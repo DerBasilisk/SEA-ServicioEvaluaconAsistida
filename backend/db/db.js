@@ -1,9 +1,13 @@
-import mongoose, { Mongoose } from "mongoose"
-import dotenv from "dotenv"
+const mongoose = require("mongoose");
 
-dotenv.config();
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log("✅┬─┬ノ(ಠ_ಠノ) Conectado a la base de datos");
+  } catch (err) {
+    console.error("❌(╯°□°)╯︵ ┻━┻ Error al conectar a la base de datos", err);
+    process.exit(1);
+  }
+};
 
-const uri =process.env.MONGODB_URI;
-mongoose.connect(uri)
-.then(()=>console.log("✅┬─┬ノ(ಠ_ಠノ) Conectado a la base de datos"))
-.catch(err=>console.log("❌(╯°□°)╯︵ ┻━┻ Error al conectar a la base de datos",err));
+module.exports = { connectDB };

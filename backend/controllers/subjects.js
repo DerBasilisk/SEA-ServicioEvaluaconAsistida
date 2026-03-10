@@ -16,7 +16,7 @@ const getSubjects = async (req, res) => {
         const lessonIds = lessons.map((l) => l._id);
 
         const completedCount = await UserProgress.countDocuments({
-          user: req.user._id,
+          user: req.usuario._id,
           lesson: { $in: lessonIds },
           status: "completed",
         });
@@ -60,7 +60,7 @@ const getSubjectBySlug = async (req, res) => {
         const lessonIds = lessons.map((l) => l._id);
 
         const progressRecords = await UserProgress.find({
-          user: req.user._id,
+          user: req.usuario._id,
           lesson: { $in: lessonIds },
         });
 

@@ -4,19 +4,19 @@ const { UserProgress, User, Streak, Achievement, Leaderboard } = require("../mod
 // Dashboard completo del usuario: XP, racha, logros, lecciones pendientes de repaso
 const getMyProgress = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate("achievements");
+    const user = await User.findById(req.usuario._id).populate("achievements");
 
-    const streak = await Streak.findOne({ user: req.user._id });
+    const streak = await Streak.findOne({ user: req.usuario._id });
 
     const today = new Date();
     const reviewsDue = await UserProgress.countDocuments({
-      user: req.user._id,
+      user: req.usuario._id,
       status: "completed",
       "spacedRepetition.nextReviewDate": { $lte: today },
     });
 
     const completedLessons = await UserProgress.countDocuments({
-      user: req.user._id,
+      user: req.usuario._id,
       status: "completed",
     });
 
@@ -27,7 +27,7 @@ const getMyProgress = async (req, res) => {
     const weeklyXP = await UserProgress.aggregate([
       {
         $match: {
-          user: req.user._id,
+          user: req.usuario._id,
           lastCompletedAt: { $gte: weekStart },
         },
       },
@@ -78,7 +78,7 @@ const getLeaderboard = async (req, res) => {
     await board.populate("entries.user", "username avatar level");
 
     const myEntry = board.entries.find(
-      (e) => e.user?._id?.toString() === req.user._id.toString()
+      (e) => e.user?._id?.toString() === req.usuario._id.toString()
     );
 
     res.json({
@@ -100,7 +100,7 @@ const getLeaderboard = async (req, res) => {
 // Todos los logros disponibles con estado desbloqueado/bloqueado
 const getAchievements = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate("achievements");
+    const user = await User.findById(req.usuario._id).populate("achievements");
     const allAchievements = await Achievement.find({ isActive: true });
 
     const unlockedIds = user.achievements.map((a) => a._id.toString());
@@ -131,7 +131,7 @@ const updateDailyGoal = async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(
-      req.user._id,
+      req.usuario._id,
       { dailyGoal },
       { new: true }
     );
@@ -147,7 +147,7 @@ const updateDailyGoal = async (req, res) => {
 const refillHearts = async (req, res) => {
   try {
     const REFILL_COST = 50; // gemas
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.usuario._id);
 
     if (user.hearts.current >= 5) {
       return res.status(400).json({ ok: false, message: "Ya tenés 5 vidas" });

@@ -39,7 +39,7 @@ const getLessonById = async (req, res) => {
     }
 
     const progress = await UserProgress.findOne({
-      user: req.user._id,
+      user: req.usuario._id,
       lesson: lesson._id,
     });
 
@@ -72,7 +72,7 @@ const startLesson = async (req, res) => {
 
     // Verificar que la lección esté disponible para el usuario
     let progress = await UserProgress.findOne({
-      user: req.user._id,
+      user: req.usuario._id,
       lesson: lesson._id,
     });
 
@@ -85,7 +85,7 @@ const startLesson = async (req, res) => {
       if (lesson.order !== 1) {
         return res.status(403).json({ ok: false, message: "Lección bloqueada" });
       }
-      progress = new UserProgress({ user: req.user._id, lesson: lesson._id, status: "available" });
+      progress = new UserProgress({ user: req.usuario._id, lesson: lesson._id, status: "available" });
     }
 
     // Si es lección generada por IA, crear preguntas al vuelo
@@ -128,7 +128,7 @@ const startLesson = async (req, res) => {
     }
 
     // Iniciar sesión en el registro de progreso
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.usuario._id);
     progress.startSession(user.hearts.current);
     await progress.save();
 
@@ -243,7 +243,7 @@ const answerQuestion = async (req, res) => {
 
     // ── Actualizar progreso y vidas ───────────────────────────
     const progress = await UserProgress.findOne({
-      user: req.user._id,
+      user: req.usuario._id,
       lesson: req.params.id,
     });
 
@@ -254,7 +254,7 @@ const answerQuestion = async (req, res) => {
 
     let heartsRemaining = null;
     if (!isCorrect) {
-      const user = await User.findById(req.user._id);
+      const user = await User.findById(req.usuario._id);
       heartsRemaining = user.loseHeart();
       await user.save();
     }
@@ -284,7 +284,7 @@ const completeLesson = async (req, res) => {
     }
 
     const progress = await UserProgress.findOne({
-      user: req.user._id,
+      user: req.usuario._id,
       lesson: lesson._id,
     });
 
@@ -305,22 +305,22 @@ const completeLesson = async (req, res) => {
     await progress.save();
 
     // Actualizar XP y nivel del usuario
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.usuario._id);
     const { leveledUp, newLevel } = user.addXP(xpEarned);
     user.gems += isPerfect ? lesson.gemsReward + 5 : lesson.gemsReward;
     await user.save();
 
     // Actualizar racha
-    let streak = await Streak.findOne({ user: req.user._id });
-    if (!streak) streak = new Streak({ user: req.user._id });
+    let streak = await Streak.findOne({ user: req.usuario._id });
+    if (!streak) streak = new Streak({ user: req.usuario._id });
     streak.recordActivity(xpEarned, user.dailyGoal);
     await streak.save();
 
     // Actualizar leaderboard
-    await Leaderboard.addXP(req.user._id, xpEarned);
+    await Leaderboard.addXP(req.usuario._id, xpEarned);
 
     // Desbloquear siguiente lección
-    await unlockNextLesson(req.user._id, lesson);
+    await unlockNextLesson(req.usuario._id, lesson);
 
     // Verificar logros
     const newAchievements = await checkAndGrantAchievements(user, streak, progress);
@@ -360,7 +360,7 @@ const completeLesson = async (req, res) => {
 const abandonLesson = async (req, res) => {
   try {
     await UserProgress.findOneAndUpdate(
-      { user: req.user._id, lesson: req.params.id, status: "in_progress" },
+      { user: req.usuario._id, lesson: req.params.id, status: "in_progress" },
       {
         status: "available",
         "currentSession.startedAt": null,
@@ -379,7 +379,7 @@ const getLessonsForReview = async (req, res) => {
   try {
     const today = new Date();
     const reviewProgress = await UserProgress.find({
-      user: req.user._id,
+      user: req.usuario._id,
       status: "completed",
       "spacedRepetition.nextReviewDate": { $lte: today },
     })

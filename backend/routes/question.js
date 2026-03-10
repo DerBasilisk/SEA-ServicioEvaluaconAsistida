@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { verifyToken } = require("../middlewares/auth.middleware");
+const { verificarToken } = require("../middlewares/auth.middleware");
 const { isAdmin } = require("../middlewares/admin.middleware");
 const {
   getQuestions,
@@ -10,12 +10,11 @@ const {
   generateWithAI,
 } = require("../controllers/question");
 
-// Todas son de admin
-router.get("/", verifyToken, isAdmin, getQuestions);
-router.post("/", verifyToken, isAdmin, createQuestion);
-router.post("/generate", verifyToken, isAdmin, generateWithAI);    // generar con IA
-router.put("/:id", verifyToken, isAdmin, updateQuestion);
-router.put("/:id/review", verifyToken, isAdmin, reviewQuestion);   // aprobar/rechazar IA
-router.delete("/:id", verifyToken, isAdmin, deleteQuestion);
+router.get("/", verificarToken, isAdmin, getQuestions);
+router.post("/", verificarToken, isAdmin, createQuestion);
+router.post("/generate", verificarToken, isAdmin, generateWithAI);
+router.put("/:id", verificarToken, isAdmin, updateQuestion);
+router.put("/:id/review", verificarToken, isAdmin, reviewQuestion);
+router.delete("/:id", verificarToken, isAdmin, deleteQuestion);
 
 module.exports = router;

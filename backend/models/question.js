@@ -139,38 +139,37 @@ const questionSchema = new mongoose.Schema(
 );
 
 // ── Validación: campos requeridos según tipo ───────────────────
-questionSchema.pre("validate", function (next) {
+questionSchema.pre("validate", function () {
   switch (this.type) {
     case "multiple_choice":
       if (!this.options || this.options.length < 2) {
-        return next(new Error("multiple_choice necesita al menos 2 opciones"));
+        throw new Error("multiple_choice necesita al menos 2 opciones");
       }
       if (!this.options.some((o) => o.isCorrect)) {
-        return next(new Error("Debe haber al menos una opción correcta"));
+        throw new Error("Debe haber al menos una opción correcta");
       }
       break;
     case "true_false":
       if (this.correctBoolean === null) {
-        return next(new Error("true_false necesita correctBoolean"));
+        throw new Error("true_false necesita correctBoolean");
       }
       break;
     case "fill_blank":
       if (!this.correctAnswers || this.correctAnswers.length === 0) {
-        return next(new Error("fill_blank necesita al menos una respuesta correcta"));
+        throw new Error("fill_blank necesita al menos una respuesta correcta");
       }
       break;
     case "order_items":
       if (!this.items || this.items.length < 2) {
-        return next(new Error("order_items necesita al menos 2 ítems"));
+        throw new Error("order_items necesita al menos 2 ítems");
       }
       break;
     case "match_pairs":
       if (!this.pairs || this.pairs.length < 2) {
-        return next(new Error("match_pairs necesita al menos 2 pares"));
+        throw new Error("match_pairs necesita al menos 2 pares");
       }
       break;
   }
-  next();
 });
 
 // Índice para búsqueda eficiente al armar sesiones de repaso

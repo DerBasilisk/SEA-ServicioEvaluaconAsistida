@@ -110,19 +110,14 @@ userSchema.virtual("xpProgress").get(function () {
 });
 
 // ── Hooks ──────────────────────────────────────────────────────
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-// Auto-subir nivel cuando acumula suficiente XP
-userSchema.pre("save", function (next) {
+userSchema.pre("save", async function () {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 12);
+  }
   const xpForNext = Math.floor(100 * Math.pow(1.5, this.level - 1));
   while (this.xp >= xpForNext) {
     this.level += 1;
   }
-  next();
 });
 
 // ── Métodos de instancia ───────────────────────────────────────

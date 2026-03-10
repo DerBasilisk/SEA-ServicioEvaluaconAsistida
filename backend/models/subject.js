@@ -51,16 +51,15 @@ const subjectSchema = new mongoose.Schema(
 );
 
 // Genera slug automáticamente desde el nombre
-subjectSchema.pre("save", function (next) {
+subjectSchema.pre("save", function () {
   if (this.isModified("name")) {
     this.slug = this.name
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // elimina acentos
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
   }
-  next();
 });
 
 // Virtual: cantidad de unidades (se usa con populate)

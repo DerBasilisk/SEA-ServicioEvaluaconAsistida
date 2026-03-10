@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { verifyToken } = require("../middlewares/auth.middleware");
+const { verificarToken } = require("../middlewares/auth.middleware");
 const { isAdmin } = require("../middlewares/admin.middleware");
 const {
   getSubjects,
@@ -7,15 +7,15 @@ const {
   createSubject,
   updateSubject,
   deleteSubject,
-} = require("../controllers/subject");
+} = require("../controllers/subjects");
 
 // Rutas públicas autenticadas
-router.get("/", verifyToken, getSubjects);
-router.get("/:slug", verifyToken, getSubjectBySlug);
+router.get("/", verificarToken, getSubjects);
+router.get("/:slug", verificarToken, getSubjectBySlug);
 
 // Rutas de administración
-router.post("/", verifyToken, isAdmin, createSubject);
-router.put("/:id", verifyToken, isAdmin, updateSubject);
-router.delete("/:id", verifyToken, isAdmin, deleteSubject);
+router.post("/", verificarToken, isAdmin, createSubject);
+router.put("/:id", verificarToken, isAdmin, updateSubject);
+router.delete("/:id", verificarToken, isAdmin, deleteSubject);
 
 module.exports = router;
