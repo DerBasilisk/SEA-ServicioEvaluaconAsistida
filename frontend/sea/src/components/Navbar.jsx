@@ -15,7 +15,6 @@ export default function Navbar() {
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img src="/sealogo.svg" alt="SEA Logo" className="w-8 h-8" />
           <span className="text-2xl">🎓</span>
           <span className="text-white font-black text-xl tracking-tight">SEA</span>
         </Link>
