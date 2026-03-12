@@ -69,6 +69,15 @@ const userProgressSchema = new mongoose.Schema(
       easeFactor: { type: Number, default: 2.5 }, // factor SM-2
       repetitions: { type: Number, default: 0 },
     },
+
+    // -- preguntas vistas
+    seenQuestions: [
+    {
+      question: { type: mongoose.Schema.Types.ObjectId, ref: "Question" },
+      timesShown: { type: Number, default: 1 },
+    },
+  ],
+
   },
   {
     timestamps: true,

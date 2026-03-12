@@ -1,16 +1,7 @@
-const Groq = require("groq-sdk");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-const MODEL = "llama-3.3-70b-versatile";
-
-const chat = async (prompt) => {
-  const result = await client.chat.completions.create({
-    model: MODEL,
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.7,
-  });
-  return result.choices[0].message.content;
-};
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 async function generateQuestions({
   subjectName, unitName, lessonName, topicHint,
@@ -43,7 +34,6 @@ REGLAS OBLIGATORIAS:
 4. Las explicaciones post-respuesta deben ser educativas y concisas (máximo 2 oraciones).
 5. Los tags deben ser palabras clave del tema (2-4 tags por pregunta).
 6. xpValue: easy=2, medium=3, hard=5.
-7. Para match_pairs: cada valor del lado derecho debe ser ÚNICO. Nunca repitas el mismo resultado para distintas operaciones.
 
 Genera ${count} preguntas de práctica sobre:
 - Materia: ${subjectName}
@@ -55,7 +45,7 @@ Genera ${count} preguntas de práctica sobre:
 Tipos de pregunta permitidos (varía los tipos):
 ${allowedDescriptions}
 
-Devuelve exactamente este formato JSON (sin markdown, sin texto extra):
+Devuelve exactamente este formato JSON:
 [
   {
     "type": "multiple_choice",
@@ -73,7 +63,8 @@ Devuelve exactamente este formato JSON (sin markdown, sin texto extra):
   }
 ]`;
 
-  const rawText = await chat(prompt);
+  const result = await model.generateContent(prompt);
+  const rawText = result.response.text();
   const cleaned = rawText.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
 
   let questions;
@@ -88,7 +79,7 @@ Devuelve exactamente este formato JSON (sin markdown, sin texto extra):
   return questions.map((q) => ({
     ...q,
     isAIGenerated: true,
-    aiModel: MODEL,
+    aiModel: "gemini-1.5-flash",
     aiGeneratedAt: new Date(),
     isReviewed: false,
     isActive: false,
@@ -101,7 +92,8 @@ Pregunta: "${question.prompt}"
 Tipo: ${question.type}
 Responde SOLO con la pista, sin texto adicional.`;
 
-  return await chat(prompt);
+  const result = await model.generateContent(prompt);
+  return result.response.text().trim() || null;
 }
 
 async function evaluateFillBlankAnswer(questionPrompt, userAnswer, correctAnswers) {
@@ -113,16 +105,16 @@ Respuesta del estudiante: "${userAnswer}"
 
 Considerá como correcta si:
 - Es semánticamente equivalente (ej: "dos" = "2")
-- Tiene diferencia de tildes (ej: "matematica" = "matemática")
+- Tiene diferencia de tildes (ej: "matematica" = "matemática") 
 - Es un sinónimo válido en contexto educativo
 - Tiene mayúsculas/minúsculas distintas
 - Tiene espacios extra
 
-IMPORTANTE para match_pairs: asegurate de que los pares tengan correspondencia unívoca (1 a 1). No uses el mismo valor derecho para múltiples izquierdos.
-Responde ÚNICAMENTE con la palabra: true o false`;
+Responde ÚNICAMENTE con: true o false`;
 
-  const text = await chat(prompt);
-  return text.trim().toLowerCase().startsWith("true");
+  const result = await model.generateContent(prompt);
+  const text = result.response.text().trim().toLowerCase();
+  return text === "true";
 }
 
 module.exports = { generateQuestions, generateHint, evaluateFillBlankAnswer };

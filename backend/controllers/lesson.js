@@ -1,19 +1,15 @@
-const { Lesson, Question, UserProgress, User, Streak, Leaderboard, Achievement } = require("../models");
-const { generateQuestions } = require("../services/ai.service");
+const { Lesson, Question, UserProgress, User, Streak, Leaderboard } = require("../models");
+const { generateQuestions, evaluateFillBlankAnswer } = require("../services/ai.service");
 const { checkAndGrantAchievements } = require("../services/achievement.service");
+const { getAdaptiveConfig, selectQuestions, getAdaptiveXPReward } = require("../services/adaptive.service");
+const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionrefresh.service");
 
-// ── Helpers ────────────────────────────────────────────────────
-
-/**
- * Desbloquea la siguiente lección cuando se completa una
- */
 const unlockNextLesson = async (userId, completedLesson) => {
   const nextLesson = await Lesson.findOne({
     unit: completedLesson.unit,
     order: completedLesson.order + 1,
     isActive: true,
   });
-
   if (nextLesson) {
     await UserProgress.findOneAndUpdate(
       { user: userId, lesson: nextLesson._id },
@@ -23,26 +19,16 @@ const unlockNextLesson = async (userId, completedLesson) => {
   }
 };
 
-// ── Controladores ──────────────────────────────────────────────
-
-// GET /api/lessons/:id
-// Detalle de una lección (sin preguntas, solo metadata)
 const getLessonById = async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id).populate({
       path: "unit",
       populate: { path: "subject", select: "name color icon" },
     });
-
     if (!lesson || !lesson.isActive) {
       return res.status(404).json({ ok: false, message: "Lección no encontrada" });
     }
-
-    const progress = await UserProgress.findOne({
-      user: req.usuario._id,
-      lesson: lesson._id,
-    });
-
+    const progress = await UserProgress.findOne({ user: req.usuario._id, lesson: lesson._id });
     res.json({
       ok: true,
       data: {
@@ -57,30 +43,20 @@ const getLessonById = async (req, res) => {
   }
 };
 
-// POST /api/lessons/:id/start
-// Inicia una sesión de práctica — devuelve las preguntas mezcladas
 const startLesson = async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id).populate({
       path: "unit",
       populate: { path: "subject" },
     });
-
     if (!lesson || !lesson.isActive) {
       return res.status(404).json({ ok: false, message: "Lección no encontrada" });
     }
 
-    // Verificar que la lección esté disponible para el usuario
-    let progress = await UserProgress.findOne({
-      user: req.usuario._id,
-      lesson: lesson._id,
-    });
-
+    let progress = await UserProgress.findOne({ user: req.usuario._id, lesson: lesson._id });
     if (progress && progress.status === "locked") {
       return res.status(403).json({ ok: false, message: "Lección bloqueada" });
     }
-
-    // Si es la primera lección de la unidad, siempre está disponible
     if (!progress) {
       if (lesson.order !== 1) {
         return res.status(403).json({ ok: false, message: "Lección bloqueada" });
@@ -88,90 +64,101 @@ const startLesson = async (req, res) => {
       progress = new UserProgress({ user: req.usuario._id, lesson: lesson._id, status: "available" });
     }
 
-    // Si es lección generada por IA, crear preguntas al vuelo
-    let questions;
-    if (lesson.type === "ai_generated") {
-      const subject = lesson.unit.subject;
-      const unit = lesson.unit;
+    // Configuración adaptativa
+    const adaptiveConfig = await getAdaptiveConfig(req.usuario._id, lesson);
 
+    let questions;
+
+    if (lesson.type === "ai_generated") {
       const aiQuestions = await generateQuestions({
-        subjectName: subject.name,
-        unitName: unit.name,
+        subjectName: lesson.unit.subject.name,
+        unitName: lesson.unit.name,
         lessonName: lesson.name,
         topicHint: lesson.aiTopicHint,
-        difficulty: lesson.difficulty,
-        subjectContext: subject.aiPromptContext,
-        count: lesson.questionCount,
+        difficulty: adaptiveConfig.difficulty,
+        subjectContext: lesson.unit.subject.aiPromptContext,
+        count: adaptiveConfig.questionCount,
       });
-
-      // Guardar las preguntas generadas y marcarlas como activas para esta sesión
-      const savedQuestions = await Question.insertMany(
+      const saved = await Question.insertMany(
         aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
       );
-      questions = savedQuestions;
+      questions = saved;
     } else {
-      // Obtener preguntas normales (mezcla de dificultades según el tipo de lección)
-      questions = await Question.find({
-        lesson: lesson._id,
-        isActive: true,
-        ...(lesson.type === "checkpoint" ? {} : {}),
-      }).select("-__v");
+      let allQuestions = await Question.find({ lesson: lesson._id, isActive: true, isReviewed: true }).select("-__v");
 
-      // Mezclar y limitar cantidad
-      questions = questions
-        .sort(() => Math.random() - 0.5)
-        .slice(0, lesson.questionCount);
+      if (allQuestions.length < adaptiveConfig.questionCount) {
+  // Generar las preguntas que faltan
+  const needed = adaptiveConfig.questionCount - allQuestions.length;
+  try {
+    const aiQuestions = await generateQuestions({
+      subjectName: lesson.unit.subject.name,
+      unitName: lesson.unit.name,
+      lessonName: lesson.name,
+      topicHint: lesson.aiTopicHint || lesson.name,
+      difficulty: adaptiveConfig.difficulty,
+      subjectContext: lesson.unit.subject.aiPromptContext,
+      count: needed,
+    });
+    const saved = await Question.insertMany(
+      aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
+    );
+    allQuestions = [...allQuestions, ...saved];
+  } catch (err) {
+    console.error("Error generando preguntas adicionales:", err.message);
+    // Si falla la IA, continuar con las que hay
+  }
+}
+
+    questions = selectQuestions(allQuestions, adaptiveConfig.questionCount, adaptiveConfig.easyRatio, adaptiveConfig.hardRatio);
     }
 
     if (questions.length === 0) {
-      return res.status(400).json({ ok: false, message: "Esta lección no tiene preguntas activas" });
+      return res.status(400).json({ ok: false, message: "Esta lección no tiene preguntas" });
     }
 
-    // Iniciar sesión en el registro de progreso
     const user = await User.findById(req.usuario._id);
     progress.startSession(user.hearts.current);
+    progress.set("currentSession.adaptiveConfig", adaptiveConfig);
     await progress.save();
 
-    // Sanear preguntas para el cliente (ocultar respuestas correctas)
     const sanitizedQuestions = questions.map((q) => {
-      const obj = q.toJSON ? q.toJSON() : q;
-      // Mezclar opciones de multiple_choice
+      const obj = q.toJSON ? q.toJSON() : { ...q };
       if (obj.type === "multiple_choice" && obj.options) {
-        obj.options = obj.options
-          .map((o) => ({ _id: o._id, text: o.text })) // ocultar isCorrect
-          .sort(() => Math.random() - 0.5);
+        obj.options = obj.options.map((o) => ({ _id: o._id, text: o.text })).sort(() => Math.random() - 0.5);
       }
-      // Mezclar items de order_items
       if (obj.type === "order_items" && obj.items) {
         obj.shuffledItems = [...obj.items].sort(() => Math.random() - 0.5);
-        delete obj.items; // no revelar el orden correcto
+        delete obj.items;
       }
-      // Mezclar pares de match_pairs
       if (obj.type === "match_pairs" && obj.pairs) {
-        obj.leftItems = obj.pairs.map((p) => ({ _id: p._id, text: p.left })).sort(() => Math.random() - 0.5);
+        obj.leftItems  = obj.pairs.map((p) => ({ _id: p._id, text: p.left  })).sort(() => Math.random() - 0.5);
         obj.rightItems = obj.pairs.map((p) => ({ _id: p._id, text: p.right })).sort(() => Math.random() - 0.5);
         delete obj.pairs;
       }
-      // Eliminar campos con respuestas
       delete obj.correctBoolean;
       delete obj.correctAnswers;
       delete obj.isCorrect;
       return obj;
     });
 
+    recordShownQuestions(
+      req.usuario._id,
+      lesson._id,
+      sanitizedQuestions.map((q) => q._id)
+    ).catch(console.error);
+
     res.json({
       ok: true,
       data: {
-        lesson: {
-          _id: lesson._id,
-          name: lesson.name,
-          xpReward: lesson.xpReward,
-          timeLimit: lesson.timeLimit,
-          type: lesson.type,
-        },
+        lesson: { _id: lesson._id, name: lesson.name, xpReward: lesson.xpReward, timeLimit: lesson.timeLimit, type: lesson.type },
         questions: sanitizedQuestions,
         totalQuestions: sanitizedQuestions.length,
         hearts: user.hearts.current,
+        adaptive: {
+          questionCount: adaptiveConfig.questionCount,
+          difficulty: adaptiveConfig.difficulty,
+          activityScore: adaptiveConfig.activityScore,
+        },
       },
     });
   } catch (err) {
@@ -179,22 +166,16 @@ const startLesson = async (req, res) => {
   }
 };
 
-// POST /api/lessons/:id/answer
-// Evalúa UNA respuesta y devuelve feedback inmediato (estilo Duolingo)
 const answerQuestion = async (req, res) => {
   try {
     const { questionId, answer } = req.body;
-
     if (!questionId || answer === undefined) {
       return res.status(400).json({ ok: false, message: "questionId y answer son requeridos" });
     }
 
     const question = await Question.findById(questionId);
-    if (!question) {
-      return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
-    }
+    if (!question) return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
 
-    // ── Evaluar respuesta según tipo ──────────────────────────
     let isCorrect = false;
     let correctAnswer = null;
 
@@ -202,9 +183,7 @@ const answerQuestion = async (req, res) => {
       case "multiple_choice": {
         const correctOption = question.options.find((o) => o.isCorrect);
         isCorrect = correctOption?._id.toString() === answer;
-        correctAnswer = correctOption
-          ? { id: correctOption._id, text: correctOption.text }
-          : null;
+        correctAnswer = correctOption ? { id: correctOption._id, text: correctOption.text } : null;
         break;
       }
       case "true_false": {
@@ -219,18 +198,23 @@ const answerQuestion = async (req, res) => {
           : question.correctAnswers.map((a) => a.toLowerCase());
         const compare = question.caseSensitive ? userAns : userAns.toLowerCase();
         isCorrect = accepted.includes(compare);
+        if (!isCorrect) {
+          try {
+            isCorrect = await evaluateFillBlankAnswer(question.prompt, userAns, question.correctAnswers);
+          } catch (err) {
+            console.error("Error evaluando con IA:", err.message);
+          }
+        }
         correctAnswer = question.correctAnswers[0];
         break;
       }
       case "order_items": {
         const userOrder = Array.isArray(answer) ? answer : [];
-        isCorrect =
-          JSON.stringify(userOrder) === JSON.stringify(question.items);
+        isCorrect = JSON.stringify(userOrder) === JSON.stringify(question.items);
         correctAnswer = question.items;
         break;
       }
       case "match_pairs": {
-        // answer = [{leftId, rightId}, ...]
         const userPairs = Array.isArray(answer) ? answer : [];
         isCorrect = userPairs.every((up) => {
           const pair = question.pairs.find((p) => p._id.toString() === up.leftId);
@@ -241,12 +225,7 @@ const answerQuestion = async (req, res) => {
       }
     }
 
-    // ── Actualizar progreso y vidas ───────────────────────────
-    const progress = await UserProgress.findOne({
-      user: req.usuario._id,
-      lesson: req.params.id,
-    });
-
+    const progress = await UserProgress.findOne({ user: req.usuario._id, lesson: req.params.id });
     if (progress) {
       progress.recordAttempt(questionId, isCorrect);
       await progress.save();
@@ -261,33 +240,22 @@ const answerQuestion = async (req, res) => {
 
     res.json({
       ok: true,
-      data: {
-        isCorrect,
-        correctAnswer,
-        explanation: question.explanation,
-        heartsRemaining,
-        xpEarned: isCorrect ? question.xpValue : 0,
-      },
+      data: { isCorrect, correctAnswer, explanation: question.explanation, heartsRemaining, xpEarned: isCorrect ? question.xpValue : 0 },
     });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }
 };
 
-// POST /api/lessons/:id/complete
-// Finaliza la sesión, otorga XP, actualiza racha y logros
 const completeLesson = async (req, res) => {
   try {
-    const lesson = await Lesson.findById(req.params.id);
-    if (!lesson) {
-      return res.status(404).json({ ok: false, message: "Lección no encontrada" });
-    }
-
-    const progress = await UserProgress.findOne({
-      user: req.usuario._id,
-      lesson: lesson._id,
+    const lesson = await Lesson.findById(req.params.id).populate({
+      path: "unit",
+      populate: { path: "subject" },
     });
+    if (!lesson) return res.status(404).json({ ok: false, message: "Lección no encontrada" });
 
+    const progress = await UserProgress.findOne({ user: req.usuario._id, lesson: lesson._id });
     if (!progress || progress.status !== "in_progress") {
       return res.status(400).json({ ok: false, message: "No hay sesión activa para esta lección" });
     }
@@ -295,59 +263,59 @@ const completeLesson = async (req, res) => {
     const score = progress.calculateSessionScore();
     const isPerfect = score === 100;
 
-    // XP base + bonus por perfección
-    const xpEarned = isPerfect
-      ? Math.round(lesson.xpReward * 1.5)
-      : lesson.xpReward;
+    const adaptiveConfig = progress.currentSession?.adaptiveConfig || {
+      questionCount: lesson.questionCount,
+      difficulty: lesson.difficulty,
+    };
 
-    // Completar sesión
+    const baseXP = isPerfect ? Math.round(lesson.xpReward * 1.5) : lesson.xpReward;
+    const xpEarned = getAdaptiveXPReward(baseXP, adaptiveConfig);
+
     progress.completeSession(xpEarned);
     await progress.save();
 
-    // Actualizar XP y nivel del usuario
     const user = await User.findById(req.usuario._id);
     const { leveledUp, newLevel } = user.addXP(xpEarned);
-    user.gems += isPerfect ? lesson.gemsReward + 5 : lesson.gemsReward;
+    user.gems += isPerfect ? (lesson.gemsReward || 0) + 5 : (lesson.gemsReward || 0);
     await user.save();
 
-    // Actualizar racha
     let streak = await Streak.findOne({ user: req.usuario._id });
     if (!streak) streak = new Streak({ user: req.usuario._id });
     streak.recordActivity(xpEarned, user.dailyGoal);
     await streak.save();
 
-    // Actualizar leaderboard
     await Leaderboard.addXP(req.usuario._id, xpEarned);
-
-    // Desbloquear siguiente lección
     await unlockNextLesson(req.usuario._id, lesson);
 
-    // Verificar logros
     const newAchievements = await checkAndGrantAchievements(user, streak, progress);
 
-    // Refill de corazones si se vaciaron y pasó suficiente tiempo
     if (user.hearts.current === 0) {
-      const minutesSinceRefill =
-        (Date.now() - user.hearts.lastRefill) / 1000 / 60;
-      if (minutesSinceRefill >= 30) {
-        user.refillHearts();
-        await user.save();
-      }
+      const minutesSinceRefill = (Date.now() - user.hearts.lastRefill) / 1000 / 60;
+      if (minutesSinceRefill >= 30) { user.refillHearts(); await user.save(); }
     }
+
+    refreshStaleQuestions(
+      req.usuario._id,
+      lesson,
+      lesson.unit,
+      lesson.unit.subject
+    ).catch(console.error);
 
     res.json({
       ok: true,
       data: {
-        score,
-        isPerfect,
-        xpEarned,
-        leveledUp,
+        score, isPerfect, xpEarned, leveledUp,
         newLevel: leveledUp ? newLevel : null,
         newStreak: streak.current,
         newAchievements,
         hearts: user.hearts.current,
         totalXP: user.xp,
         gems: user.gems,
+        adaptive: {
+          questionsAnswered: adaptiveConfig.questionCount,
+          difficulty: adaptiveConfig.difficulty,
+          activityScore: adaptiveConfig.activityScore,
+        },
       },
     });
   } catch (err) {
@@ -355,17 +323,11 @@ const completeLesson = async (req, res) => {
   }
 };
 
-// POST /api/lessons/:id/abandon
-// El usuario abandona la lección a mitad (pierde progreso de la sesión)
 const abandonLesson = async (req, res) => {
   try {
     await UserProgress.findOneAndUpdate(
       { user: req.usuario._id, lesson: req.params.id, status: "in_progress" },
-      {
-        status: "available",
-        "currentSession.startedAt": null,
-        "currentSession.attempts": [],
-      }
+      { status: "available", "currentSession.startedAt": null, "currentSession.attempts": [] }
     );
     res.json({ ok: true, message: "Lección abandonada" });
   } catch (err) {
@@ -373,8 +335,6 @@ const abandonLesson = async (req, res) => {
   }
 };
 
-// GET /api/lessons/review
-// Devuelve lecciones que necesitan repaso espaciado hoy
 const getLessonsForReview = async (req, res) => {
   try {
     const today = new Date();
@@ -382,9 +342,7 @@ const getLessonsForReview = async (req, res) => {
       user: req.usuario._id,
       status: "completed",
       "spacedRepetition.nextReviewDate": { $lte: today },
-    })
-      .populate("lesson", "name xpReward unit")
-      .limit(10);
+    }).populate("lesson", "name xpReward unit").limit(10);
 
     res.json({
       ok: true,
@@ -399,11 +357,4 @@ const getLessonsForReview = async (req, res) => {
   }
 };
 
-module.exports = {
-  getLessonById,
-  startLesson,
-  answerQuestion,
-  completeLesson,
-  abandonLesson,
-  getLessonsForReview,
-};
+module.exports = { getLessonById, startLesson, answerQuestion, completeLesson, abandonLesson, getLessonsForReview };
