@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const Streak = require("../models/streak");
 
 const generateToken = (id) =>
   jwt.sign({ _id: id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -76,10 +77,19 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.usuario._id);
-    res.json({ ok: true, data: user });
+    const streak = await Streak.findOne({ user: req.usuario._id });
+
+    res.json({
+      ok: true,
+      data: {
+        ...user.toJSON(),
+        streak: { current: streak?.current || 0, longest: streak?.longest || 0 },
+      },
+    });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }
 };
+
 
 module.exports = { register, login, getMe };

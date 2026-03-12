@@ -70,18 +70,18 @@ async function recordShownQuestions(userId, lessonId, questionIds) {
     for (const qId of questionIds) {
       // Intentar incrementar si ya existe
       const updated = await UserProgress.findOneAndUpdate(
-  { user: userId, lesson: lessonId, "seenQuestions.question": qId },
-  { $inc: { "seenQuestions.$.timesShown": 1 } },
-  { strict: false }
-);
+        { user: userId, lesson: lessonId, "seenQuestions.question": qId },
+        { $inc: { "seenQuestions.$.timesShown": 1 } },
+        { strict: false }
+      );
 
-if (!updated) {
-  await UserProgress.findOneAndUpdate(
-    { user: userId, lesson: lessonId },
-    { $push: { seenQuestions: { question: qId, timesShown: 1 } } },
-    { strict: false }
-  );
-}
+      if (!updated) {
+        await UserProgress.findOneAndUpdate(
+          { user: userId, lesson: lessonId },
+          { $push: { seenQuestions: { question: qId, timesShown: 1 } } },
+          { strict: false }
+        );
+      }
     }
   } catch (err) {
     console.error("[questionRefresh] Error registrando preguntas:", err.message);

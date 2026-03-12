@@ -5,6 +5,14 @@ const { getAdaptiveConfig, selectQuestions, getAdaptiveXPReward } = require("../
 const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionrefresh.service");
 
 const unlockNextLesson = async (userId, completedLesson) => {
+  // Verificar cuántas veces completó esta lección
+  const currentProgress = await UserProgress.findOne({
+    user: userId,
+    lesson: completedLesson._id,
+  });
+
+  if (!currentProgress || currentProgress.completions < 4) return;
+
   const nextLesson = await Lesson.findOne({
     unit: completedLesson.unit,
     order: completedLesson.order + 1,
@@ -14,7 +22,7 @@ const unlockNextLesson = async (userId, completedLesson) => {
     await UserProgress.findOneAndUpdate(
       { user: userId, lesson: nextLesson._id },
       { $setOnInsert: { status: "available" } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
   }
 };
@@ -117,9 +125,19 @@ const startLesson = async (req, res) => {
     }
 
     const user = await User.findById(req.usuario._id);
-    progress.startSession(user.hearts.current);
-    progress.set("currentSession.adaptiveConfig", adaptiveConfig);
-    await progress.save();
+    await UserProgress.findOneAndUpdate(
+      { user: req.usuario._id, lesson: lesson._id },
+      {
+        $set: {
+          status: "in_progress",
+          "currentSession.startedAt": new Date(),
+          "currentSession.heartsAtStart": user.hearts.current,
+          "currentSession.attempts": [],
+          "currentSession.adaptiveConfig": adaptiveConfig,
+        },
+      },
+      { upsert: true }
+    );
 
     const sanitizedQuestions = questions.map((q) => {
       const obj = q.toJSON ? q.toJSON() : { ...q };
@@ -134,6 +152,9 @@ const startLesson = async (req, res) => {
         obj.leftItems  = obj.pairs.map((p) => ({ _id: p._id, text: p.left  })).sort(() => Math.random() - 0.5);
         obj.rightItems = obj.pairs.map((p) => ({ _id: p._id, text: p.right })).sort(() => Math.random() - 0.5);
         delete obj.pairs;
+      }
+      if (obj.type === "sentence_builder" && obj.wordBank) {
+        obj.wordBank = obj.wordBank.sort(() => Math.random() - 0.5);
       }
       delete obj.correctBoolean;
       delete obj.correctAnswers;
@@ -180,6 +201,12 @@ const answerQuestion = async (req, res) => {
     let correctAnswer = null;
 
     switch (question.type) {
+      case "sentence_builder": {
+        const userWords = Array.isArray(answer) ? answer : [];
+        isCorrect = JSON.stringify(userWords) === JSON.stringify(question.correctAnswers);
+        correctAnswer = question.correctAnswers;
+        break;
+      }
       case "multiple_choice": {
         const correctOption = question.options.find((o) => o.isCorrect);
         isCorrect = correctOption?._id.toString() === answer;
@@ -225,11 +252,14 @@ const answerQuestion = async (req, res) => {
       }
     }
 
-    const progress = await UserProgress.findOne({ user: req.usuario._id, lesson: req.params.id });
-    if (progress) {
-      progress.recordAttempt(questionId, isCorrect);
-      await progress.save();
-    }
+    await UserProgress.findOneAndUpdate(
+      { user: req.usuario._id, lesson: req.params.id },
+      {
+        $push: {
+          "currentSession.attempts": { question: questionId, isCorrect, answeredAt: new Date() },
+        },
+      }
+    );
 
     let heartsRemaining = null;
     if (!isCorrect) {
@@ -271,8 +301,18 @@ const completeLesson = async (req, res) => {
     const baseXP = isPerfect ? Math.round(lesson.xpReward * 1.5) : lesson.xpReward;
     const xpEarned = getAdaptiveXPReward(baseXP, adaptiveConfig);
 
-    progress.completeSession(xpEarned);
-    await progress.save();
+    await UserProgress.findOneAndUpdate(
+      { user: req.usuario._id, lesson: lesson._id },
+      {
+        $set: {
+          status: "completed",
+          lastScore: score,
+          "currentSession.completedAt": new Date(),
+        },
+        $inc: { completions: 1, totalXPEarned: xpEarned },
+        $max: { bestScore: score },
+      }
+    );
 
     const user = await User.findById(req.usuario._id);
     const { leveledUp, newLevel } = user.addXP(xpEarned);

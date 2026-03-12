@@ -15,7 +15,7 @@ const chat = async (prompt) => {
 async function generateQuestions({
   subjectName, unitName, lessonName, topicHint,
   difficulty = "easy", subjectContext = "", count = 5,
-  allowedTypes = ["multiple_choice", "true_false", "fill_blank", "order_items", "match_pairs"],
+  allowedTypes = ["multiple_choice", "true_false", "fill_blank", "order_items", "match_pairs", "sentence_builder"],
 }) {
   const difficultyMap = {
     easy: "básico, para alguien que recién aprende el tema",
@@ -29,6 +29,7 @@ async function generateQuestions({
     fill_blank: 'completar el espacio en blanco (usar ___ en el prompt). Campo "correctAnswers": array de strings aceptados',
     order_items: 'ordenar elementos en secuencia correcta. Campo "items": array de strings en el orden CORRECTO',
     match_pairs: 'relacionar columnas. Campo "pairs": array de {left, right}',
+    sentence_builder: 'completar oración eligiendo palabras. Campo "wordBank": array con las palabras correctas MÁS 2-3 distractores mezclados. Campo "correctAnswers": array de strings en el orden correcto que llenan los ___ del prompt.',
   };
 
   const allowedDescriptions = allowedTypes.map((t) => `- ${t}: ${typesDescription[t]}`).join("\n");

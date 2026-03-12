@@ -30,6 +30,8 @@ const questionSchema = new mongoose.Schema(
       required: true,
     },
 
+    wordBank: [String],
+
     type: {
       type: String,
       required: true,
@@ -39,6 +41,7 @@ const questionSchema = new mongoose.Schema(
         "fill_blank",       // Completar el espacio en blanco
         "order_items",      // Ordenar elementos en secuencia correcta
         "match_pairs",      // Relacionar columna A con columna B
+        "sentence_builder", // Crear oraciones
       ],
     },
 
