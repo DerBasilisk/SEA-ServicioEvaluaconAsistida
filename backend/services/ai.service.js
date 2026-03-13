@@ -44,7 +44,7 @@ REGLAS OBLIGATORIAS:
 4. Las explicaciones post-respuesta deben ser educativas y concisas (máximo 2 oraciones).
 5. Los tags deben ser palabras clave del tema (2-4 tags por pregunta).
 6. xpValue: easy=2, medium=3, hard=5.
-7. Para match_pairs: cada valor del lado derecho debe ser ÚNICO. Nunca repitas el mismo resultado para distintas operaciones.
+7. Para match_pairs: los valores del lado derecho deben ser TODOS DISTINTOS entre sí. Si los resultados matemáticos son iguales (ej: 6-1=5, 9-4=5, 7-2=5), NO uses match_pairs — usá multiple_choice o true_false en su lugar.
 
 Genera ${count} preguntas de práctica sobre:
 - Materia: ${subjectName}

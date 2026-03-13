@@ -80,6 +80,12 @@ export default function Login() {
             </button>
           </form>
 
+          
+  <a href="http://localhost:3000/api/auth/google" className="w-full flex items-center justify-center gap-3 bg-white text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-100 transition">
+  <img src="https://www.google.com/favicon.ico" className="w-5 h-5" />
+  Continuar con Google
+</a>
+
           <p className="text-center text-indigo-400 mt-6 text-sm">
             ¿No tenés cuenta?{" "}
             <Link to="/register" className="text-violet-400 hover:text-violet-300 font-semibold">

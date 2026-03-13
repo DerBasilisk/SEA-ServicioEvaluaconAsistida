@@ -3,6 +3,10 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
+    googleId: { type: String, sparse: true },
+    
+    avatar:   { type: String },
+
     username: {
       type: String,
       required: [true, "El nombre de usuario es obligatorio"],

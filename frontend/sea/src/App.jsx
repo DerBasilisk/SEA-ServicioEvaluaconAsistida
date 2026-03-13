@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import SubjectMap from "./pages/SubjectMap";
 import Lesson from "./pages/Lesson";
 import Profile from "./pages/Profile";
+import AuthCallback from "./pages/AuthCallback"
 
 function App() {
   const { token, fetchMe } = useAuthStore();
@@ -24,6 +25,7 @@ function App() {
         {/* Públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Protegidas */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />

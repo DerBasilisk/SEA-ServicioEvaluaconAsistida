@@ -35,6 +35,17 @@ const useAuthStore = create((set) => ({
     }
   },
 
+  loginWithToken: async (token) => {
+    localStorage.setItem("sea_token", token);
+    set({ token });
+    try {
+      const { data } = await api.get("/users/me");
+      set({ user: data.data, loading: false });
+    } catch {
+      set({ loading: false });
+    }
+  },
+
   logout: () => {
     localStorage.removeItem("sea_token");
     set({ user: null, token: null });

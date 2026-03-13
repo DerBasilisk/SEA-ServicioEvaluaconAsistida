@@ -243,10 +243,22 @@ const answerQuestion = async (req, res) => {
       }
       case "match_pairs": {
         const userPairs = Array.isArray(answer) ? answer : [];
-        isCorrect = userPairs.every((up) => {
-          const pair = question.pairs.find((p) => p._id.toString() === up.leftId);
-          return pair && pair._id.toString() === up.rightId;
-        }) && userPairs.length === question.pairs.length;
+        
+        // Verificar que cada leftId esté correctamente mapeado a su rightId
+        isCorrect = userPairs.length === question.pairs.length &&
+          userPairs.every((up) => {
+            const pair = question.pairs.find((p) => p._id.toString() === up.leftId);
+            // El rightId del usuario debe coincidir con el _id del par correcto
+            return pair && pair._id.toString() === up.rightId;
+          });
+
+        // Si todos los right values son iguales, cualquier combinación es válida
+        const rightValues = question.pairs.map((p) => p.right);
+        const allSameRight = rightValues.every((v) => v === rightValues[0]);
+        if (allSameRight && userPairs.length === question.pairs.length) {
+          isCorrect = true;
+        }
+
         correctAnswer = question.pairs;
         break;
       }

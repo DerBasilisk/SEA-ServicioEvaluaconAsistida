@@ -12,6 +12,7 @@ const subjectRoutes = require("./routes/subject");
 const lessonRoutes = require("./routes/lesson");
 const questionRoutes = require("./routes/question");
 const progressRoutes = require("./routes/progress");
+const passport = require("./Auth.google");
 
 const app = express();
 
@@ -19,6 +20,7 @@ const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json());
 app.use(morgan("dev"));
+app.use(passport.initialize());
 
 // ── Rutas ──────────────────────────────────────────────────────
 app.use("/api/users", userRoutes);
@@ -27,6 +29,7 @@ app.use("/api/subjects", subjectRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
+app.use("/api/auth", require("./routes/auth"));
 
 // ── Health check ───────────────────────────────────────────────
 app.get("/api/health", (req, res) => {

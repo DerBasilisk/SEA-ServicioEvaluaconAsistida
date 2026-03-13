@@ -9,6 +9,8 @@ import FillBlank from "../components/lesson/FillBlank";
 import OrderItems from "../components/lesson/OrderItems";
 import MatchPairs from "../components/lesson/MatchPairs";
 import ResultScreen from "../components/lesson/ResultScreen";
+import NoHeartsPanel from "../components/lesson/NoHeartsPanel";
+import SentenceBuilder from "../components/lesson/Sentencebuilder";
 
 const QUESTION_COMPONENTS = {
   multiple_choice: MultipleChoice,
@@ -16,6 +18,7 @@ const QUESTION_COMPONENTS = {
   fill_blank: FillBlank,
   order_items: OrderItems,
   match_pairs: MatchPairs,
+  sentence_builder: SentenceBuilder,
 };
 
 export default function Lesson() {
@@ -66,8 +69,9 @@ export default function Lesson() {
         questionId: question._id,
         answer,
       });
-      if (!data.data.isCorrect && data.data.heartsRemaining !== null) {
-        setHearts(data.data.heartsRemaining);
+      const remaining = data.data.heartsRemaining;
+      if (!data.data.isCorrect && remaining !== null) {
+        setHearts(remaining);
       }
       setXpEarned((prev) => prev + (data.data.xpEarned || 0));
       setFeedback(data.data);
@@ -78,16 +82,28 @@ export default function Lesson() {
   }, [id, currentIndex, questions]);
 
   const handleContinue = useCallback(async () => {
-    if (hearts === 0) { await handleComplete(); return; }
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= questions.length || hearts === 0) {
+      await handleComplete();
+      return;
+    }
+    setCurrentIndex(nextIndex);
+    setFeedback(null);
+    setPhase("playing");
+  }, [hearts, currentIndex, questions, handleComplete]);
+
+  // Cuando recarga corazones desde el panel, continúa la lección
+  const handleRefilled = useCallback(() => {
+    setHearts(5);
     const nextIndex = currentIndex + 1;
     if (nextIndex >= questions.length) {
-      await handleComplete();
+      handleComplete();
     } else {
       setCurrentIndex(nextIndex);
       setFeedback(null);
       setPhase("playing");
     }
-  }, [hearts, currentIndex, questions, handleComplete]);
+  }, [currentIndex, questions, handleComplete]);
 
   const handleAbandon = async () => {
     await api.post(`/lessons/${id}/abandon`).catch(() => {});
@@ -104,8 +120,11 @@ export default function Lesson() {
   const QuestionComponent = QUESTION_COMPONENTS[question?.type];
   const progress = (currentIndex / questions.length) * 100;
 
+  if (phase === "playing" && (!question || !QuestionComponent)) return <LoadingScreen />; // ← acá
+
   return (
     <div className="min-h-screen bg-indigo-950 flex flex-col">
+      {/* Header */}
       <div className="px-4 py-3 flex items-center gap-4 border-b border-indigo-800">
         <button onClick={handleAbandon} className="text-indigo-400 hover:text-white transition text-xl font-bold">✕</button>
         <div className="flex-1 bg-indigo-800 rounded-full h-3">
@@ -118,6 +137,7 @@ export default function Lesson() {
         </div>
       </div>
 
+      {/* Contenido */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full">
         <p className="text-indigo-400 text-sm mb-6">Pregunta {currentIndex + 1} de {questions.length}</p>
         <h2 className="text-white text-2xl font-bold text-center mb-8 leading-snug">{question?.prompt}</h2>
@@ -126,8 +146,12 @@ export default function Lesson() {
           <QuestionComponent question={question} onAnswer={handleAnswer} />
         )}
 
-        {phase === "feedback" && feedback && (
+        {phase === "feedback" && feedback && hearts > 0 && (
           <FeedbackPanel feedback={feedback} onContinue={handleContinue} />
+        )}
+
+        {phase === "feedback" && hearts === 0 && (
+          <NoHeartsPanel onRefilled={handleRefilled} onContinue={handleComplete} />
         )}
       </div>
     </div>
@@ -148,9 +172,14 @@ function FeedbackPanel({ feedback, onContinue }) {
         <p className="text-white text-sm mb-2">
           <span className="text-indigo-300">Respuesta correcta: </span>
           <span className="font-bold">
-            {Array.isArray(correctAnswer) ? correctAnswer.join(", ")
-              : typeof correctAnswer === "boolean" ? (correctAnswer ? "Verdadero" : "Falso")
-              : String(correctAnswer)}
+            {Array.isArray(correctAnswer) && correctAnswer[0]?.left
+            ? correctAnswer.map((p, i) => (
+                <span key={i} className="block">{p.left} → {p.right}</span>
+              ))
+            : Array.isArray(correctAnswer) ? correctAnswer.join(", ")
+            : typeof correctAnswer === "boolean" ? (correctAnswer ? "Verdadero" : "Falso")
+            : typeof correctAnswer === "object" && correctAnswer !== null ? correctAnswer.text || JSON.stringify(correctAnswer)
+            : String(correctAnswer)}
           </span>
         </p>
       )}
