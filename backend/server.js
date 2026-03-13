@@ -14,7 +14,11 @@ const questionRoutes = require("./routes/question");
 const progressRoutes = require("./routes/progress");
 const passport = require("./Auth.google");
 
+const http = require("http");
+const { setupDuelSocket } = require("./duel.socket");
+
 const app = express();
+const httpServer = http.createServer(app);
 
 // ── Middlewares globales ───────────────────────────────────────
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
@@ -32,6 +36,7 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/password", require("./routes/password"));
 app.use("/api/friends", require("./routes/friends"));
+
 
 // ── Health check ───────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
@@ -54,9 +59,11 @@ app.use((err, req, res, next) => {
 
 // ── Arranque ──────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-
+setupDuelSocket(httpServer);
+//connectDB().then(() => {
+//  app.listen(PORT, () => {console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+//  });
+//});
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  });
+  httpServer.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
 });

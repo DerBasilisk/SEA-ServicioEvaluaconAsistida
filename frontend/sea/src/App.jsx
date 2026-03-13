@@ -15,6 +15,8 @@ import ForgotPassword from "./pages/ForgotPassword"
 import ResetPassword from "./pages/ResetPassword"
 import Friends from "./pages/Friends";
 import PublicProfile from "./pages/PublicProfile";
+import Duel from "./pages/Duel";
+import DuelInviteToast from "./components/Duelinvitetoast";
 
 function App() {
   const { token, fetchMe } = useAuthStore();
@@ -34,16 +36,19 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* Protegidas */}
+        <Route path="/duel/:duelId" element={<ProtectedRoute><Duel /></ProtectedRoute>} />
         <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
         <Route path="/profile/:username" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/subject/:slug" element={<ProtectedRoute><SubjectMap /></ProtectedRoute>} />
         <Route path="/lesson/:id" element={<ProtectedRoute><Lesson /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-
+        
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
+      <DuelInviteToast />
     </BrowserRouter>
   );
 }
