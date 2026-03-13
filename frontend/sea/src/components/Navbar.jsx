@@ -40,12 +40,17 @@ export default function Navbar() {
       <div className="max-w-4xl mx-auto flex items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
-          <img srcSet="/sealogo.png" width="60" alt="" srcset="" />
+          <img src="/sealogo.png" width="60" alt="SEA" />
         </Link>
+
+        
 
         {/* Stats */}
         {user && (
           <div className="flex items-center gap-4">
+            <Link to="/friends" className="text-indigo-400 hover:text-white transition text-sm">
+              👥
+            </Link>
             {/* Racha */}
             <div className="flex items-center gap-1 text-orange-400">
               <span>🔥</span>
@@ -87,7 +92,7 @@ export default function Navbar() {
 
             {/* Avatar */}
             <Link to="/profile" className="w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-violet-400 transition">
-              {user.username?.[0]?.toUpperCase() || "U"}
+              {(user.displayName || user.username)?.[0]?.toUpperCase() || "U"}
             </Link>
 
             {/* Logout */}

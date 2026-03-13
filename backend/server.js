@@ -30,6 +30,8 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/password", require("./routes/password"));
+app.use("/api/friends", require("./routes/friends"));
 
 // ── Health check ───────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
