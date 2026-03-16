@@ -4,6 +4,7 @@ const morgan = require("morgan");
 require("dotenv").config();
 
 const { connectDB } = require("./db/db");
+const { setupCronJobs } = require("./cron");
 
 // Rutas
 const userRoutes = require("./routes/user");
@@ -36,6 +37,8 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/password", require("./routes/password"));
 app.use("/api/friends", require("./routes/friends"));
+app.use("/api/leagues", require("./routes/league"));
+setupCronJobs();
 
 
 // ── Health check ───────────────────────────────────────────────

@@ -1,8 +1,9 @@
-const { Lesson, Question, UserProgress, User, Streak, Leaderboard } = require("../models");
+const { Lesson, Question, UserProgress, User, Streak } = require("../models");
 const { generateQuestions, evaluateFillBlankAnswer } = require("../services/ai.service");
 const { checkAndGrantAchievements } = require("../services/achievement.service");
 const { getAdaptiveConfig, selectQuestions, getAdaptiveXPReward } = require("../services/adaptive.service");
 const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionrefresh.service");
+const { addLeagueXP } = require("../services/league.service");
 
 const unlockNextLesson = async (userId, completedLesson) => {
   // Verificar cuántas veces completó esta lección
@@ -336,7 +337,7 @@ const completeLesson = async (req, res) => {
     streak.recordActivity(xpEarned, user.dailyGoal);
     await streak.save();
 
-    await Leaderboard.addXP(req.usuario._id, xpEarned);
+    await addLeagueXP(req.usuario._id, xpEarned);
     await unlockNextLesson(req.usuario._id, lesson);
 
     const newAchievements = await checkAndGrantAchievements(user, streak, progress);

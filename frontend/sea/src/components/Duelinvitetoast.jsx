@@ -25,7 +25,7 @@ export default function DuelInviteToast() {
     });
 
     socket.on("duel:start", ({ duelId }) => {
-      console.log("[Toast] Duel start recibido:", data);
+      console.log("[Toast] Duel start recibido:", duelId);
       setInvite(null);
       navigate(`/duel/${duelId}`);
     });
@@ -35,7 +35,11 @@ export default function DuelInviteToast() {
     return () => socket.disconnect();
   }, [token]);
 
+  const [accepting, setAccepting] = useState(false);
+
   const handleAccept = () => {
+    if (accepting) return;
+    setAccepting(true);
     socketRef.current?.emit("duel:accept", { inviteId: invite.inviteId });
   };
 
@@ -57,8 +61,12 @@ export default function DuelInviteToast() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleAccept} className="flex-1 bg-violet-500 hover:bg-violet-400 text-white font-bold py-2 rounded-xl transition active:scale-95">
-            ⚔️ Aceptar
+          <button 
+            onClick={handleAccept} 
+            disabled={accepting}
+            className="flex-1 bg-violet-500 hover:bg-violet-400 disabled:opacity-50 text-white font-bold py-2 rounded-xl transition active:scale-95"
+          >
+            {accepting ? "Conectando..." : "⚔️ Aceptar"}
           </button>
           <button onClick={handleReject} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-indigo-300 font-bold py-2 rounded-xl transition">
             Rechazar

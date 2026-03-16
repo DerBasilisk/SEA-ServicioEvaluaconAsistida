@@ -17,6 +17,7 @@ import Friends from "./pages/Friends";
 import PublicProfile from "./pages/PublicProfile";
 import Duel from "./pages/Duel";
 import DuelInviteToast from "./components/Duelinvitetoast";
+import League from "./pages/League";
 
 function App() {
   const { token, fetchMe } = useAuthStore();
@@ -34,6 +35,7 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/league" element={<ProtectedRoute><League /></ProtectedRoute>} />
 
         {/* Protegidas */}
         <Route path="/duel/:duelId" element={<ProtectedRoute><Duel /></ProtectedRoute>} />

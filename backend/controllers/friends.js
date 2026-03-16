@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const Friendship = require("../models/friendship");
-const Leaderboard = require("../models/leaderboard");
+const LeagueRoom = require("../models/Leagueroom");
 
 // GET /api/friends — lista de amigos aceptados
 const getFriends = async (req, res) => {
@@ -169,7 +169,6 @@ const searchUsers = async (req, res) => {
 // GET /api/friends/leaderboard — tabla semanal de amigos
 const getFriendsLeaderboard = async (req, res) => {
   try {
-    // Obtener IDs de amigos
     const friendships = await Friendship.find({
       $or: [{ requester: req.usuario._id }, { recipient: req.usuario._id }],
       status: "accepted",
@@ -178,35 +177,30 @@ const getFriendsLeaderboard = async (req, res) => {
     const friendIds = friendships.map((f) =>
       f.requester.toString() === req.usuario._id.toString() ? f.recipient : f.requester
     );
-
-    // Incluir al usuario actual
     const allIds = [req.usuario._id, ...friendIds];
 
-    // Obtener leaderboard semanal actual
-    const weekStart = getWeekStart();
-    const leaderboard = await Leaderboard.findOne({ weekStart });
+    const weekStart = LeagueRoom.getWeekStart();
 
-    let entries = [];
-    if (leaderboard) {
-      entries = leaderboard.entries
-        .filter((e) => allIds.some((id) => id.toString() === e.user.toString()))
-        .sort((a, b) => b.xpEarned - a.xpEarned);
+    // Buscar XP de cada usuario en su sala de liga esta semana
+    const entries = await Promise.all(allIds.map(async (userId) => {
+      const room = await LeagueRoom.findOne({
+        weekStart,
+        "members.user": userId,
+      });
+      const member = room?.members.find((m) => m.user.toString() === userId.toString());
+      const user = await User.findById(userId).select("username displayName avatar level");
+      return {
+        user,
+        xpEarned: member?.xpEarned || 0,
+      };
+    }));
 
-      await Leaderboard.populate(entries, { path: "user", select: "username displayName avatar level" });
-    }
-
-    // Usuarios que no tienen entrada esta semana (0 XP)
-    const inLeaderboard = entries.map((e) => e.user._id.toString());
-    const missing = await User.find({
-      _id: { $in: allIds.filter((id) => !inLeaderboard.includes(id.toString())) },
-    }).select("username displayName avatar level");
-
-    const zeroEntries = missing.map((u) => ({ user: u, xpEarned: 0 }));
-    const allEntries = [...entries, ...zeroEntries]
+    const sorted = entries
+      .filter((e) => e.user)
       .sort((a, b) => b.xpEarned - a.xpEarned)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
-    res.json({ ok: true, data: allEntries });
+    res.json({ ok: true, data: sorted });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

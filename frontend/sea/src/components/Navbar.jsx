@@ -48,6 +48,7 @@ export default function Navbar() {
         {/* Stats */}
         {user && (
           <div className="flex items-center gap-4">
+            <Link to="/league" className="text-indigo-400 hover:text-white transition text-sm">🏆</Link>
             <Link to="/friends" className="text-indigo-400 hover:text-white transition text-sm">
               👥
             </Link>

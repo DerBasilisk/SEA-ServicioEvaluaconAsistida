@@ -47,6 +47,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "default_avatar",
     },
+    league: {
+      type: String,
+      enum: ["bronze","silver","gold","sapphire","emerald","diamond","master","champion"],
+      default: "bronze",
+    },
 
     // ── Gamificación ──────────────────────────────────────────
     xp: {

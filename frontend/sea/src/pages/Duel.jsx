@@ -23,6 +23,15 @@ const MODIFIERS = [
   { id: "blackout",        icon: "🌑", label: "Pantalla oscura",  description: "3s de pantalla negra"    },
 ];
 
+function formatTime(ms) {
+  if (!ms) return "—";
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes === 0) return `${seconds}s`;
+  return `${minutes}m ${seconds}s`;
+}
+
 export default function Duel() {
   const { duelId } = useParams();
   const navigate = useNavigate();
@@ -49,11 +58,20 @@ export default function Duel() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      socket.emit("duel:join", { duelId });
+      console.log("[Duel] Socket conectado, uniendo al duelo:", duelId);
+      setTimeout(() => {
+        socket.emit("duel:join", { duelId });
+      }, 500);
     });
 
     socket.on("duel:state", (duel) => {
-      if (duel.questions) { setQuestions(duel.questions); setPhase("playing"); }
+      console.log("[Duel] Estado recibido:", duel);
+      if (duel.questions) {
+        setQuestions(duel.questions);
+        const oppId = Object.keys(duel.players).find((id) => id !== user?._id);
+        if (oppId) setOpponentId(oppId);
+        setPhase("playing");
+      }
     });
 
     socket.on("duel:start", ({ questions: qs, opponentId: oppId }) => {
@@ -80,8 +98,14 @@ export default function Duel() {
     });
 
     socket.on("duel:finished", (data) => {
+      console.log("[Duel] Finished recibido:", data);
       setResult(data);
       setPhase("result");
+    });
+
+    socket.on("duel:opponent_progress", (data) => {
+      console.log("[Duel] Progreso oponente:", data);
+      setOpponentProgress(data);
     });
 
     socket.on("duel:opponent_abandoned", () => {
@@ -152,7 +176,7 @@ export default function Duel() {
         {/* Mi progreso */}
         <div className="flex-1">
           <div className="flex justify-between text-xs text-indigo-400 mb-1">
-            <span>Vos: {myCorrect} ✓</span>
+            <span>Tú: {myCorrect} ✓</span>
             <span>Oponente: {opponentProgress.correct} ✓</span>
           </div>
           <div className="w-full bg-indigo-800 rounded-full h-2 relative">
@@ -245,22 +269,27 @@ function ResultScreen({ result, userId, myScore, myCorrect, total, opponentProgr
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <div className="text-7xl mb-3">{isWinner ? "🏆" : "😤"}</div>
-          <h1 className={`text-4xl font-black ${isWinner ? "text-yellow-400" : "text-red-400"}`}>
+          <h1 className={`text-4xl font-black ${isWinner ? "text-green-400" : "text-red-400"}`}>
             {isWinner ? "¡Ganaste!" : "Perdiste"}
           </h1>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           {[
-            { label: "Vos", entry: myEntry, highlight: isWinner },
+            { label: "Tú", entry: myEntry, highlight: isWinner },
             { label: "Oponente", entry: oppEntry, highlight: !isWinner },
           ].map(({ label, entry, highlight }) => (
             <div key={label} className={`rounded-2xl p-4 text-center border-2 ${
-              highlight ? "bg-yellow-900 border-yellow-500" : "bg-indigo-900 border-indigo-700"
+              highlight ? "bg-green-900 border-green-500" : "bg-indigo-900 border-indigo-700"
             }`}>
-              <p className={`font-bold text-sm mb-2 ${highlight ? "text-yellow-300" : "text-indigo-300"}`}>{label}</p>
+              <p className={`font-bold text-sm mb-2 ${highlight ? "text-green-300" : "text-indigo-300"}`}>{label}</p>
               <p className="text-white font-black text-2xl">{entry?.correct || 0}/{total}</p>
-              <p className="text-indigo-400 text-xs">respuestas correctas</p>
+              <p className="text-indigo-400 text-xs mb-1">respuestas correctas</p>
+              {entry?.timeSpent && (
+                <p className="text-indigo-300 text-xs">
+                  ⏱️ {formatTime(entry.timeSpent)}
+                </p>
+              )}
             </div>
           ))}
         </div>
