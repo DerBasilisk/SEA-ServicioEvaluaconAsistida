@@ -1,4 +1,5 @@
-const { UserProgress, User, Streak, Achievement, Leaderboard } = require("../models");
+const { UserProgress, User, Streak, Achievement } = require("../models");
+const LeagueRoom = require("../models/Leagueroom");
 
 // GET /api/progress/me
 // Dashboard completo del usuario: XP, racha, logros, lecciones pendientes de repaso
@@ -74,23 +75,31 @@ const getMyProgress = async (req, res) => {
 // Top 10 de la semana actual
 const getLeaderboard = async (req, res) => {
   try {
-    const board = await Leaderboard.getCurrentWeek(req.query.subjectId || null);
-    await board.populate("entries.user", "username avatar level");
+    const weekStart = LeagueRoom.getWeekStart();
 
-    const myEntry = board.entries.find(
-      (e) => e.user?._id?.toString() === req.usuario._id.toString()
-    );
+    let room = await LeagueRoom.findOne({
+      weekStart,
+      "members.user": req.usuario._id,
+    }).populate("members.user", "username displayName avatar level xp league");
 
-    res.json({
-      ok: true,
-      data: {
-        weekStart: board.weekStart,
-        weekEnd: board.weekEnd,
-        top10: board.entries.slice(0, 10),
-        myRank: myEntry?.rank || null,
-        myXP: myEntry?.xpEarned || 0,
-      },
-    });
+    if (!room) {
+      const user = await User.findById(req.usuario._id).select("league");
+      const league = user?.league || "bronze";
+      room = await LeagueRoom.assignUser(req.usuario._id, league);
+      room = await LeagueRoom.findById(room._id)
+        .populate("members.user", "username displayName avatar level xp league");
+    }
+
+    const sorted = [...room.members]
+      .sort((a, b) => b.xpEarned - a.xpEarned)
+      .map((m, i) => ({
+        rank: i + 1,
+        user: m.user,
+        xpEarned: m.xpEarned,
+        isMe: m.user._id.toString() === req.usuario._id.toString(),
+      }));
+
+    res.json({ ok: true, data: sorted });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

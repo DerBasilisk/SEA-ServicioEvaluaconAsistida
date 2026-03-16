@@ -1,0 +1,88 @@
+const LeagueRoom = require("../models/Leagueroom");
+const User = require("../models/user");
+
+const LEAGUES = LeagueRoom.LEAGUES;
+const PROMOTE_COUNT = 15;
+const DEMOTE_COUNT = 15;
+
+/**
+ * Procesar ascensos y descensos al inicio de cada semana.
+ * Se llama cada lunes a las 00:00.
+ */
+async function processWeeklyLeagues() {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  
+  // Semana anterior
+  const lastWeekStart = new Date(now);
+  lastWeekStart.setDate(diff - 7);
+  lastWeekStart.setHours(0, 0, 0, 0);
+
+  const rooms = await LeagueRoom.find({ weekStart: lastWeekStart, processed: false })
+    .populate("members.user", "username displayName league");
+
+  let processed = 0;
+
+  for (const room of rooms) {
+    const sorted = [...room.members].sort((a, b) => b.xpEarned - a.xpEarned);
+    const total = sorted.length;
+
+    for (let i = 0; i < total; i++) {
+      const member = sorted[i];
+      const leagueIndex = LEAGUES.indexOf(room.league);
+
+      if (i < PROMOTE_COUNT && leagueIndex < LEAGUES.length - 1) {
+        // Promover
+        member.promoted = true;
+        const newLeague = LEAGUES[leagueIndex + 1];
+        await User.findByIdAndUpdate(member.user._id, { league: newLeague });
+        await LeagueRoom.assignUser(member.user._id, newLeague);
+      } else if (i >= total - DEMOTE_COUNT && leagueIndex > 0) {
+        // Descender
+        member.demoted = true;
+        const newLeague = LEAGUES[leagueIndex - 1];
+        await User.findByIdAndUpdate(member.user._id, { league: newLeague });
+        await LeagueRoom.assignUser(member.user._id, newLeague);
+      } else {
+        // Mantener
+        await User.findByIdAndUpdate(member.user._id, { league: room.league });
+        await LeagueRoom.assignUser(member.user._id, room.league);
+      }
+    }
+
+    room.processed = true;
+    await room.save();
+    processed++;
+  }
+
+  console.log(`[Leagues] Procesadas ${processed} salas`);
+  return processed;
+}
+
+/**
+ * Agregar XP a un usuario en su sala de liga actual.
+ */
+async function addLeagueXP(userId, xpAmount) {
+  try {
+    const weekStart = LeagueRoom.getWeekStart();
+    const result = await LeagueRoom.findOneAndUpdate(
+      { weekStart, "members.user": userId },
+      { $inc: { "members.$.xpEarned": xpAmount } }
+    );
+    if (!result) {
+      // Usuario no está en ninguna sala — asignarle una
+      const user = await User.findById(userId).select("league");
+      const league = user?.league || "bronze";
+      const room = await LeagueRoom.assignUser(userId, league);
+      await LeagueRoom.findOneAndUpdate(
+        { _id: room._id, "members.user": userId },
+        { $inc: { "members.$.xpEarned": xpAmount } }
+      );
+    }
+  } catch (err) {
+    console.error("[Leagues] Error agregando XP:", err.message);
+  }
+}
+
+module.exports = { processWeeklyLeagues, addLeagueXP };

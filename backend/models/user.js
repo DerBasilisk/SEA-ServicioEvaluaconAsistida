@@ -7,13 +7,27 @@ const userSchema = new mongoose.Schema(
     
     avatar:   { type: String },
 
+    resetPasswordToken:   { type: String },
+
+    resetPasswordExpires: { type: Date },
+    displayName: {
+      type: String,
+      trim: true,
+      maxlength: [30, "Máximo 30 caracteres"],
+      default: function() { return this.username; },
+    },
     username: {
       type: String,
-      required: [true, "El nombre de usuario es obligatorio"],
+      required: true,
       unique: true,
       trim: true,
       minlength: [3, "Mínimo 3 caracteres"],
       maxlength: [20, "Máximo 20 caracteres"],
+      match: [/^[a-zA-Z0-9_]+$/, "Solo letras, números y guión bajo"],
+    },
+    usernameChangedAt: {
+      type: Date,
+      default: null,
     },
     email: {
       type: String,
@@ -32,6 +46,11 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
       default: "default_avatar",
+    },
+    league: {
+      type: String,
+      enum: ["bronze","silver","gold","sapphire","emerald","diamond","master","champion"],
+      default: "bronze",
     },
 
     // ── Gamificación ──────────────────────────────────────────

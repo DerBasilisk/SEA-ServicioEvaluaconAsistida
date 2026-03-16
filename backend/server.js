@@ -4,6 +4,7 @@ const morgan = require("morgan");
 require("dotenv").config();
 
 const { connectDB } = require("./db/db");
+const { setupCronJobs } = require("./cron");
 
 // Rutas
 const userRoutes = require("./routes/user");
@@ -14,7 +15,11 @@ const questionRoutes = require("./routes/question");
 const progressRoutes = require("./routes/progress");
 const passport = require("./Auth.google");
 
+const http = require("http");
+const { setupDuelSocket } = require("./duel.socket");
+
 const app = express();
+const httpServer = http.createServer(app);
 
 // ── Middlewares globales ───────────────────────────────────────
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
@@ -30,6 +35,11 @@ app.use("/api/lessons", lessonRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/auth", require("./routes/auth"));
+app.use("/api/password", require("./routes/password"));
+app.use("/api/friends", require("./routes/friends"));
+app.use("/api/leagues", require("./routes/league"));
+setupCronJobs();
+
 
 // ── Health check ───────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
@@ -52,9 +62,11 @@ app.use((err, req, res, next) => {
 
 // ── Arranque ──────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-
+setupDuelSocket(httpServer);
+//connectDB().then(() => {
+//  app.listen(PORT, () => {console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+//  });
+//});
 connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-  });
+  httpServer.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
 });

@@ -1,48 +1,52 @@
-# Patch: integrar questionRefresh en lesson.js
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
 
-## 1. Agregar import al inicio de controllers/lesson.js
+    // Buscamos al usuario y poblamos sus logros de una vez
+    const user = await User.findOne({ email })
+      .select("+password")
+      .populate("achievements"); // <--- Importante aquí también
 
-```js
-const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionRefresh.service");
-```
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ ok: false, message: "Email o contraseña incorrectos" });
+    }
 
-## 2. En startLesson — registrar preguntas mostradas ANTES de enviar respuesta
+    // Buscamos la racha para enviarla en el login
+    const streak = await Streak.findOne({ user: user._id });
 
-Justo antes del `res.json(...)` final de startLesson, agregá:
+    const token = generateToken(user._id);
 
-```js
-// Registrar preguntas mostradas (sin await — no bloquea)
-recordShownQuestions(
-  req.usuario._id,
-  lesson._id,
-  sanitizedQuestions.map((q) => q._id)
-).catch(console.error);
-```
+    res.json({
+      ok: true,
+      data: {
+        ...user.toJSON(), // Enviamos todo el objeto (ya poblado)
+        password: undefined, // Por seguridad
+        streak: { current: streak?.current || 0, longest: streak?.longest || 0 }
+      },
+      token,
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
 
-## 3. En completeLesson — regenerar en segundo plano
+// GET /api/users/me
+const getMe = async (req, res) => {
+  try {
+    // Nota: Asegúrate de que el middleware de auth use 'usuario' o 'user' consistentemente
+    const user = await User.findById(req.usuario._id).populate("achievements");
+    const streak = await Streak.findOne({ user: req.usuario._id });
 
-Justo antes del `res.json(...)` final de completeLesson, agregá:
+    if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
 
-```js
-// Regenerar preguntas viejas en segundo plano (sin await)
-refreshStaleQuestions(
-  req.usuario._id,
-  lesson,
-  lesson.unit,
-  lesson.unit.subject
-).catch(console.error);
-```
-
-IMPORTANTE: Para que lesson.unit.subject esté disponible en completeLesson,
-cambiá el findById al inicio de esa función:
-
-```js
-// Antes
-const lesson = await Lesson.findById(req.params.id);
-
-// Después
-const lesson = await Lesson.findById(req.params.id).populate({
-  path: "unit",
-  populate: { path: "subject" },
-});
-```
+    res.json({
+      ok: true,
+      data: {
+        ...user.toJSON(),
+        streak: { current: streak?.current || 0, longest: streak?.longest || 0 },
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
