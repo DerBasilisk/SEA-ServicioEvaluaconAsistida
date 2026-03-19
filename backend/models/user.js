@@ -4,9 +4,11 @@ const bcrypt = require("bcryptjs");
 const userSchema = new mongoose.Schema(
   {
     googleId: { type: String, sparse: true },
+    discordId: { type: String, sparse: true },
     
-    avatar:   { type: String },
-
+    avatar: { type: String, default: null },
+    banner: { type: String, default: null },
+    
     resetPasswordToken:   { type: String },
 
     resetPasswordExpires: { type: Date },
@@ -157,8 +159,60 @@ userSchema.methods.addXP = function (amount) {
 };
 
 userSchema.methods.loseHeart = function () {
-  if (this.hearts.current > 0) this.hearts.current -= 1;
+  if (this.hearts.current > 0) {
+    this.hearts.current -= 1;
+    if (this.hearts.current < 5) {
+      this.hearts.lastRefill = new Date(); // registrar cuándo empezó a recuperar
+    }
+  }
   return this.hearts.current;
+};
+
+// Recarga 1 corazón cada 30 minutos automáticamente
+userSchema.methods.checkHeartRefill = function () {
+  if (this.hearts.current >= 5) return false;
+
+  const REFILL_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
+  const now = Date.now();
+  const lastRefill = new Date(this.hearts.lastRefill).getTime();
+  const elapsed = now - lastRefill;
+  const heartsToAdd = Math.floor(elapsed / REFILL_INTERVAL_MS);
+
+  if (heartsToAdd > 0) {
+    this.hearts.current = Math.min(5, this.hearts.current + heartsToAdd);
+    this.hearts.lastRefill = new Date(lastRefill + heartsToAdd * REFILL_INTERVAL_MS);
+    return true; // hubo cambio
+  }
+  return false;
+};
+
+userSchema.methods.updateStreak = function () {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const lastActivity = this.streak.lastActivityDate
+    ? new Date(this.streak.lastActivityDate)
+    : null;
+
+  if (lastActivity) {
+    const lastDay = new Date(lastActivity.getFullYear(), lastActivity.getMonth(), lastActivity.getDate());
+    const diffDays = Math.floor((today - lastDay) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return; // ya hizo actividad hoy
+    if (diffDays === 1) {
+      // día consecutivo
+      this.streak.current += 1;
+    } else {
+      // rompió la racha
+      this.streak.current = 1;
+    }
+  } else {
+    this.streak.current = 1;
+  }
+
+  if (this.streak.current > this.streak.longest) {
+    this.streak.longest = this.streak.current;
+  }
+  this.streak.lastActivityDate = now;
 };
 
 userSchema.methods.refillHearts = function () {

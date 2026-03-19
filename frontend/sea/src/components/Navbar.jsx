@@ -92,8 +92,14 @@ export default function Navbar() {
             </div>
 
             {/* Avatar */}
-            <Link to="/profile" className="w-8 h-8 bg-violet-500 rounded-full flex items-center justify-center text-white font-bold text-sm hover:bg-violet-400 transition">
-              {(user.displayName || user.username)?.[0]?.toUpperCase() || "U"}
+            <Link to="/profile" className="w-8 h-8 rounded-full overflow-hidden border-2 border-violet-500 hover:border-violet-300 transition flex-shrink-0">
+              {user.avatar ? (
+                <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
+                  {(user.displayName || user.username)?.[0]?.toUpperCase()}
+                </div>
+              )}
             </Link>
 
             {/* Logout */}

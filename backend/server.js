@@ -13,7 +13,7 @@ const subjectRoutes = require("./routes/subject");
 const lessonRoutes = require("./routes/lesson");
 const questionRoutes = require("./routes/question");
 const progressRoutes = require("./routes/progress");
-const passport = require("./Auth.google");
+const passport = require("./Auth.account");
 
 const http = require("http");
 const { setupDuelSocket } = require("./duel.socket");
@@ -37,6 +37,7 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/password", require("./routes/password"));
 app.use("/api/friends", require("./routes/friends"));
+app.use("/api/upload", require("./routes/upload"));
 app.use("/api/leagues", require("./routes/league"));
 setupCronJobs();
 

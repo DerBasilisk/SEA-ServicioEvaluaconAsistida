@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Avatar from "../components/Avatar";
 import api from "../api/axios";
 
 const LEAGUE_CONFIG = {
@@ -35,11 +36,8 @@ export default function PublicProfile() {
     try {
       const { data } = await api.get(`/friends/profile/${username}`);
       setProfile(data.data);
-    } catch {
-      navigate("/friends");
-    } finally {
-      setLoading(false);
-    }
+    } catch { navigate("/friends"); }
+    finally { setLoading(false); }
   };
 
   const handleSendRequest = async () => {
@@ -62,8 +60,7 @@ export default function PublicProfile() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-indigo-950">
-      <Navbar />
+    <div className="min-h-screen bg-indigo-950"><Navbar />
       <div className="text-center text-indigo-400 py-20">Cargando...</div>
     </div>
   );
@@ -71,6 +68,7 @@ export default function PublicProfile() {
   if (!profile) return null;
 
   const league = LEAGUE_CONFIG[profile.league || "bronze"];
+  const displayName = profile.displayName || profile.username;
 
   const friendButton = () => {
     if (profile.friendStatus === "accepted") return (
@@ -96,20 +94,16 @@ export default function PublicProfile() {
     <div className="min-h-screen bg-indigo-950 pb-20">
       <Navbar />
       <div className="max-w-xl mx-auto px-4 py-8">
-
         <button onClick={() => navigate(-1)} className="text-indigo-400 hover:text-white mb-6 flex items-center gap-2 transition">
           ← Volver
         </button>
 
-        {/* Card principal */}
         <div className="bg-indigo-900 border border-indigo-700 rounded-3xl p-8 text-center mb-6">
-          <div className="w-24 h-24 bg-gradient-to-tr from-violet-600 to-fuchsia-500 rounded-full flex items-center justify-center text-white text-4xl font-black mx-auto mb-4">
-            {(profile.displayName || profile.username)?.[0]?.toUpperCase()}
+          <div className="flex justify-center mb-4">
+            <Avatar src={profile.avatar} name={displayName} size="2xl" className="border-4 border-indigo-800 shadow-lg" />
           </div>
-          <h1 className="text-white font-black text-2xl">{profile.displayName || profile.username}</h1>
+          <h1 className="text-white font-black text-2xl">{displayName}</h1>
           <p className="text-indigo-400 text-sm mb-4">@{profile.username}</p>
-
-          {/* Badges */}
           <div className="flex items-center justify-center gap-3 flex-wrap mb-4">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-violet-500/20 border border-violet-500/30 text-violet-300 rounded-full text-sm font-bold">
               Nivel {profile.level}
@@ -121,11 +115,9 @@ export default function PublicProfile() {
               </div>
             )}
           </div>
-
           {friendButton()}
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {[
             { icon: "⚡", label: "XP Total", value: profile.xp },
@@ -140,12 +132,10 @@ export default function PublicProfile() {
           ))}
         </div>
 
-        {/* Logros */}
         {profile.achievements?.length > 0 && (
           <div className="bg-indigo-900 border border-indigo-700 rounded-2xl p-5">
             <h2 className="text-white font-bold mb-3 flex items-center gap-2">
-              🏆 Logros
-              <span className="text-indigo-400 text-sm font-normal">({profile.achievements.length})</span>
+              🏆 Logros <span className="text-indigo-400 text-sm font-normal">({profile.achievements.length})</span>
             </h2>
             <div className="grid grid-cols-1 gap-2">
               {profile.achievements.map((a, i) => {
@@ -157,9 +147,7 @@ export default function PublicProfile() {
                       <p className="text-white font-bold text-sm">{a.name}</p>
                       <p className="text-indigo-400 text-xs">{a.description}</p>
                     </div>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${style.text}`}>
-                      {style.label}
-                    </span>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${style.text}`}>{style.label}</span>
                   </div>
                 );
               })}

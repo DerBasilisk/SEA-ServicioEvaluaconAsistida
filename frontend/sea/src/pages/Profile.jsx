@@ -5,6 +5,9 @@ import Navbar from "../components/Navbar";
 import UsernameInput from "../components/UsernameInput";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
+import AvatarUpload from "../components/AvatarUpload";
+import BannerUpload from "../components/BannerUpload";
+import Avatar from "../components/Avatar";
 
 const rarityConfig = {
   common:    { border: "border-indigo-700",    bg: "bg-indigo-900/40",  text: "text-indigo-300", label: "Común"      },
@@ -94,13 +97,14 @@ export default function Profile() {
       <div className="max-w-2xl mx-auto px-4 py-8">
 
         {/* Card de usuario */}
-        <div className="bg-indigo-900 border border-indigo-700 rounded-3xl p-8 mb-6 text-center relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 right-0 p-4 opacity-10 text-white">
-            <Trophy size={120} />
-          </div>
-          <div className="relative z-10">
-            <div className="w-24 h-24 bg-gradient-to-tr from-violet-600 to-fuchsia-500 rounded-full flex items-center justify-center text-white text-4xl font-black mx-auto mb-4 border-4 border-indigo-800 shadow-lg">
-              {(user.displayName || user.username)?.[0]?.toUpperCase()}
+        <div className="bg-indigo-900 border border-indigo-700 rounded-3xl mb-6 overflow-hidden shadow-xl">
+          {/* Banner */}
+          <BannerUpload currentBanner={user.banner} />
+
+          <div className="px-8 pb-8 text-center relative">
+            {/* Avatar sobre el banner */}
+            <div className="flex justify-center -mt-12 mb-4">
+              <AvatarUpload currentAvatar={user.avatar} username={user.displayName || user.username} size="lg" />
             </div>
             <h1 className="text-white font-black text-3xl">{user.displayName || user.username}</h1>
             <p className="text-indigo-400 text-sm mb-1">@{user.username}</p>
@@ -211,9 +215,7 @@ export default function Profile() {
                   <span className="text-sm font-black w-6 text-center text-indigo-400">
                     {m.rank === 1 ? "🥇" : m.rank === 2 ? "🥈" : m.rank === 3 ? "🥉" : `#${m.rank}`}
                   </span>
-                  <div className="w-7 h-7 bg-indigo-700 rounded-full flex items-center justify-center text-white text-xs font-black">
-                    {(m.user.displayName || m.user.username)?.[0]?.toUpperCase()}
-                  </div>
+                  <Avatar src={m.user.avatar} name={m.user.displayName || m.user.username} size="xs" />
                   <p className="text-white text-sm flex-1 truncate">
                     {m.user.displayName || m.user.username}
                     {m.isMe && <span className="text-violet-400 text-xs ml-1">(Tú)</span>}

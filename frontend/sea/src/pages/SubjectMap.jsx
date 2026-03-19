@@ -92,7 +92,7 @@ function UnitSection({ unit, subjectColor, onLessonClick }) {
       <div className="flex items-center gap-2 mb-4 px-2">
         <div className="flex gap-1">
           {Array.from({ length: REQUIRED_COMPLETIONS }).map((_, i) => (
-            <div key={i} className="w-2 h-2 rounded-full bg-violet-500" />
+            <div key={i} className="w-2 h-2 rounded-full bg-blue-500" />
           ))}
         </div>
         <p className="text-indigo-500 text-xs">Cada lección requiere {REQUIRED_COMPLETIONS} completaciones para desbloquear la siguiente</p>

@@ -8,9 +8,9 @@ import TrueFalse from "../components/lesson/TrueFalse";
 import FillBlank from "../components/lesson/FillBlank";
 import OrderItems from "../components/lesson/OrderItems";
 import MatchPairs from "../components/lesson/MatchPairs";
-import ResultScreen from "../components/lesson/ResultScreen";
-import NoHeartsPanel from "../components/lesson/NoHeartsPanel";
 import SentenceBuilder from "../components/lesson/Sentencebuilder";
+import ResultScreen from "../components/lesson/ResultScreen";
+import NoHeartsPanel from "../components/lesson/Noheartspanel";
 
 const QUESTION_COMPONENTS = {
   multiple_choice: MultipleChoice,
@@ -26,15 +26,20 @@ export default function Lesson() {
   const navigate = useNavigate();
   const { fetchMe } = useAuthStore();
 
-  const [phase, setPhase] = useState("loading");
+  const [phase, setPhase] = useState("loading"); // loading | theory | playing | feedback | result
   const [lesson, setLesson] = useState(null);
   const [questions, setQuestions] = useState([]);
+  const [theorySlides, setTheorySlides] = useState([]);
+  const [theoryIndex, setTheoryIndex] = useState(0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [hearts, setHearts] = useState(5);
   const [xpEarned, setXpEarned] = useState(0);
   const [feedback, setFeedback] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [conceptOpen, setConceptOpen] = useState(true); // panel izquierdo abierto por defecto
 
   useEffect(() => {
     api.post(`/lessons/${id}/start`)
@@ -42,7 +47,9 @@ export default function Lesson() {
         setLesson(data.data.lesson);
         setQuestions(data.data.questions);
         setHearts(data.data.hearts);
-        setPhase("playing");
+        const slides = data.data.theorySlides || [];
+        setTheorySlides(slides);
+        setPhase(slides.length > 0 ? "theory" : "playing");
       })
       .catch((err) => {
         setError(err.response?.data?.message || "Error al cargar la lección");
@@ -68,18 +75,17 @@ export default function Lesson() {
       const { data } = await api.post(`/lessons/${id}/answer`, {
         questionId: question._id,
         answer,
+        hintUsed,
       });
       const remaining = data.data.heartsRemaining;
-      if (!data.data.isCorrect && remaining !== null) {
-        setHearts(remaining);
-      }
+      if (!data.data.isCorrect && remaining !== null) setHearts(remaining);
       setXpEarned((prev) => prev + (data.data.xpEarned || 0));
       setFeedback(data.data);
       setPhase("feedback");
     } catch (err) {
       console.error(err);
     }
-  }, [id, currentIndex, questions]);
+  }, [id, currentIndex, questions, hintUsed]);
 
   const handleContinue = useCallback(async () => {
     const nextIndex = currentIndex + 1;
@@ -89,20 +95,21 @@ export default function Lesson() {
     }
     setCurrentIndex(nextIndex);
     setFeedback(null);
+    setHintUsed(false);
+    setShowHint(false);
+    setConceptOpen(true);
     setPhase("playing");
   }, [hearts, currentIndex, questions, handleComplete]);
 
-  // Cuando recarga corazones desde el panel, continúa la lección
   const handleRefilled = useCallback(() => {
     setHearts(5);
     const nextIndex = currentIndex + 1;
-    if (nextIndex >= questions.length) {
-      handleComplete();
-    } else {
-      setCurrentIndex(nextIndex);
-      setFeedback(null);
-      setPhase("playing");
-    }
+    if (nextIndex >= questions.length) { handleComplete(); return; }
+    setCurrentIndex(nextIndex);
+    setFeedback(null);
+    setHintUsed(false);
+    setShowHint(false);
+    setPhase("playing");
   }, [currentIndex, questions, handleComplete]);
 
   const handleAbandon = async () => {
@@ -110,22 +117,74 @@ export default function Lesson() {
     navigate(-1);
   };
 
+  const handleUseHint = () => {
+    setHintUsed(true);
+    setShowHint(true);
+  };
+
+  // ── Renders ────────────────────────────────────────────────
+
   if (phase === "loading") return <LoadingScreen />;
-  if (phase === "error") return <ErrorScreen message={error} onBack={() => navigate(-1)} />;
-  if (phase === "result") return (
-    <ResultScreen result={result} lesson={lesson} onContinue={() => navigate(-1)} onRetry={() => window.location.reload()} />
+  if (phase === "error")   return <ErrorScreen message={error} onBack={() => navigate(-1)} />;
+  if (phase === "result")  return (
+    <ResultScreen result={result} lesson={lesson}
+      onContinue={() => navigate(-1)} onRetry={() => window.location.reload()} />
   );
+
+  // Pantalla de teoría
+  if (phase === "theory") {
+    const slide = theorySlides[theoryIndex];
+    const isLast = theoryIndex >= theorySlides.length - 1;
+    return (
+      <div className="min-h-screen bg-indigo-950 flex flex-col">
+        <div className="px-4 py-3 flex items-center gap-4 border-b border-indigo-800">
+          <button onClick={handleAbandon} className="text-indigo-400 hover:text-white transition text-xl font-bold">✕</button>
+          <div className="flex-1 flex gap-1">
+            {theorySlides.map((_, i) => (
+              <div key={i} className={`flex-1 h-2 rounded-full transition-all ${i <= theoryIndex ? "bg-violet-500" : "bg-indigo-800"}`} />
+            ))}
+          </div>
+          <span className="text-indigo-400 text-sm">{theoryIndex + 1}/{theorySlides.length}</span>
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full">
+          <div className="text-6xl mb-4">{slide?.icon || "📖"}</div>
+          <h2 className="text-white font-black text-2xl text-center mb-6">{slide?.title}</h2>
+
+          <div className="bg-indigo-900 border border-indigo-700 rounded-2xl p-6 w-full mb-6">
+            <p className="text-indigo-100 text-lg leading-relaxed">{slide?.content}</p>
+            {slide?.example && (
+              <div className="mt-4 bg-indigo-800 rounded-xl px-4 py-3 text-center">
+                <p className="text-indigo-300 text-xs mb-1">Ejemplo</p>
+                <p className="text-white font-black text-xl">{slide.example}</p>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              if (isLast) setPhase("playing");
+              else setTheoryIndex((i) => i + 1);
+            }}
+            className="w-full bg-violet-500 hover:bg-violet-400 text-white font-black py-4 rounded-xl transition active:scale-95 text-lg"
+          >
+            {isLast ? "¡Empezar ejercicios! →" : "Siguiente →"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const question = questions[currentIndex];
   const QuestionComponent = QUESTION_COMPONENTS[question?.type];
   const progress = (currentIndex / questions.length) * 100;
 
-  if (phase === "playing" && (!question || !QuestionComponent)) return <LoadingScreen />; // ← acá
+  if (phase === "playing" && (!question || !QuestionComponent)) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-indigo-950 flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 flex items-center gap-4 border-b border-indigo-800">
+      <div className="px-4 py-3 flex items-center gap-4 border-b border-indigo-800 flex-shrink-0">
         <button onClick={handleAbandon} className="text-indigo-400 hover:text-white transition text-xl font-bold">✕</button>
         <div className="flex-1 bg-indigo-800 rounded-full h-3">
           <div className="bg-violet-500 h-3 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -137,22 +196,75 @@ export default function Lesson() {
         </div>
       </div>
 
-      {/* Contenido */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full">
-        <p className="text-indigo-400 text-sm mb-6">Pregunta {currentIndex + 1} de {questions.length}</p>
-        <h2 className="text-white text-2xl font-bold text-center mb-8 leading-snug">{question?.prompt}</h2>
+      {/* Contador */}
+      <p className="text-indigo-400 text-xs text-center py-2 flex-shrink-0">
+        Pregunta {currentIndex + 1} de {questions.length}
+      </p>
 
-        {QuestionComponent && phase === "playing" && (
-          <QuestionComponent question={question} onAnswer={handleAnswer} />
+      {/* Layout dividido */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-0 lg:gap-4 px-4 pb-4 max-w-5xl mx-auto w-full">
+
+        {/* Panel izquierdo — Concepto */}
+        {question?.conceptExplanation && (
+          <div className="lg:w-2/5 flex-shrink-0">
+            {/* Mobile: colapsable */}
+            <div className="lg:hidden mb-3">
+              <button
+                onClick={() => setConceptOpen((o) => !o)}
+                className="w-full flex items-center justify-between bg-indigo-800 border border-indigo-600 rounded-xl px-4 py-2 text-sm text-indigo-300 font-bold"
+              >
+                <span>💡 Ver concepto</span>
+                <span>{conceptOpen ? "▲" : "▼"}</span>
+              </button>
+            </div>
+
+            {/* Panel */}
+            <div className={`${conceptOpen ? "block" : "hidden"} lg:block bg-indigo-900 border border-indigo-700 rounded-2xl p-5 h-full`}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xl">💡</span>
+                <h3 className="text-violet-300 font-bold text-sm">Concepto clave</h3>
+              </div>
+              <p className="text-indigo-100 text-sm leading-relaxed">{question.conceptExplanation}</p>
+
+              {/* Pista */}
+              <div className="mt-4 border-t border-indigo-700 pt-4">
+                {!showHint ? (
+                  <button
+                    onClick={handleUseHint}
+                    disabled={hintUsed || phase !== "playing"}
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold py-2 rounded-xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    🔍 {hintUsed ? "Pista usada (-50% XP)" : "Ver pista (-50% XP)"}
+                  </button>
+                ) : (
+                  <div className="bg-amber-900/30 border border-amber-500/40 rounded-xl p-3">
+                    <p className="text-amber-300 text-xs font-bold mb-1">🔍 Pista</p>
+                    <p className="text-amber-100 text-sm">{question.hint}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
-        {phase === "feedback" && feedback && hearts > 0 && (
-          <FeedbackPanel feedback={feedback} onContinue={handleContinue} />
-        )}
+        {/* Panel derecho — Pregunta */}
+        <div className="flex-1 flex flex-col justify-center">
+          <h2 className="text-white text-xl lg:text-2xl font-bold text-center mb-6 leading-snug">
+            {question?.prompt}
+          </h2>
 
-        {phase === "feedback" && hearts === 0 && (
-          <NoHeartsPanel onRefilled={handleRefilled} onContinue={handleComplete} />
-        )}
+          {QuestionComponent && phase === "playing" && (
+            <QuestionComponent question={question} onAnswer={handleAnswer} />
+          )}
+
+          {phase === "feedback" && feedback && hearts > 0 && (
+            <FeedbackPanel feedback={feedback} onContinue={handleContinue} />
+          )}
+
+          {phase === "feedback" && hearts === 0 && (
+            <NoHeartsPanel onRefilled={handleRefilled} onContinue={handleComplete} />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -173,18 +285,17 @@ function FeedbackPanel({ feedback, onContinue }) {
           <span className="text-indigo-300">Respuesta correcta: </span>
           <span className="font-bold">
             {Array.isArray(correctAnswer) && correctAnswer[0]?.left
-            ? correctAnswer.map((p, i) => (
-                <span key={i} className="block">{p.left} → {p.right}</span>
-              ))
-            : Array.isArray(correctAnswer) ? correctAnswer.join(", ")
-            : typeof correctAnswer === "boolean" ? (correctAnswer ? "Verdadero" : "Falso")
-            : typeof correctAnswer === "object" && correctAnswer !== null ? correctAnswer.text || JSON.stringify(correctAnswer)
-            : String(correctAnswer)}
+              ? correctAnswer.map((p, i) => <span key={i} className="block">{p.left} → {p.right}</span>)
+              : Array.isArray(correctAnswer) ? correctAnswer.join(", ")
+              : typeof correctAnswer === "boolean" ? (correctAnswer ? "Verdadero" : "Falso")
+              : typeof correctAnswer === "object" ? correctAnswer.text || JSON.stringify(correctAnswer)
+              : String(correctAnswer)}
           </span>
         </p>
       )}
       {explanation && <p className="text-indigo-200 text-sm mb-4">{explanation}</p>}
-      <button onClick={onContinue} className={`w-full py-3 rounded-xl font-bold transition active:scale-95 ${isCorrect ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "bg-red-500 hover:bg-red-400 text-white"}`}>
+      <button onClick={onContinue}
+        className={`w-full py-3 rounded-xl font-bold transition active:scale-95 ${isCorrect ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "bg-red-500 hover:bg-red-400 text-white"}`}>
         Continuar
       </button>
     </div>

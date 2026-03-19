@@ -1,9 +1,9 @@
-const { Lesson, Question, UserProgress, User, Streak } = require("../models");
-const { generateQuestions, evaluateFillBlankAnswer } = require("../services/ai.service");
+const { Lesson, Question, UserProgress, User } = require("../models");
 const { checkAndGrantAchievements } = require("../services/achievement.service");
 const { getAdaptiveConfig, selectQuestions, getAdaptiveXPReward } = require("../services/adaptive.service");
 const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionrefresh.service");
 const { addLeagueXP } = require("../services/league.service");
+const { generateQuestions, evaluateFillBlankAnswer, generateTheorySlides } = require("../services/ai.service");
 
 const unlockNextLesson = async (userId, completedLesson) => {
   // Verificar cuántas veces completó esta lección
@@ -96,27 +96,27 @@ const startLesson = async (req, res) => {
       let allQuestions = await Question.find({ lesson: lesson._id, isActive: true, isReviewed: true }).select("-__v");
 
       if (allQuestions.length < adaptiveConfig.questionCount) {
-  // Generar las preguntas que faltan
-  const needed = adaptiveConfig.questionCount - allQuestions.length;
-  try {
-    const aiQuestions = await generateQuestions({
-      subjectName: lesson.unit.subject.name,
-      unitName: lesson.unit.name,
-      lessonName: lesson.name,
-      topicHint: lesson.aiTopicHint || lesson.name,
-      difficulty: adaptiveConfig.difficulty,
-      subjectContext: lesson.unit.subject.aiPromptContext,
-      count: needed,
-    });
-    const saved = await Question.insertMany(
-      aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
-    );
-    allQuestions = [...allQuestions, ...saved];
-  } catch (err) {
-    console.error("Error generando preguntas adicionales:", err.message);
-    // Si falla la IA, continuar con las que hay
-  }
-}
+        // Generar las preguntas que faltan
+        const needed = adaptiveConfig.questionCount - allQuestions.length;
+        try {
+          const aiQuestions = await generateQuestions({
+            subjectName: lesson.unit.subject.name,
+            unitName: lesson.unit.name,
+            lessonName: lesson.name,
+            topicHint: lesson.aiTopicHint || lesson.name,
+            difficulty: adaptiveConfig.difficulty,
+            subjectContext: lesson.unit.subject.aiPromptContext,
+            count: needed,
+          });
+          const saved = await Question.insertMany(
+            aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
+          );
+          allQuestions = [...allQuestions, ...saved];
+        } catch (err) {
+          console.error("Error generando preguntas adicionales:", err.message);
+          // Si falla la IA, continuar con las que hay
+        }
+      }
 
     questions = selectQuestions(allQuestions, adaptiveConfig.questionCount, adaptiveConfig.easyRatio, adaptiveConfig.hardRatio);
     }
@@ -163,6 +163,20 @@ const startLesson = async (req, res) => {
       return obj;
     });
 
+    let theorySlides = [];
+      try {
+        theorySlides = await generateTheorySlides({
+          subjectName: lesson.unit.subject.name,
+          unitName: lesson.unit.name,
+          lessonName: lesson.name,
+          topicHint: lesson.aiTopicHint || lesson.name,
+          difficulty: adaptiveConfig.difficulty,
+          subjectContext: lesson.unit.subject.aiPromptContext,
+        });
+      } catch (err) {
+        console.error("[Theory] Error generando slides:", err.message);
+      }
+
     recordShownQuestions(
       req.usuario._id,
       lesson._id,
@@ -174,6 +188,7 @@ const startLesson = async (req, res) => {
       data: {
         lesson: { _id: lesson._id, name: lesson.name, xpReward: lesson.xpReward, timeLimit: lesson.timeLimit, type: lesson.type },
         questions: sanitizedQuestions,
+        theorySlides,
         totalQuestions: sanitizedQuestions.length,
         hearts: user.hearts.current,
         adaptive: {
@@ -190,7 +205,7 @@ const startLesson = async (req, res) => {
 
 const answerQuestion = async (req, res) => {
   try {
-    const { questionId, answer } = req.body;
+    const { questionId, answer, hintUsed  } = req.body;
     if (!questionId || answer === undefined) {
       return res.status(400).json({ ok: false, message: "questionId y answer son requeridos" });
     }
@@ -203,6 +218,7 @@ const answerQuestion = async (req, res) => {
 
     switch (question.type) {
       case "sentence_builder": {
+        console.log("[Debug] correctAnswers:", question.correctAnswers);
         const userWords = Array.isArray(answer) ? answer : [];
         isCorrect = JSON.stringify(userWords) === JSON.stringify(question.correctAnswers);
         correctAnswer = question.correctAnswers;
@@ -283,9 +299,10 @@ const answerQuestion = async (req, res) => {
 
     res.json({
       ok: true,
-      data: { isCorrect, correctAnswer, explanation: question.explanation, heartsRemaining, xpEarned: isCorrect ? question.xpValue : 0 },
+      data: { isCorrect, correctAnswer, explanation: question.explanation, heartsRemaining, xpEarned: isCorrect ? (hintUsed ? Math.floor(question.xpValue * 0.5) : question.xpValue) : 0 },
     });
   } catch (err) {
+    console.error("[answerQuestion] Error completo:", err);
     res.status(500).json({ ok: false, message: err.message });
   }
 };
@@ -330,17 +347,16 @@ const completeLesson = async (req, res) => {
     const user = await User.findById(req.usuario._id);
     const { leveledUp, newLevel } = user.addXP(xpEarned);
     user.gems += isPerfect ? (lesson.gemsReward || 0) + 5 : (lesson.gemsReward || 0);
+    user.hearts.current = Math.min(5, user.hearts.current);
     await user.save();
 
-    let streak = await Streak.findOne({ user: req.usuario._id });
-    if (!streak) streak = new Streak({ user: req.usuario._id });
-    streak.recordActivity(xpEarned, user.dailyGoal);
-    await streak.save();
+    user.updateStreak();
+    await user.save();
 
     await addLeagueXP(req.usuario._id, xpEarned);
     await unlockNextLesson(req.usuario._id, lesson);
 
-    const newAchievements = await checkAndGrantAchievements(user, streak, progress);
+    const newAchievements = await checkAndGrantAchievements(user, user.streak, progress);
 
     if (user.hearts.current === 0) {
       const minutesSinceRefill = (Date.now() - user.hearts.lastRefill) / 1000 / 60;
@@ -359,7 +375,7 @@ const completeLesson = async (req, res) => {
       data: {
         score, isPerfect, xpEarned, leveledUp,
         newLevel: leveledUp ? newLevel : null,
-        newStreak: streak.current,
+        newStreak: user.streak.current,
         newAchievements,
         hearts: user.hearts.current,
         totalXP: user.xp,
@@ -372,6 +388,7 @@ const completeLesson = async (req, res) => {
       },
     });
   } catch (err) {
+    console.error('[completeLesson ERROR]', err);
     res.status(500).json({ ok: false, message: err.message });
   }
 };

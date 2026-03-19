@@ -91,6 +91,16 @@ const questionSchema = new mongoose.Schema(
     // match_pairs
     pairs: [matchPairSchema],
 
+    hint: {
+      type: String,
+      default: null, // pista sin spoiler
+    },
+    
+    conceptExplanation: {
+      type: String,
+      default: null, // explicación del concepto para el panel izquierdo
+    },
+
     // ── Explicación post-respuesta ────────────────────────────
     explanation: {
       type: String,
@@ -135,6 +145,7 @@ const questionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
   },
   {
     timestamps: true,

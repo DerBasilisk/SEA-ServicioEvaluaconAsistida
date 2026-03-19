@@ -1,9 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Avatar from "../components/Avatar";
 import api from "../api/axios";
 
 const LEAGUE_ORDER = ["bronze","silver","gold","sapphire","emerald","diamond","master","champion"];
+const LEAGUE_CONFIG_MAP = {
+  bronze:   { name: "Bronce",    icon: "🥉", color: "#cd7f32" },
+  silver:   { name: "Plata",     icon: "🥈", color: "#c0c0c0" },
+  gold:     { name: "Oro",       icon: "🥇", color: "#ffd700" },
+  sapphire: { name: "Zafiro",    icon: "💙", color: "#0f52ba" },
+  emerald:  { name: "Esmeralda", icon: "💚", color: "#50c878" },
+  diamond:  { name: "Diamante",  icon: "💎", color: "#b9f2ff" },
+  master:   { name: "Maestro",   icon: "🔮", color: "#9b59b6" },
+  champion: { name: "Campeón",   icon: "👑", color: "#f1c40f" },
+};
 
 export default function League() {
   const navigate = useNavigate();
@@ -18,8 +29,7 @@ export default function League() {
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen bg-indigo-950">
-      <Navbar />
+    <div className="min-h-screen bg-indigo-950"><Navbar />
       <div className="text-center text-indigo-400 py-20">Cargando liga...</div>
     </div>
   );
@@ -34,14 +44,12 @@ export default function League() {
       <Navbar />
       <div className="max-w-2xl mx-auto px-4 py-8">
 
-        {/* Header de liga */}
+        {/* Header */}
         <div className="rounded-3xl p-6 mb-6 text-center relative overflow-hidden border"
           style={{ backgroundColor: leagueColor + "15", borderColor: leagueColor + "40" }}>
           <div className="text-7xl mb-2">{leagueIcon}</div>
           <h1 className="text-white font-black text-3xl mb-1">Liga {leagueName}</h1>
           <p className="text-indigo-400 text-sm mb-4">Sala #{data.roomNumber} · {total} participantes</p>
-
-          {/* Mi posición */}
           <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl border"
             style={{ backgroundColor: leagueColor + "20", borderColor: leagueColor + "60" }}>
             <span className="text-2xl font-black" style={{ color: leagueColor }}>#{myRank}</span>
@@ -50,8 +58,6 @@ export default function League() {
               <p className="text-indigo-300 text-xs">⚡ {myXP} XP esta semana</p>
             </div>
           </div>
-
-          {/* Días restantes */}
           <p className="text-indigo-400 text-xs mt-3">
             🗓️ {daysLeft === 1 ? "¡Último día!" : `${daysLeft} días hasta el cierre`}
           </p>
@@ -71,59 +77,44 @@ export default function League() {
 
         {/* Tabla */}
         <div className="space-y-1.5">
-          {members.map((m, i) => {
+          {members.map((m) => {
             const inPromoteZone = m.rank <= promoteZone;
             const inDemoteZone  = m.rank > demoteZone;
+            const displayName   = m.user.displayName || m.user.username;
 
             return (
-              <div
-                key={m.user._id}
+              <div key={m.user._id}
                 onClick={() => !m.isMe && navigate(`/profile/${m.user.username}`)}
-                className={`
-                  flex items-center gap-3 px-4 py-3 rounded-2xl border transition
-                  ${m.isMe
-                    ? "border-violet-500 bg-violet-900/40"
-                    : inPromoteZone
-                    ? "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 cursor-pointer"
-                    : inDemoteZone
-                    ? "border-red-500/30 bg-red-500/5 hover:bg-red-500/10 cursor-pointer"
+                className={`flex items-center gap-3 px-4 py-3 rounded-2xl border transition
+                  ${m.isMe ? "border-violet-500 bg-violet-900/40"
+                    : inPromoteZone ? "border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 cursor-pointer"
+                    : inDemoteZone  ? "border-red-500/30 bg-red-500/5 hover:bg-red-500/10 cursor-pointer"
                     : "border-indigo-700 bg-indigo-900/40 hover:bg-indigo-800/40 cursor-pointer"
-                  }
-                `}
+                  }`}
               >
-                {/* Rank */}
                 <span className={`text-lg font-black w-8 text-center flex-shrink-0 ${
-                  m.rank === 1 ? "text-yellow-400" :
-                  m.rank === 2 ? "text-gray-300"   :
-                  m.rank === 3 ? "text-amber-600"  :
-                  inPromoteZone ? "text-emerald-400" :
-                  inDemoteZone  ? "text-red-400"    :
-                  "text-indigo-400"
+                  m.rank === 1 ? "text-yellow-400" : m.rank === 2 ? "text-gray-300" : m.rank === 3 ? "text-amber-600"
+                  : inPromoteZone ? "text-emerald-400" : inDemoteZone ? "text-red-400" : "text-indigo-400"
                 }`}>
                   {m.rank === 1 ? "🥇" : m.rank === 2 ? "🥈" : m.rank === 3 ? "🥉" : `#${m.rank}`}
                 </span>
 
-                {/* Avatar */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black flex-shrink-0 ${
-                  m.isMe ? "bg-gradient-to-tr from-violet-500 to-fuchsia-500" : "bg-indigo-700"
-                }`}>
-                  {(m.user.displayName || m.user.username)?.[0]?.toUpperCase()}
-                </div>
+                <Avatar
+                  src={m.user.avatar}
+                  name={displayName}
+                  size="md"
+                  className={m.isMe ? "border-2 border-violet-500" : ""}
+                />
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className={`font-bold text-sm truncate ${m.isMe ? "text-violet-300" : "text-white"}`}>
-                    {m.user.displayName || m.user.username}
-                    {m.isMe && " (Tú)"}
+                    {displayName}{m.isMe && " (Tú)"}
                   </p>
                   <p className="text-indigo-500 text-xs">Nivel {m.user.level}</p>
                 </div>
 
-                {/* XP */}
                 <div className="text-right flex-shrink-0">
-                  <p className={`font-black text-sm ${m.isMe ? "text-violet-300" : "text-indigo-300"}`}>
-                    ⚡ {m.xpEarned}
-                  </p>
+                  <p className={`font-black text-sm ${m.isMe ? "text-violet-300" : "text-indigo-300"}`}>⚡ {m.xpEarned}</p>
                   {inPromoteZone && <p className="text-emerald-400 text-xs">↑ Asciende</p>}
                   {inDemoteZone  && <p className="text-red-400 text-xs">↓ Desciende</p>}
                 </div>
@@ -137,35 +128,20 @@ export default function League() {
           <h2 className="text-white font-bold mb-4">🗺️ Mapa de ligas</h2>
           <div className="flex flex-col gap-2">
             {LEAGUE_ORDER.slice().reverse().map((key) => {
-              const config = {
-                bronze:   { name: "Bronce",    icon: "🥉", color: "#cd7f32" },
-                silver:   { name: "Plata",     icon: "🥈", color: "#c0c0c0" },
-                gold:     { name: "Oro",       icon: "🥇", color: "#ffd700" },
-                sapphire: { name: "Zafiro",    icon: "💙", color: "#0f52ba" },
-                emerald:  { name: "Esmeralda", icon: "💚", color: "#50c878" },
-                diamond:  { name: "Diamante",  icon: "💎", color: "#b9f2ff" },
-                master:   { name: "Maestro",   icon: "🔮", color: "#9b59b6" },
-                champion: { name: "Campeón",   icon: "👑", color: "#f1c40f" },
-              }[key];
+              const config = LEAGUE_CONFIG_MAP[key];
               const isCurrent = key === league;
               return (
-                <div key={key} className={`flex items-center gap-3 px-4 py-2 rounded-xl transition ${
-                  isCurrent ? "border-2" : "opacity-50"
-                }`} style={isCurrent ? { borderColor: config.color + "80", backgroundColor: config.color + "10" } : {}}>
+                <div key={key} className={`flex items-center gap-3 px-4 py-2 rounded-xl transition ${isCurrent ? "border-2" : "opacity-50"}`}
+                  style={isCurrent ? { borderColor: config.color + "80", backgroundColor: config.color + "10" } : {}}>
                   <span className="text-xl">{config.icon}</span>
-                  <span className={`font-bold text-sm ${isCurrent ? "text-white" : "text-indigo-400"}`}>
-                    {config.name}
-                  </span>
+                  <span className={`font-bold text-sm ${isCurrent ? "text-white" : "text-indigo-400"}`}>{config.name}</span>
                   {isCurrent && <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: config.color + "30", color: config.color }}>
-                    Tu liga
-                  </span>}
+                    style={{ backgroundColor: config.color + "30", color: config.color }}>Tu liga</span>}
                 </div>
               );
             })}
           </div>
         </div>
-
       </div>
     </div>
   );

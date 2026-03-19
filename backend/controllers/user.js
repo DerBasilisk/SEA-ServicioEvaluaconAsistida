@@ -76,6 +76,10 @@ const getMe = async (req, res) => {
     const user = await User.findById(req.usuario._id).populate("achievements");
     const streak = await Streak.findOne({ user: req.usuario._id });
 
+    // Recuperar corazones automáticamente
+    const changed = user.checkHeartRefill();
+    if (changed) await user.save();
+
     if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
 
     res.json({
