@@ -1,6 +1,6 @@
 const User = require("../models/user");
 const Friendship = require("../models/friendship");
-const LeagueRoom = require("../models/Leagueroom");
+const LeagueRoom = require("../models/leagueRoom");
 
 // GET /api/friends — lista de amigos aceptados
 const getFriends = async (req, res) => {

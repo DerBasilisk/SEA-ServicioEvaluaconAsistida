@@ -1,5 +1,5 @@
 const { UserProgress, User, Streak, Achievement } = require("../models");
-const LeagueRoom = require("../models/Leagueroom");
+const LeagueRoom = require("../models/leagueRoom");
 
 // GET /api/progress/me
 // Dashboard completo del usuario: XP, racha, logros, lecciones pendientes de repaso

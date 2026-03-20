@@ -1,8 +1,10 @@
-const LeagueRoom = require("../models/Leagueroom");
+const LeagueRoom = require("../models/leagueRoom");
 const User = require("../models/user");
 const { processWeeklyLeagues } = require("../services/league.service");
 
 const LEAGUE_CONFIG = LeagueRoom.LEAGUE_CONFIG;
+const PROMOTE_COUNT = 10;
+const DEMOTE_COUNT = 10;
 
 // GET /api/leagues/me — sala actual del usuario
 const getMyLeague = async (req, res) => {
@@ -25,6 +27,7 @@ const getMyLeague = async (req, res) => {
 
     // Ordenar miembros por XP
     const sortedMembers = [...room.members]
+      .filter((m) => m.user !== null)
       .sort((a, b) => b.xpEarned - a.xpEarned)
       .map((m, i) => ({
         rank: i + 1,
@@ -64,12 +67,12 @@ const getMyLeague = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+  console.error('[getMyLeague ERROR]', err);
+  res.status(500).json({ ok: false, message: err.message });
   }
 };
 
-const PROMOTE_COUNT = 15;
-const DEMOTE_COUNT = 15;
+
 
 // GET /api/leagues/info — info de todas las ligas
 const getLeaguesInfo = async (req, res) => {

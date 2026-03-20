@@ -45,13 +45,9 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Mínimo 6 caracteres"],
       select: false,
     },
-    avatar: {
-      type: String,
-      default: "default_avatar",
-    },
     league: {
       type: String,
-      enum: ["bronze","silver","gold","sapphire","emerald","diamond","master","champion"],
+      enum: ["bronze","silver","gold","sapphire","emerald","diamond","master","champion","heroic"],
       default: "bronze",
     },
 

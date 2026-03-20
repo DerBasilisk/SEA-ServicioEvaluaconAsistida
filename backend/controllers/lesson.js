@@ -126,6 +126,9 @@ const startLesson = async (req, res) => {
     }
 
     const user = await User.findById(req.usuario._id);
+    if (user.hearts.current === 0) {
+      return res.status(403).json({ ok: false, message: "No tenés corazones para iniciar una lección" });
+    }
     await UserProgress.findOneAndUpdate(
       { user: req.usuario._id, lesson: lesson._id },
       {
@@ -352,6 +355,18 @@ const completeLesson = async (req, res) => {
 
     user.updateStreak();
     await user.save();
+
+    // Sincronizar con el modelo Streak separado
+    const Streak = require("../models/streak");
+    await Streak.findOneAndUpdate(
+      { user: req.usuario._id },
+      {
+        current: user.streak.current,
+        longest: user.streak.longest,
+        lastActivityDate: user.streak.lastActivityDate,
+      },
+      { upsert: true }
+    );
 
     await addLeagueXP(req.usuario._id, xpEarned);
     await unlockNextLesson(req.usuario._id, lesson);

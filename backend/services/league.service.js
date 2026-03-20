@@ -1,9 +1,9 @@
-const LeagueRoom = require("../models/Leagueroom");
+const LeagueRoom = require("../models/leagueRoom");
 const User = require("../models/user");
 
 const LEAGUES = LeagueRoom.LEAGUES;
-const PROMOTE_COUNT = 15;
-const DEMOTE_COUNT = 15;
+const PROMOTE_COUNT = 10;
+const DEMOTE_COUNT = 10;
 
 /**
  * Procesar ascensos y descensos al inicio de cada semana.

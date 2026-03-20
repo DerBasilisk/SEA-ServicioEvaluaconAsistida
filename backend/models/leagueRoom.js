@@ -1,16 +1,17 @@
 const mongoose = require("mongoose");
 
-const LEAGUES = ["bronze", "silver", "gold", "sapphire", "emerald", "diamond", "master", "champion"];
+const LEAGUES = ["bronze", "silver", "gold", "sapphire", "emerald", "diamond", "master", "champion", "heroic"];
 
 const LEAGUE_CONFIG = {
-  bronze:   { name: "Bronce",   icon: "🥉", color: "#cd7f32", order: 0 },
-  silver:   { name: "Plata",    icon: "🥈", color: "#c0c0c0", order: 1 },
-  gold:     { name: "Oro",      icon: "🥇", color: "#ffd700", order: 2 },
-  sapphire: { name: "Zafiro",   icon: "💙", color: "#0f52ba", order: 3 },
-  emerald:  { name: "Esmeralda",icon: "💚", color: "#50c878", order: 4 },
-  diamond:  { name: "Diamante", icon: "💎", color: "#b9f2ff", order: 5 },
-  master:   { name: "Maestro",  icon: "🔮", color: "#9b59b6", order: 6 },
-  champion: { name: "Campeón",  icon: "👑", color: "#f1c40f", order: 7 },
+  bronze:   { name: "Bronce",    icon: "🥉", color: "#cd7f32", order: 0 },
+  silver:   { name: "Plata",     icon: "🥈", color: "#c0c0c0", order: 1 },
+  gold:     { name: "Oro",       icon: "🥇", color: "#ffd700", order: 2 },
+  sapphire: { name: "Zafiro",    icon: "💙", color: "#0f52ba", order: 3 },
+  emerald:  { name: "Esmeralda", icon: "💚", color: "#50c878", order: 4 },
+  diamond:  { name: "Diamante",  icon: "💎", color: "#b9f2ff", order: 5 },
+  master:   { name: "Maestro",   icon: "🔮", color: "#9b59b6", order: 6 },
+  champion: { name: "Campeón",   icon: "👑", color: "#f1c40f", order: 7 },
+  heroic:   { name: "Heroico",   icon: "⚔️", color: "#ff4444", order: 8 },
 };
 
 const memberSchema = new mongoose.Schema({

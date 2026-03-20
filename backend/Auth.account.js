@@ -27,12 +27,24 @@ passport.use(
           return done(null, user);
         }
 
+        if (user) {
+          if (!user.googleId) user.googleId = profile.id;
+          if (!user.avatar) user.avatar = profile.photos?.[0]?.value?.replace("=s96-c", "=s400-c") || null;
+          await user.save();
+          return done(null, user);
+        }
+
         user = await User.create({
           googleId: profile.id,
-          username: (profile.displayName.replace(/\s+/g, "").toLowerCase().slice(0, 12)) + "_" + Date.now().toString().slice(-4),
+          username: profile.displayName
+                  .normalize("NFD")                    // descompone tildes: á → a + ́
+                  .replace(/[\u0300-\u036f]/g, "")     // elimina los diacríticos
+                  .replace(/[^a-zA-Z0-9]/g, "")        // elimina todo lo que no sea alfanumérico
+                  .toLowerCase()
+                  .slice(0, 12) + "_" + Date.now().toString().slice(-4),
           email: profile.emails?.[0]?.value,
           password: Math.random().toString(36) + Math.random().toString(36),
-          avatar: profile.photos?.[0]?.value,
+          avatar: profile.photos?.[0]?.value?.replace("=s96-c", "=s400-c") || null,
         });
 
         done(null, user);
