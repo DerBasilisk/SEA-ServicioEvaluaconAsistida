@@ -1,7 +1,7 @@
 const { Lesson, Question, UserProgress, User } = require("../models");
 const { checkAndGrantAchievements } = require("../services/achievement.service");
 const { getAdaptiveConfig, selectQuestions, getAdaptiveXPReward } = require("../services/adaptive.service");
-const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionrefresh.service");
+const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionRefresh.service");
 const { addLeagueXP } = require("../services/league.service");
 const { generateQuestions, evaluateFillBlankAnswer, generateTheorySlides } = require("../services/ai.service");
 
