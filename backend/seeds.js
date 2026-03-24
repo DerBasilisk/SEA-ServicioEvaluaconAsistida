@@ -16,7 +16,7 @@ async function seed() {
     Achievement.deleteMany({}),
   ]);
   console.log("🗑️  Colecciones limpiadas");
-
+como 
   // ── MATEMÁTICAS ──────────────────────────────────────────────
   const matematica = await Subject.create({
     name: "Matemática",
@@ -30,10 +30,10 @@ async function seed() {
 
   const matUnit1 = await Unit.create({ subject: matematica._id, name: "Matemáticas Básicas 1", icon: "➕", order: 1, requiredXP: 0 });
   const matU1Lessons = await Lesson.insertMany([
-    { unit: matUnit1._id, name: "Suma de un dígito",          order: 1, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner",     aiTopicHint: "Sumas simples con números del 1 al 9, ej: 3+4, 2+7" },
-    { unit: matUnit1._id, name: "Resta de un dígito",         order: 2, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner",     aiTopicHint: "Restas simples con números del 1 al 9, ej: 7-3, 9-5" },
-    { unit: matUnit1._id, name: "Suma y Resta de un dígito",  order: 3, type: "lesson",     xpReward: 15, questionCount: 5, difficulty: "beginner",     aiTopicHint: "Mezcla de sumas y restas con números del 1 al 9" },
-    { unit: matUnit1._id, name: "Checkpoint",                 order: 4, type: "checkpoint", xpReward: 25, questionCount: 8, difficulty: "beginner",     aiTopicHint: "Repaso de sumas y restas de un dígito" },
+    { unit: matUnit1._id, name: "Suma de un dígito",          order: 1, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy",     aiTopicHint: "Sumas simples con números del 1 al 9, ej: 3+4, 2+7" },
+    { unit: matUnit1._id, name: "Resta de un dígito",         order: 2, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy",     aiTopicHint: "Restas simples con números del 1 al 9, ej: 7-3, 9-5" },
+    { unit: matUnit1._id, name: "Suma y Resta de un dígito",  order: 3, type: "lesson",     xpReward: 15, questionCount: 5, difficulty: "easy",     aiTopicHint: "Mezcla de sumas y restas con números del 1 al 9" },
+    { unit: matUnit1._id, name: "Checkpoint",                 order: 4, type: "checkpoint", xpReward: 25, questionCount: 8, difficulty: "easy",     aiTopicHint: "Repaso de sumas y restas de un dígito" },
   ]);
 
   await Question.insertMany([
@@ -49,18 +49,18 @@ async function seed() {
 
   const matUnit2 = await Unit.create({ subject: matematica._id, name: "Matemáticas Básicas 2", icon: "🔟", order: 2, requiredXP: 30 });
   await Lesson.insertMany([
-    { unit: matUnit2._id, name: "Suma de dos dígitos",         order: 1, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "beginner",     aiTopicHint: "Sumas con números del 10 al 99, ej: 12+23, 34+45" },
-    { unit: matUnit2._id, name: "Resta de dos dígitos",        order: 2, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "beginner",     aiTopicHint: "Restas con números del 10 al 99, ej: 45-23, 78-34" },
-    { unit: matUnit2._id, name: "Suma y Resta de dos dígitos", order: 3, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "beginner",     aiTopicHint: "Mezcla de sumas y restas con números de dos dígitos" },
-    { unit: matUnit2._id, name: "Checkpoint",                  order: 4, type: "checkpoint", xpReward: 30, questionCount: 8, difficulty: "beginner",     aiTopicHint: "Repaso de sumas y restas de dos dígitos" },
+    { unit: matUnit2._id, name: "Suma de dos dígitos",         order: 1, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "easy",     aiTopicHint: "Sumas con números del 10 al 99, ej: 12+23, 34+45" },
+    { unit: matUnit2._id, name: "Resta de dos dígitos",        order: 2, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "easy",     aiTopicHint: "Restas con números del 10 al 99, ej: 45-23, 78-34" },
+    { unit: matUnit2._id, name: "Suma y Resta de dos dígitos", order: 3, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "easy",     aiTopicHint: "Mezcla de sumas y restas con números de dos dígitos" },
+    { unit: matUnit2._id, name: "Checkpoint",                  order: 4, type: "checkpoint", xpReward: 30, questionCount: 8, difficulty: "easy",     aiTopicHint: "Repaso de sumas y restas de dos dígitos" },
   ]);
 
   const matUnit3 = await Unit.create({ subject: matematica._id, name: "Matemáticas Básicas 3", icon: "✖️", order: 3, requiredXP: 80 });
   await Lesson.insertMany([
-    { unit: matUnit3._id, name: "Multiplicación de un dígito",            order: 1, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "Tablas del 1 al 9, ej: 3×4, 7×2" },
-    { unit: matUnit3._id, name: "División de un dígito",                  order: 2, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "Divisiones exactas simples, ej: 8÷2, 9÷3" },
-    { unit: matUnit3._id, name: "Multiplicación y División de un dígito", order: 3, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "intermediate", aiTopicHint: "Mezcla de multiplicaciones y divisiones de un dígito" },
-    { unit: matUnit3._id, name: "Checkpoint",                             order: 4, type: "checkpoint", xpReward: 35, questionCount: 10, difficulty: "intermediate", aiTopicHint: "Repaso de multiplicación y división de un dígito" },
+    { unit: matUnit3._id, name: "Multiplicación de un dígito",            order: 1, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "Tablas del 1 al 9, ej: 3×4, 7×2" },
+    { unit: matUnit3._id, name: "División de un dígito",                  order: 2, type: "lesson",     xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "Divisiones exactas simples, ej: 8÷2, 9÷3" },
+    { unit: matUnit3._id, name: "Multiplicación y División de un dígito", order: 3, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "medium", aiTopicHint: "Mezcla de multiplicaciones y divisiones de un dígito" },
+    { unit: matUnit3._id, name: "Checkpoint",                             order: 4, type: "checkpoint", xpReward: 35, questionCount: 10, difficulty: "medium", aiTopicHint: "Repaso de multiplicación y división de un dígito" },
   ]);
 
   // ── LENGUA BÁSICA ────────────────────────────────────────────
@@ -77,11 +77,11 @@ async function seed() {
   // Unidad 1
   const lenUnit1 = await Unit.create({ subject: lenguaBasica._id, name: "Mis Primeras Letras", icon: "🅰️", order: 1, requiredXP: 0 });
   const lenU1Lessons = await Lesson.insertMany([
-    { unit: lenUnit1._id, name: "Las Vocales",    order: 1, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner", aiTopicHint: "a, e, i, o, u. Palabras: ala, eje, imán, oso, uva." },
-    { unit: lenUnit1._id, name: "La letra M",     order: 2, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner", aiTopicHint: "ma, me, mi, mo, mu. Frase: Mi mamá me mima." },
-    { unit: lenUnit1._id, name: "La letra P",     order: 3, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner", aiTopicHint: "pa, pe, pi, po, pu. Palabras: papá, pipa, pomo, mapa." },
-    { unit: lenUnit1._id, name: "La letra S",     order: 4, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner", aiTopicHint: "sa, se, si, so, su. Palabras: sapo, sopa, esa mesa." },
-    { unit: lenUnit1._id, name: "Checkpoint 1",   order: 5, type: "checkpoint", xpReward: 25, questionCount: 8, difficulty: "beginner", aiTopicHint: "Repaso M, P, S." },
+    { unit: lenUnit1._id, name: "Las Vocales",    order: 1, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy", aiTopicHint: "a, e, i, o, u. Palabras: ala, eje, imán, oso, uva." },
+    { unit: lenUnit1._id, name: "La letra M",     order: 2, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy", aiTopicHint: "ma, me, mi, mo, mu. Frase: Mi mamá me mima." },
+    { unit: lenUnit1._id, name: "La letra P",     order: 3, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy", aiTopicHint: "pa, pe, pi, po, pu. Palabras: papá, pipa, pomo, mapa." },
+    { unit: lenUnit1._id, name: "La letra S",     order: 4, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy", aiTopicHint: "sa, se, si, so, su. Palabras: sapo, sopa, esa mesa." },
+    { unit: lenUnit1._id, name: "Checkpoint 1",   order: 5, type: "checkpoint", xpReward: 25, questionCount: 8, difficulty: "easy", aiTopicHint: "Repaso M, P, S." },
   ]);
 
   // Preguntas seed "Las Vocales"
@@ -104,64 +104,64 @@ async function seed() {
   // Unidad 2
   const lenUnit2 = await Unit.create({ subject: lenguaBasica._id, name: "Pequeños Lectores", icon: "📝", order: 2, requiredXP: 100 });
   await Lesson.insertMany([
-    { unit: lenUnit2._id, name: "La letra L", order: 1, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner",     aiTopicHint: "la, le, li, lo, lu. Palabras: loma, lupa, paloma." },
-    { unit: lenUnit2._id, name: "La letra T", order: 2, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner",     aiTopicHint: "ta, te, ti, to, tu. Palabras: tomate, tela, moto." },
-    { unit: lenUnit2._id, name: "La letra N", order: 3, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner",     aiTopicHint: "na, ne, ni, no, nu. Palabras: nene, pino, luna, niña." },
-    { unit: lenUnit2._id, name: "La letra D", order: 4, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "beginner",     aiTopicHint: "da, de, di, do, du. Palabras: dedo, dama, duda, todo." },
-    { unit: lenUnit2._id, name: "Checkpoint 2", order: 5, type: "checkpoint", xpReward: 25, questionCount: 8, difficulty: "beginner",  aiTopicHint: "Repaso de L, T, N, D." },
+    { unit: lenUnit2._id, name: "La letra L", order: 1, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy",     aiTopicHint: "la, le, li, lo, lu. Palabras: loma, lupa, paloma." },
+    { unit: lenUnit2._id, name: "La letra T", order: 2, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy",     aiTopicHint: "ta, te, ti, to, tu. Palabras: tomate, tela, moto." },
+    { unit: lenUnit2._id, name: "La letra N", order: 3, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy",     aiTopicHint: "na, ne, ni, no, nu. Palabras: nene, pino, luna, niña." },
+    { unit: lenUnit2._id, name: "La letra D", order: 4, type: "lesson",     xpReward: 10, questionCount: 5, difficulty: "easy",     aiTopicHint: "da, de, di, do, du. Palabras: dedo, dama, duda, todo." },
+    { unit: lenUnit2._id, name: "Checkpoint 2", order: 5, type: "checkpoint", xpReward: 25, questionCount: 8, difficulty: "easy",  aiTopicHint: "Repaso de L, T, N, D." },
   ]);
 
   // Unidad 3
   const lenUnit3 = await Unit.create({ subject: lenguaBasica._id, name: "Sonidos Fuertes y Suaves", icon: "🔔", order: 3, requiredXP: 250 });
   await Lesson.insertMany([
-    { unit: lenUnit3._id, name: "La letra R (Fuerte)",   order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "beginner",     aiTopicHint: "ra, re, ri, ro, ru al inicio. Rosa, ropa, rata." },
-    { unit: lenUnit3._id, name: "La RR y R suave",       order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "beginner",     aiTopicHint: "perro, carro vs pera, loro, mora." },
-    { unit: lenUnit3._id, name: "La letra B",             order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "beginner",     aiTopicHint: "ba, be, bi, bo, bu. Palabras: bota, lobo, nube." },
-    { unit: lenUnit3._id, name: "La letra V",             order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "beginner",     aiTopicHint: "va, ve, vi, vo, vu. Palabras: vaso, uva, vela, vino." },
+    { unit: lenUnit3._id, name: "La letra R (Fuerte)",   order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "easy",     aiTopicHint: "ra, re, ri, ro, ru al inicio. Rosa, ropa, rata." },
+    { unit: lenUnit3._id, name: "La RR y R suave",       order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "easy",     aiTopicHint: "perro, carro vs pera, loro, mora." },
+    { unit: lenUnit3._id, name: "La letra B",             order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "easy",     aiTopicHint: "ba, be, bi, bo, bu. Palabras: bota, lobo, nube." },
+    { unit: lenUnit3._id, name: "La letra V",             order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "easy",     aiTopicHint: "va, ve, vi, vo, vu. Palabras: vaso, uva, vela, vino." },
   ]);
 
   // Unidad 4
   const lenUnit4 = await Unit.create({ subject: lenguaBasica._id, name: "Letras Mágicas", icon: "🪄", order: 4, requiredXP: 450 });
   await Lesson.insertMany([
-    { unit: lenUnit4._id, name: "La letra C (ca, co, cu)", order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "casa, coco, cuna, cama." },
-    { unit: lenUnit4._id, name: "La letra Q (que, qui)",   order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "queso, quitasol, paquete." },
-    { unit: lenUnit4._id, name: "La letra G (ga, go, gu)", order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "gato, gota, gusano, mago." },
-    { unit: lenUnit4._id, name: "La letra J",              order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "ja, je, ji, jo, ju. Palabras: jarra, jefe, ojo." },
+    { unit: lenUnit4._id, name: "La letra C (ca, co, cu)", order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "casa, coco, cuna, cama." },
+    { unit: lenUnit4._id, name: "La letra Q (que, qui)",   order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "queso, quitasol, paquete." },
+    { unit: lenUnit4._id, name: "La letra G (ga, go, gu)", order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "gato, gota, gusano, mago." },
+    { unit: lenUnit4._id, name: "La letra J",              order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "ja, je, ji, jo, ju. Palabras: jarra, jefe, ojo." },
   ]);
 
   // Unidad 5
   const lenUnit5 = await Unit.create({ subject: lenguaBasica._id, name: "Sonidos del Corazón", icon: "❤️", order: 5, requiredXP: 700 });
   await Lesson.insertMany([
-    { unit: lenUnit5._id, name: "La letra H (Muda)", order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "ha, he, hi, ho, hu. Helado, hoja, humo." },
-    { unit: lenUnit5._id, name: "La letra Ch",       order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "cha, che, chi, cho, chu. Chupete, choza, leche." },
-    { unit: lenUnit5._id, name: "La letra Ll",       order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "lla, lle, lli, llo, llu. Llave, silla, pollo." },
-    { unit: lenUnit5._id, name: "La letra Ñ",        order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "ña, ñe, ñi, ño, ñu. Piña, niña, año, puño." },
+    { unit: lenUnit5._id, name: "La letra H (Muda)", order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "ha, he, hi, ho, hu. Helado, hoja, humo." },
+    { unit: lenUnit5._id, name: "La letra Ch",       order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "cha, che, chi, cho, chu. Chupete, choza, leche." },
+    { unit: lenUnit5._id, name: "La letra Ll",       order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "lla, lle, lli, llo, llu. Llave, silla, pollo." },
+    { unit: lenUnit5._id, name: "La letra Ñ",        order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "ña, ñe, ñi, ño, ñu. Piña, niña, año, puño." },
   ]);
 
   // Unidad 6
   const lenUnit6 = await Unit.create({ subject: lenguaBasica._id, name: "Tesoro de Palabras", icon: "💎", order: 6, requiredXP: 1000 });
   await Lesson.insertMany([
-    { unit: lenUnit6._id, name: "La letra F",         order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "fa, fe, fi, fo, fu. Foca, café, sofá, fino." },
-    { unit: lenUnit6._id, name: "La Z y C (ce, ci)",  order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "zapato, taza, cena, cine." },
-    { unit: lenUnit6._id, name: "La letra Y",         order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "ya, ye, yi, yo, yu. Yate, raya, yema." },
-    { unit: lenUnit6._id, name: "Letras X, K, W",     order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "intermediate", aiTopicHint: "examen, taxi, kilo, karate, waterpolo." },
+    { unit: lenUnit6._id, name: "La letra F",         order: 1, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "fa, fe, fi, fo, fu. Foca, café, sofá, fino." },
+    { unit: lenUnit6._id, name: "La Z y C (ce, ci)",  order: 2, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "zapato, taza, cena, cine." },
+    { unit: lenUnit6._id, name: "La letra Y",         order: 3, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "ya, ye, yi, yo, yu. Yate, raya, yema." },
+    { unit: lenUnit6._id, name: "Letras X, K, W",     order: 4, type: "lesson", xpReward: 15, questionCount: 6, difficulty: "medium", aiTopicHint: "examen, taxi, kilo, karate, waterpolo." },
   ]);
 
   // Unidad 7
   const lenUnit7 = await Unit.create({ subject: lenguaBasica._id, name: "Palabras Saltimbanquis", icon: "🤸", order: 7, requiredXP: 1400 });
   await Lesson.insertMany([
-    { unit: lenUnit7._id, name: "Combinaciones con L (Bl, Cl, Fl)", order: 1, type: "lesson", xpReward: 20, questionCount: 6, difficulty: "advanced", aiTopicHint: "blanco, clavo, flaco." },
-    { unit: lenUnit7._id, name: "Combinaciones con L (Gl, Pl)",     order: 2, type: "lesson", xpReward: 20, questionCount: 6, difficulty: "advanced", aiTopicHint: "globo, regla, plato, pluma." },
-    { unit: lenUnit7._id, name: "Oraciones Complejas",              order: 3, type: "lesson", xpReward: 20, questionCount: 6, difficulty: "advanced", aiTopicHint: "El clavo es de hierro. La blusa es blanca." },
+    { unit: lenUnit7._id, name: "Combinaciones con L (Bl, Cl, Fl)", order: 1, type: "lesson", xpReward: 20, questionCount: 6, difficulty: "hard", aiTopicHint: "blanco, clavo, flaco." },
+    { unit: lenUnit7._id, name: "Combinaciones con L (Gl, Pl)",     order: 2, type: "lesson", xpReward: 20, questionCount: 6, difficulty: "hard", aiTopicHint: "globo, regla, plato, pluma." },
+    { unit: lenUnit7._id, name: "Oraciones Complejas",              order: 3, type: "lesson", xpReward: 20, questionCount: 6, difficulty: "hard", aiTopicHint: "El clavo es de hierro. La blusa es blanca." },
   ]);
 
   // Unidad 8
   const lenUnit8 = await Unit.create({ subject: lenguaBasica._id, name: "Maestro de la Lectura", icon: "🎓", order: 8, requiredXP: 1800 });
   await Lesson.insertMany([
-    { unit: lenUnit8._id, name: "Combinaciones con R (Br, Cr, Fr)",    order: 1, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "advanced", aiTopicHint: "brazo, crema, fresa." },
-    { unit: lenUnit8._id, name: "Combinaciones con R (Gr, Pr, Tr, Dr)",order: 2, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "advanced", aiTopicHint: "grillo, prado, tren, dragón." },
-    { unit: lenUnit8._id, name: "Comprensión Lectora Final",           order: 3, type: "lesson",     xpReward: 25, questionCount: 8, difficulty: "advanced", aiTopicHint: "Textos cortos de la parte final de Nacho." },
-    { unit: lenUnit8._id, name: "EXAMEN FINAL",                       order: 4, type: "checkpoint", xpReward: 50, questionCount: 15, difficulty: "advanced", aiTopicHint: "Repaso de toda la cartilla." },
+    { unit: lenUnit8._id, name: "Combinaciones con R (Br, Cr, Fr)",    order: 1, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "hard", aiTopicHint: "brazo, crema, fresa." },
+    { unit: lenUnit8._id, name: "Combinaciones con R (Gr, Pr, Tr, Dr)",order: 2, type: "lesson",     xpReward: 20, questionCount: 6, difficulty: "hard", aiTopicHint: "grillo, prado, tren, dragón." },
+    { unit: lenUnit8._id, name: "Comprensión Lectora Final",           order: 3, type: "lesson",     xpReward: 25, questionCount: 8, difficulty: "hard", aiTopicHint: "Textos cortos de la parte final de Nacho." },
+    { unit: lenUnit8._id, name: "EXAMEN FINAL",                       order: 4, type: "checkpoint", xpReward: 50, questionCount: 15, difficulty: "hard", aiTopicHint: "Repaso de toda la cartilla." },
   ]);
 
   // ── LOGROS ───────────────────────────────────────────────────

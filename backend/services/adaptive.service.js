@@ -103,7 +103,7 @@ async function getAdaptiveConfig(userId, lesson) {
     // Fallback seguro: configuración base de la lección
     return {
       questionCount: lesson.questionCount || 5,
-      difficulty: lesson.difficulty || "beginner",
+      difficulty: lesson.difficulty || "easy",
       easyRatio: 0.33,
       hardRatio: 0.33,
       activityScore: 50,
@@ -113,11 +113,11 @@ async function getAdaptiveConfig(userId, lesson) {
 
 /**
  * Sube o baja la dificultad un nivel.
- * @param {string} current - "beginner" | "intermediate" | "advanced"
+ * @param {string} current - "easy" | "medium" | "hard"
  * @param {number} delta   - 1 = subir, -1 = bajar
  */
 function escalateDifficulty(current, delta) {
-  const levels = ["beginner", "intermediate", "advanced"];
+  const levels = ["easy", "medium", "hard"];
   const idx = levels.indexOf(current) ?? 0;
   const newIdx = Math.max(0, Math.min(2, idx + delta));
   return levels[newIdx];
@@ -169,9 +169,9 @@ function selectQuestions(allQuestions, count, easyRatio, hardRatio) {
  */
 function getAdaptiveXPReward(baseXP, config) {
   const difficultyMultiplier = {
-    beginner: 1,
-    intermediate: 1.3,
-    advanced: 1.6,
+    easy: 1,
+    medium: 1.3,
+    hard: 1.6,
   };
 
   const quantityMultiplier = config.questionCount >= 14 ? 1.5

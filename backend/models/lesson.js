@@ -52,8 +52,8 @@ const lessonSchema = new mongoose.Schema(
     },
     difficulty: {
       type: String,
-      enum: ["beginner", "intermediate", "advanced"],
-      default: "beginner",
+      enum: ["easy", "medium", "hard"],
+      default: "easy",
     },
 
     // ── Contenido teórico (opcional, mini-lectura antes de ejercicios) ──
