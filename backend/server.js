@@ -22,7 +22,13 @@ const app = express();
 const httpServer = http.createServer(app);
 
 // ── Middlewares globales ───────────────────────────────────────
-app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || "http://localhost:5173",
+    /https:\/\/sea-frontend.*\.vercel\.app$/
+  ],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(passport.initialize());
