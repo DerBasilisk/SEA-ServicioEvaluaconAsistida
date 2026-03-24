@@ -76,22 +76,22 @@ export default function Navbar() {
         {user && (
           <div className="flex items-center gap-4">
             <Link to="/league" className="text-indigo-400 hover:text-white transition text-sm"><img className="w-9"
-                src={`/src/assets/league.png`}
+                src={`/league.png`}
               /></Link>
             <Link to="/friends" className="text-indigo-400 hover:text-white transition text-sm"><img className="w-9"
-                src={`/src/assets/friends.png`}
+                src={`/friends.png`}
               /></Link>
 
             <div className="flex items-center gap-1 text-orange-400">
               <img className="w-9"
-                src={`/src/assets/streak.png`}
+                src={`/streak.png`}
               />
               <span className="font-bold text-sm">{user.streak?.current || 0}</span>
             </div>
 
             <div className="flex items-center gap-1 text-cyan-400">
               <img className="w-9"
-                src={`/src/assets/gems.png`}
+                src={`/gems.png`}
               />
               <span className="font-bold text-sm">{gems}</span>
             </div>
@@ -140,7 +140,7 @@ export default function Navbar() {
             </div>
             <div className="flex items-center gap-1 text-violet-400">
               <img className="w-9"
-                src={`/src/assets/xp.png`}
+                src={`/xp.png`}
               />
               <span className="font-bold text-sm">{user.xp || 0} XP</span>
             </div>

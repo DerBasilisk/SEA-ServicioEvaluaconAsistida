@@ -49,7 +49,7 @@ export default function League() {
         <div className="rounded-3xl p-6 mb-6 text-center relative overflow-hidden border"
           style={{ backgroundColor: leagueColor + "15", borderColor: leagueColor + "40" }}>
           <img
-            src={`/src/assets/league/league-tier ${LEAGUE_ORDER.indexOf(league) + 1}.png`}
+            src={`/league/league-tier ${LEAGUE_ORDER.indexOf(league) + 1}.png`}
             alt={leagueName}
             className="w-24 h-24 object-contain mx-auto mb-2 drop-shadow-lg"
           />
@@ -138,7 +138,7 @@ export default function League() {
             return (
               <div key={key} className="flex flex-col items-center gap-1 flex-1">
                 <img
-                  src={`/src/assets/league/league-tier ${i + 1}.png`}
+                  src={`/league/league-tier ${i + 1}.png`}
                   alt={config.name}
                   className={`w-10 h-10 object-contain transition-all ${
                     isCurrent ? "scale-125 drop-shadow-lg" : "opacity-40 grayscale"
