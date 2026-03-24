@@ -117,7 +117,7 @@ export default function Login() {
           {/* OAuth Buttons */}
           <div className="flex flex-col gap-3">
             
-            <a  href="http://localhost:3000/api/auth/google" className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-bold py-3 rounded-xl hover:bg-gray-100 transition-all shadow-md active:scale-[0.98]">
+            <a  href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`} className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-bold py-3 rounded-xl hover:bg-gray-100 transition-all shadow-md active:scale-[0.98]">
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
               Google
             </a>
