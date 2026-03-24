@@ -39,9 +39,5 @@
     "uuid": "^13.0.0",
     "winston": "^3.17.0",
     "zod": "^3.24.0"
-  },
-  "overrides": {
-    "node-domexception": "$node-domexception",
-    "socket.io-parser": "^4.2.4"
   }
 }
