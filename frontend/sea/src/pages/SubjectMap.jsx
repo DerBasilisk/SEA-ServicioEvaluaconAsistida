@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import api from "../api/axios";
+import useAuthStore from "../store/authStore"; // ← agregá este import
 
 const REQUIRED_COMPLETIONS = 4;
 
@@ -10,13 +11,16 @@ const STATUS_STYLES = {
   available:   { bg: "bg-violet-500",  border: "border-violet-400",  icon: "▶", text: "text-white" },
   in_progress: { bg: "bg-amber-500",   border: "border-amber-400",   icon: "…", text: "text-white" },
   locked:      { bg: "bg-indigo-800",  border: "border-indigo-700",  icon: "🔒", text: "text-indigo-500" },
+  no_hearts:   { bg: "bg-red-900",     border: "border-red-800",     icon: "💔", text: "text-red-600" },
 };
 
 export default function SubjectMap() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuthStore(); // ← agregá esto
   const [subject, setSubject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hasHearts = (user?.hearts?.current ?? 1) > 0; // ← agregá esto
 
   useEffect(() => {
     api.get(`/subjects/${slug}`)
@@ -49,12 +53,24 @@ export default function SubjectMap() {
           </div>
         </div>
 
+        {/* Banner sin corazones */}
+        {!hasHearts && (
+          <div className="bg-red-950 border border-red-800 rounded-2xl px-5 py-4 mb-6 flex items-center gap-3">
+            <span className="text-2xl">💔</span>
+            <div>
+              <p className="text-red-300 font-bold text-sm">Sin corazones</p>
+              <p className="text-red-400/70 text-xs">Esperá a que se recarguen o usá 50💎 desde el menú superior.</p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-8">
           {subject.units?.map((unit) => (
             <UnitSection
               key={unit._id}
               unit={unit}
               subjectColor={subject.color}
+              hasHearts={hasHearts} // ← pasá esto
               onLessonClick={(id) => navigate(`/lesson/${id}`)}
             />
           ))}
@@ -64,21 +80,31 @@ export default function SubjectMap() {
   );
 }
 
-function UnitSection({ unit, subjectColor, onLessonClick }) {
+function UnitSection({ unit, subjectColor, hasHearts, onLessonClick }) {
+  const [collapsed, setCollapsed] = useState(false); // ← agregá esto
+
   return (
     <div>
       <div
-        className="rounded-xl p-4 mb-4"
+        onClick={() => setCollapsed((c) => !c)} // ← hacerlo clickeable
+        className="rounded-xl p-4 mb-4 cursor-pointer hover:opacity-90 transition-opacity select-none"
         style={{ backgroundColor: subjectColor + "20", borderColor: subjectColor + "40", border: "1px solid" }}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{unit.icon || "📖"}</span>
-          <div>
-            <h2 className="text-white font-bold">{unit.name}</h2>
-            <p className="text-sm" style={{ color: subjectColor }}>
-              {unit.completedLessons}/{unit.totalLessons} completadas
-            </p>
+        <div className="flex items-center justify-between"> {/* ← agregá justify-between */}
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{unit.icon || "📖"}</span>
+            <div>
+              <h2 className="text-white font-bold">{unit.name}</h2>
+              <p className="text-sm" style={{ color: subjectColor }}>
+                {unit.completedLessons}/{unit.totalLessons} completadas
+              </p>
+            </div>
           </div>
+          {/* Indicador de colapso */}
+          <span className="text-indigo-400 text-sm transition-transform duration-200"
+            style={{ transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)", display: "inline-block" }}>
+            ▼
+          </span>
         </div>
         <div className="w-full bg-indigo-900 rounded-full h-2 mt-3">
           <div
@@ -88,33 +114,41 @@ function UnitSection({ unit, subjectColor, onLessonClick }) {
         </div>
       </div>
 
-      {/* Leyenda */}
-      <div className="flex items-center gap-2 mb-4 px-2">
-        <div className="flex gap-1">
-          {Array.from({ length: REQUIRED_COMPLETIONS }).map((_, i) => (
-            <div key={i} className="w-2 h-2 rounded-full bg-blue-500" />
-          ))}
-        </div>
-        <p className="text-indigo-500 text-xs">Cada lección requiere {REQUIRED_COMPLETIONS} completaciones para desbloquear la siguiente</p>
-      </div>
+      {/* Contenido colapsable */}
+      {!collapsed && (
+        <>
+          <div className="flex items-center gap-2 mb-4 px-2">
+            <div className="flex gap-1">
+              {Array.from({ length: REQUIRED_COMPLETIONS }).map((_, i) => (
+                <div key={i} className="w-2 h-2 rounded-full bg-blue-500" />
+              ))}
+            </div>
+            <p className="text-indigo-500 text-xs">Cada lección requiere {REQUIRED_COMPLETIONS} completaciones para desbloquear la siguiente</p>
+          </div>
 
-      <div className="flex flex-col items-center gap-4">
-        {unit.lessons?.map((lesson, i) => (
-          <LessonNode
-            key={lesson._id}
-            lesson={lesson}
-            index={i}
-            onClick={() => onLessonClick(lesson._id)}
-          />
-        ))}
-      </div>
+          <div className="flex flex-col items-center gap-4">
+            {unit.lessons?.map((lesson, i) => (
+              <LessonNode
+                key={lesson._id}
+                lesson={lesson}
+                index={i}
+                hasHearts={hasHearts}
+                onClick={() => onLessonClick(lesson._id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function LessonNode({ lesson, index, onClick }) {
-  const style = STATUS_STYLES[lesson.status] || STATUS_STYLES.locked;
-  const isLocked = lesson.status === "locked" && index !== 0;
+function LessonNode({ lesson, index, hasHearts, onClick }) {
+  const noHearts = !hasHearts && lesson.status !== "locked"; // bloqueado por corazones
+  const style = noHearts
+    ? STATUS_STYLES.no_hearts
+    : STATUS_STYLES[lesson.status] || STATUS_STYLES.locked;
+  const isLocked = (lesson.status === "locked" && index !== 0) || noHearts;
   const completions = lesson.completions || 0;
   const isFullyComplete = completions >= REQUIRED_COMPLETIONS;
 

@@ -89,7 +89,15 @@ export default function Lesson() {
 
   const handleContinue = useCallback(async () => {
     const nextIndex = currentIndex + 1;
-    if (nextIndex >= questions.length || hearts === 0) {
+    if (hearts === 0) {
+      // Sin corazones → terminar como fallida, no completada
+      await api.post(`/lessons/${id}/abandon`).catch(() => {});
+      setResult({ score: 0, xpEarned, newAchievements: [], failed: true });
+      await fetchMe();
+      setPhase("result");
+      return;
+    }
+    if (nextIndex >= questions.length) {
       await handleComplete();
       return;
     }
@@ -99,7 +107,7 @@ export default function Lesson() {
     setShowHint(false);
     setConceptOpen(true);
     setPhase("playing");
-  }, [hearts, currentIndex, questions, handleComplete]);
+  }, [hearts, currentIndex, questions, handleComplete, id, xpEarned, fetchMe]);
 
   const handleRefilled = useCallback(() => {
     setHearts(5);

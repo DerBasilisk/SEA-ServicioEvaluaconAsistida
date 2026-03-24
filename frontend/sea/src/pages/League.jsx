@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import Avatar from "../components/Avatar";
 import api from "../api/axios";
 
-const LEAGUE_ORDER = ["bronze","silver","gold","sapphire","emerald","diamond","master","champion"];
+const LEAGUE_ORDER = ["bronze","silver","gold","sapphire","emerald","diamond","master","champion","heroic"];
 const LEAGUE_CONFIG_MAP = {
   bronze:   { name: "Bronce",    icon: "🥉", color: "#cd7f32" },
   silver:   { name: "Plata",     icon: "🥈", color: "#c0c0c0" },
@@ -14,6 +14,7 @@ const LEAGUE_CONFIG_MAP = {
   diamond:  { name: "Diamante",  icon: "💎", color: "#b9f2ff" },
   master:   { name: "Maestro",   icon: "🔮", color: "#9b59b6" },
   champion: { name: "Campeón",   icon: "👑", color: "#f1c40f" },
+  heroic:   { name: "Heroico",   icon: "⚔️", color: "#ff4444" },
 };
 
 export default function League() {
@@ -47,7 +48,11 @@ export default function League() {
         {/* Header */}
         <div className="rounded-3xl p-6 mb-6 text-center relative overflow-hidden border"
           style={{ backgroundColor: leagueColor + "15", borderColor: leagueColor + "40" }}>
-          <div className="text-7xl mb-2">{leagueIcon}</div>
+          <img
+            src={`/src/assets/league/league-tier ${LEAGUE_ORDER.indexOf(league) + 1}.png`}
+            alt={leagueName}
+            className="w-24 h-24 object-contain mx-auto mb-2 drop-shadow-lg"
+          />
           <h1 className="text-white font-black text-3xl mb-1">Liga {leagueName}</h1>
           <p className="text-indigo-400 text-sm mb-4">Sala #{data.roomNumber} · {total} participantes</p>
           <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl border"
@@ -124,24 +129,34 @@ export default function League() {
         </div>
 
         {/* Mapa de ligas */}
-        <div className="mt-8 bg-indigo-900 border border-indigo-700 rounded-2xl p-5">
-          <h2 className="text-white font-bold mb-4">🗺️ Mapa de ligas</h2>
-          <div className="flex flex-col gap-2">
-            {LEAGUE_ORDER.slice().reverse().map((key) => {
-              const config = LEAGUE_CONFIG_MAP[key];
-              const isCurrent = key === league;
-              return (
-                <div key={key} className={`flex items-center gap-3 px-4 py-2 rounded-xl transition ${isCurrent ? "border-2" : "opacity-50"}`}
-                  style={isCurrent ? { borderColor: config.color + "80", backgroundColor: config.color + "10" } : {}}>
-                  <span className="text-xl">{config.icon}</span>
-                  <span className={`font-bold text-sm ${isCurrent ? "text-white" : "text-indigo-400"}`}>{config.name}</span>
-                  {isCurrent && <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: config.color + "30", color: config.color }}>Tu liga</span>}
-                </div>
-              );
-            })}
-          </div>
+      <div className="mt-8 bg-indigo-900 border border-indigo-700 rounded-2xl p-5">
+        <h2 className="text-white font-bold mb-4">🗺️ Mapa de ligas</h2>
+        <div className="flex items-end justify-between gap-1">
+          {LEAGUE_ORDER.map((key, i) => {
+            const config = LEAGUE_CONFIG_MAP[key];
+            const isCurrent = key === league;
+            return (
+              <div key={key} className="flex flex-col items-center gap-1 flex-1">
+                <img
+                  src={`/src/assets/league/league-tier ${i + 1}.png`}
+                  alt={config.name}
+                  className={`w-10 h-10 object-contain transition-all ${
+                    isCurrent ? "scale-125 drop-shadow-lg" : "opacity-40 grayscale"
+                  }`}
+                />
+                <span className={`text-[10px] font-bold text-center leading-tight ${
+                  isCurrent ? "text-white" : "text-indigo-600"
+                }`}>
+                  {config.name}
+                </span>
+                {isCurrent && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                )}
+              </div>
+            );
+          })}
         </div>
+      </div>
       </div>
     </div>
   );

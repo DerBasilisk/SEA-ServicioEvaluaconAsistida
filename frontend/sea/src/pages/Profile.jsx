@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Zap, Flame, Diamond, Heart, Trophy, Medal, Star, Users } from "lucide-react";
 import Navbar from "../components/Navbar";
-import UsernameInput from "../components/UsernameInput";
+import UsernameInput from "../components/Usernameinput";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
 import AvatarUpload from "../components/AvatarUpload";

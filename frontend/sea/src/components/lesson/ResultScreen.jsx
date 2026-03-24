@@ -1,7 +1,37 @@
 export default function ResultScreen({ result, lesson, onContinue, onRetry }) {
   if (!result) return null;
 
-  const { score = 0, xpEarned = 0, isPerfect, leveledUp, newLevel, newStreak, newAchievements = [] } = result;
+  const { score = 0, xpEarned = 0, isPerfect, leveledUp, newLevel, newStreak, newAchievements = [], failed } = result;
+
+  // Pantalla de fallo por corazones
+  if (failed) {
+    return (
+      <div className="min-h-screen bg-indigo-950 flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-md space-y-6 text-center">
+          <div className="text-7xl mb-4">💔</div>
+          <h1 className="text-4xl font-black text-red-400 mb-1">¡Sin corazones!</h1>
+          {lesson && <p className="text-indigo-400">{lesson.name}</p>}
+          <p className="text-indigo-300 text-sm">
+            Te quedaste sin vidas. Esperá a que se recarguen o usá gemas para continuar.
+          </p>
+          <div className="space-y-3 pt-2">
+            <button
+              onClick={onRetry}
+              className="w-full bg-red-500 hover:bg-red-400 text-white font-black py-4 rounded-xl transition active:scale-95 text-lg"
+            >
+              Intentar de nuevo
+            </button>
+            <button
+              onClick={onContinue}
+              className="w-full bg-indigo-800 hover:bg-indigo-700 border border-indigo-600 text-indigo-300 font-bold py-3 rounded-xl transition"
+            >
+              Volver
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const getScoreEmoji = () => {
     if (score === 100) return "🌟";
@@ -24,6 +54,7 @@ export default function ResultScreen({ result, lesson, onContinue, onRetry }) {
     return "text-indigo-400";
   };
 
+  
   return (
     <div className="min-h-screen bg-indigo-950 flex flex-col items-center justify-center px-4 py-8">
       <div className="w-full max-w-md space-y-6">

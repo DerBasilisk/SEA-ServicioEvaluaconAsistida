@@ -18,6 +18,7 @@ import PublicProfile from "./pages/PublicProfile";
 import Duel from "./pages/Duel";
 import DuelInviteToast from "./components/Duelinvitetoast";
 import League from "./pages/League";
+import Settings from "./pages/Settings";
 
 function App() {
   const { token, fetchMe } = useAuthStore();
@@ -38,6 +39,7 @@ function App() {
         <Route path="/league" element={<ProtectedRoute><League /></ProtectedRoute>} />
 
         {/* Protegidas */}
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/duel/:duelId" element={<ProtectedRoute><Duel /></ProtectedRoute>} />
         <Route path="/friends" element={<ProtectedRoute><Friends /></ProtectedRoute>} />
         <Route path="/profile/:username" element={<ProtectedRoute><PublicProfile /></ProtectedRoute>} />
