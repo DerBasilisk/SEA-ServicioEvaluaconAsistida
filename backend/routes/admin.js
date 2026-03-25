@@ -1,0 +1,43 @@
+const express = require("express");
+const router = express.Router();
+const { verificarToken } = require("../middlewares/auth.middleware");
+const { isAdmin } = require("../middlewares/admin.middleware");
+const ctrl = require("../controllers/admin");
+
+router.use(verificarToken, isAdmin);
+
+// Stats
+router.get("/stats", ctrl.getStats);
+
+// Usuarios
+router.get("/users", ctrl.getUsers);
+router.get("/users/:id/progress", ctrl.getUserProgress);
+router.put("/users/:id", ctrl.updateUser);
+router.put("/users/:id/ban", ctrl.banUser);
+router.delete("/users/:id", ctrl.deleteUser);
+
+// Materias
+router.get("/subjects", ctrl.getSubjects);
+router.post("/subjects", ctrl.createSubject);
+router.put("/subjects/:id", ctrl.updateSubject);
+router.delete("/subjects/:id", ctrl.deleteSubject);
+
+// Unidades
+router.get("/subjects/:subjectId/units", ctrl.getUnits);
+router.post("/subjects/:subjectId/units", ctrl.createUnit);
+router.put("/units/:id", ctrl.updateUnit);
+router.delete("/units/:id", ctrl.deleteUnit);
+
+// Lecciones
+router.get("/units/:unitId/lessons", ctrl.getLessons);
+router.post("/units/:unitId/lessons", ctrl.createLesson);
+router.put("/lessons/:id", ctrl.updateLesson);
+router.delete("/lessons/:id", ctrl.deleteLesson);
+
+// Preguntas
+router.get("/questions", ctrl.getQuestions);
+router.put("/questions/:id", ctrl.updateQuestion);
+router.put("/questions/:id/review", ctrl.reviewQuestion);
+router.delete("/questions/:id", ctrl.deleteQuestion);
+
+module.exports = router;

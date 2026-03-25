@@ -80,16 +80,17 @@ const reviewQuestion = async (req, res) => {
   }
 };
 
-// POST /api/questions/generate  (admin)
-// Genera preguntas con IA para una lección específica
+// POST /api/admin/questions/generate
 const generateWithAI = async (req, res) => {
   try {
     const { lessonId, count = 5, difficulty = "easy", allowedTypes } = req.body;
 
-    const lesson = await Lesson.findById(lessonId).populate({
-      path: "unit",
-      populate: { path: "subject" },
-    });
+    // Obtener la lección completa con su unidad y materia
+    const lesson = await Lesson.findById(lessonId)
+      .populate({
+        path: "unit",
+        populate: { path: "subject" }
+      });
 
     if (!lesson) {
       return res.status(404).json({ ok: false, message: "Lección no encontrada" });
@@ -104,22 +105,29 @@ const generateWithAI = async (req, res) => {
       lessonName: lesson.name,
       topicHint: lesson.aiTopicHint || lesson.name,
       difficulty,
-      subjectContext: subject.aiPromptContext,
-      count,
-      allowedTypes,
+      subjectContext: subject.aiPromptContext || "",
+      count: Number(count),
+      allowedTypes: allowedTypes || ["multiple_choice", "true_false", "fill_blank"]
     });
 
-    // Guardar como pendientes de revisión
-    const saved = await Question.insertMany(
-      generatedQuestions.map((q) => ({ ...q, lesson: lessonId }))
+    // Guardar las preguntas generadas
+    const savedQuestions = await Question.insertMany(
+      generatedQuestions.map(q => ({
+        ...q,
+        lesson: lessonId,
+        isReviewed: false,
+        isActive: false   // quedan inactivas hasta que el admin las revise
+      }))
     );
 
     res.status(201).json({
       ok: true,
-      message: `${saved.length} preguntas generadas. Deben ser revisadas antes de activarse.`,
-      data: saved,
+      message: `${savedQuestions.length} preguntas generadas correctamente para la lección "${lesson.name}". Deben ser revisadas antes de activarse.`,
+      data: savedQuestions
     });
+
   } catch (err) {
+    console.error("Error generando preguntas con IA:", err);
     res.status(500).json({ ok: false, message: err.message });
   }
 };

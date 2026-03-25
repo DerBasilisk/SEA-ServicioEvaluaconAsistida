@@ -1,26 +1,38 @@
+// frontend/sea/src/api/axios.js
 import axios from "axios";
+import useAuthStore from "../store/authStore";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
   headers: { "Content-Type": "application/json" },
 });
 
-// Inyectar token en cada request automáticamente
+// Inyectar token automáticamente en cada request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("sea_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
 
-// Redirigir al login si el token expiró
+// Manejo global de errores (especialmente 401)
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem("sea_token");
-      window.location.href = "/login";
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      // Token expirado o inválido
+      const { logout } = useAuthStore.getState();
+      
+      console.warn("Token expirado o inválido → cerrando sesión");
+      
+      logout();                    // Limpia Zustand y localStorage
+      window.location.href = "/login";   // Redirige de forma segura
     }
-    return Promise.reject(err);
+
+    return Promise.reject(error);
   }
 );
 

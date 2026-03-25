@@ -45,6 +45,11 @@ const userSchema = new mongoose.Schema(
       minlength: [6, "Mínimo 6 caracteres"],
       select: false,
     },
+    role: {
+      type: String,
+      enum: ["student", "admin"],
+      default: "student",
+    },
     league: {
       type: String,
       enum: ["bronze","silver","gold","sapphire","emerald","diamond","master","champion","heroic"],
