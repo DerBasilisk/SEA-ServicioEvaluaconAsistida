@@ -36,13 +36,21 @@ export default function UsersManagement() {
 
   // Acciones
   const handleBan = async (id, isActive) => {
-    if (!confirm(`¿${isActive ? "Desbanear" : "Banear"} a este usuario?`)) return;
+    // Invertimos el estado actual para la confirmación
+    const action = isActive ? "Banear" : "Desbanear";
+    if (!confirm(`¿${action} a este usuario?`)) return;
     
     try {
-      await api.put(`/admin/users/${id}/ban`);
+      // Enviamos el nuevo estado al backend
+      await api.put(`/admin/users/${id}/ban`, { 
+        isActive: !isActive 
+      });
+      
+      // Refrescamos la lista para ver el cambio reflejado
       fetchUsers();
     } catch (err) {
-      alert("Error al actualizar estado");
+      console.error(err);
+      alert("Error al actualizar estado: " + (err.response?.data?.message || "Error desconocido"));
     }
   };
 
@@ -170,8 +178,8 @@ export default function UsersManagement() {
                     onClick={() => handleBan(user._id, user.isActive)}
                     className={`p-3 rounded-2xl transition-colors ${
                       user.isActive 
-                        ? "hover:bg-red-500/10 text-red-400 hover:text-red-500" 
-                        : "hover:bg-emerald-500/10 text-emerald-400 hover:text-emerald-500"
+                        ? "hover:bg-red-500/10 text-emerald-400 hover:text-emerald-500" 
+                        : "hover:bg-emerald-500/10 text-red-400 hover:text-red-500"
                     }`}
                     title={user.isActive ? "Banear" : "Desbanear"}
                   >

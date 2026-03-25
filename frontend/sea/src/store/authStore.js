@@ -12,22 +12,54 @@ const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ loading: true, error: null });
     try {
-      const { data } = await api.post("/users/login", { email, password });
+      const res = await api.post("/users/login", { email, password });
+      console.log("Estructura que llega del server:", res.data);
+      const token = res.data.token; // El token está en la raíz de res.data
+      const user = res.data.data;
 
-      const { token, user } = data.data || data; // por si cambia la estructura
+      console.log("Token encontrado:", token);
+      console.log("Usuario encontrado:", user);
+
+      if (!token) {
+        throw new Error("No se recibió un token del servidor");
+      }
 
       localStorage.setItem("sea_token", token);
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
       set({ user, token, loading: false });
-      
-      // Redirección inteligente según rol
-      return { 
-        ok: true, 
-        isAdmin: user.role === "admin" 
-      };
+      return { ok: true, isAdmin: user?.role === "admin" };
+
     } catch (err) {
+      console.error("Error detallado en login:", err);
       const msg = err.response?.data?.message || "Error al iniciar sesión";
+      set({ error: msg, loading: false });
+      return { ok: false, message: msg };
+    }
+  },
+
+  // ==================== REGISTRO ====================
+  register: async (username, email, password) => {
+    set({ loading: true, error: null });
+    try {
+      // Ajusta la ruta "/users/register" según tu API real
+      const { data } = await api.post("/users/register", { 
+        username, 
+        email, 
+        password 
+      });
+
+      const { token, user } = data.data || data;
+
+      // Guardamos sesión inmediatamente tras el registro
+      localStorage.setItem("sea_token", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      set({ user, token, loading: false });
+
+      return { ok: true };
+    } catch (err) {
+      const msg = err.response?.data?.message || "Error al crear la cuenta";
       set({ error: msg, loading: false });
       return { ok: false, message: msg };
     }

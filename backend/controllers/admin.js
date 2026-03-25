@@ -56,13 +56,18 @@ const updateUser = async (req, res) => {
 
 const banUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    ).select("-password");
-    if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
-    res.json({ ok: true, data: user });
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+    }
+    user.isActive = !user.isActive;
+    
+    await user.save();
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.json({ ok: true, data: userResponse });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

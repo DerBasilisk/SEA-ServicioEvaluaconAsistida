@@ -8,7 +8,7 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "seed": "node seeds.js",
-    "git": "git pull && git add -A && git commit -m \"${MSG:-quick fix}\" && git push"
+    "git": "git pull && git add -A && git commit -m \"quick fix\" && git push"
   },
   "keywords": [],
   "author": "",
