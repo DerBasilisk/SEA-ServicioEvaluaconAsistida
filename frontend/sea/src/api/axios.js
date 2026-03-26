@@ -22,14 +22,11 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
 
-    if (status === 401) {
-      // Token expirado o inválido
+    // Solo redirigir si NO estamos ya en el login
+    if (status === 401 && !isLoginPath) {
       const { logout } = useAuthStore.getState();
-      
-      console.warn("Token expirado o inválido → cerrando sesión");
-      
-      logout();                    // Limpia Zustand y localStorage
-      window.location.href = "/login";   // Redirige de forma segura
+      logout();
+      window.location.href = "/login";
     }
 
     return Promise.reject(error);

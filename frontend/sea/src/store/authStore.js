@@ -50,10 +50,12 @@ const useAuthStore = create((set, get) => ({
       return { ok: true, isAdmin: user?.role === "admin" };
 
     } catch (err) {
-      console.error("Error detallado en login:", err);
-      const msg = err.response?.data?.message || "Error al iniciar sesión";
-      set({ error: msg, loading: false });
-      return { ok: false, message: msg };
+      set({ 
+      loading: false, // 👈 Importante: Apagamos el loading para que el botón se reactive
+      error: err.response?.data?.message || "Error al iniciar sesión",
+      user: null 
+      });
+      throw err;
     }
   },
 

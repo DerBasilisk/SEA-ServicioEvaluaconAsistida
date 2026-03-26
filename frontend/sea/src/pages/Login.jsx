@@ -1,14 +1,34 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, LogIn } from "lucide-react"; // Librería recomendada
 import useAuthStore from "../store/authStore";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loading, error, clearError } = useAuthStore();
+  const location = useLocation();
+  const { login, loading, error, clearError, fetchMe } = useAuthStore();
+  
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get("token");
+
+    if (token) {
+      // Guardamos el token manualmente
+      localStorage.setItem("sea_token", token);
+      // Actualizamos los datos del usuario
+      fetchMe().then(() => {
+        navigate("/admin"); // O a la ruta que prefieras
+      });
+    }
+  }, [location, navigate, fetchMe]);
   
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+
+  const handleGoogleLogin = () => {
+    // No uses api.get(). Para OAuth con Passport, debes redirigir al navegador:
+    window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`;
+  };
 
   const handleChange = (e) => {
     if (error) clearError();
