@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const UserProgress = require("../models/userProgress");
 const { Subject, Unit, Lesson, Question } = require("../models");
+const mongoose = require("mongoose");
 
 // ── USUARIOS ──────────────────────────────────────────────────
 
@@ -121,9 +122,12 @@ const deleteSubject = async (req, res) => {
   }
 };
 
+
+// GET /api/admin/subjects/:subjectId/units (anidada)
 const getUnits = async (req, res) => {
   try {
-    const units = await Unit.find({ subject: req.params.subjectId }).sort({ order: 1 });
+    const units = await Unit.find({ subject: req.params.subjectId })
+      .sort({ order: 1 });
     res.json({ ok: true, data: units });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
@@ -157,9 +161,14 @@ const deleteUnit = async (req, res) => {
   }
 };
 
+// ==================== LECCIONES ====================
+
+
+// GET /api/admin/units/:unitId/lessons (anidada)
 const getLessons = async (req, res) => {
   try {
-    const lessons = await Lesson.find({ unit: req.params.unitId }).sort({ order: 1 });
+    const lessons = await Lesson.find({ unit: req.params.unitId })
+      .sort({ order: 1 });
     res.json({ ok: true, data: lessons });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
@@ -197,20 +206,76 @@ const deleteLesson = async (req, res) => {
 
 const getQuestions = async (req, res) => {
   try {
-    const { lessonId, reviewed, page = 1, limit = 20 } = req.query;
+    const { 
+      subjectId, 
+      unitId, 
+      lessonId, 
+      reviewed, 
+      search, 
+      page = 1, 
+      limit = 15 
+    } = req.query;
+
     const query = {};
-    if (lessonId) query.lesson = lessonId;
-    if (reviewed !== undefined) query.isReviewed = reviewed === "true";
 
-    const total = await Question.countDocuments(query);
-    const questions = await Question.find(query)
-      .populate("lesson", "name")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(Number(limit));
+    // 1. Filtrado por Jerarquía (Materia -> Unidad -> Lección)
+    if (lessonId) {
+      // Caso más específico: ya tenemos la lección
+      query.lesson = lessonId;
+    } else if (unitId) {
+      // Caso intermedio: buscar todas las lecciones de esta unidad
+      const Lesson = mongoose.model("Lesson");
+      const lessons = await Lesson.find({ unit: unitId }).select("_id");
+      query.lesson = { $in: lessons.map(l => l._id) };
+    } else if (subjectId) {
+      // Caso general: buscar unidades -> luego sus lecciones
+      const Unit = mongoose.model("Unit");
+      const Lesson = mongoose.model("Lesson");
+      
+      const units = await Unit.find({ subject: subjectId }).select("_id");
+      const unitIds = units.map(u => u._id);
+      
+      const lessons = await Lesson.find({ unit: { $in: unitIds } }).select("_id");
+      query.lesson = { $in: lessons.map(l => l._id) };
+    }
 
-    res.json({ ok: true, data: { questions, total, page: Number(page), pages: Math.ceil(total / limit) } });
+    // 2. Filtro por estado de revisión
+    if (reviewed !== undefined && reviewed !== "all") {
+      query.isReviewed = reviewed === "true";
+    }
+
+    // 3. Filtro por búsqueda de texto (en el prompt/enunciado)
+    if (search) {
+      query.prompt = { $regex: search, $options: "i" }; // "i" para insensible a mayúsculas
+    }
+
+    // 4. Ejecución de la consulta con paginación
+    const skip = (Number(page) - 1) * Number(limit);
+    
+    const [questions, total] = await Promise.all([
+      Question.find(query)
+        .populate({
+          path: "lesson",
+          select: "name",
+          populate: { path: "unit", select: "name" } // Opcional: ver a qué unidad pertenece en la tabla
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Question.countDocuments(query)
+    ]);
+
+    res.json({ 
+      ok: true, 
+      data: { 
+        questions, 
+        total, 
+        page: Number(page), 
+        pages: Math.ceil(total / Number(limit)) 
+      } 
+    });
   } catch (err) {
+    console.error("Error en getQuestions:", err);
     res.status(500).json({ ok: false, message: err.message });
   }
 };
@@ -264,11 +329,63 @@ const getStats = async (req, res) => {
   }
 };
 
+// POST /api/admin/questions - Crear pregunta manual
+const createQuestion = async (req, res) => {
+  try {
+    const question = await Question.create(req.body);
+    res.status(201).json({ ok: true, data: question });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+};
+
+// GET /api/admin/units - Todas las unidades
+const getAllUnits = async (req, res) => {
+  try {
+    const units = await Unit.find()
+      .populate("subject", "name icon color")
+      .sort({ order: 1 });
+    res.json({ ok: true, data: units });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+// GET /api/admin/lessons - Todas las lecciones
+const getAllLessons = async (req, res) => {
+  try {
+    const lessons = await Lesson.find()
+      .populate("unit", "name")
+      .sort({ order: 1 });
+    res.json({ ok: true, data: lessons });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
 module.exports = {
   getUsers, getUserProgress, updateUser, banUser, deleteUser,
   getSubjects, createSubject, updateSubject, deleteSubject,
-  getUnits, createUnit, updateUnit, deleteUnit,
-  getLessons, createLesson, updateLesson, deleteLesson,
-  getQuestions, updateQuestion, reviewQuestion, deleteQuestion,
+  
+  // Unidades
+  getAllUnits,      // ← Importante
+  getUnits,
+  createUnit,
+  updateUnit,
+  deleteUnit,
+
+  // Lecciones
+  getAllLessons,    // ← Importante
+  getLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+
+  // Preguntas
+  getQuestions, 
+  updateQuestion, 
+  reviewQuestion, 
+  deleteQuestion,
+
   getStats,
 };

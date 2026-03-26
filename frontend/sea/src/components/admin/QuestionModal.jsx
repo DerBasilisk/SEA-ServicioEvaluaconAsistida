@@ -254,6 +254,69 @@ export default function QuestionModal({ isOpen, onClose, question, onSave }) {
               </div>
             )}
 
+            {/* Relacionar Columnas */}
+            {form.type === "match_pairs" && (
+              <div className="space-y-3">
+                {form.pairs.map((pair, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <input 
+                      type="text" 
+                      placeholder="Lado A"
+                      value={pair.left}
+                      onChange={(e) => {
+                        const newPairs = [...form.pairs];
+                        newPairs[idx].left = e.target.value;
+                        setForm({...form, pairs: newPairs});
+                      }}
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white"
+                    />
+                    <span className="text-gray-600">→</span>
+                    <input 
+                      type="text" 
+                      placeholder="Lado B"
+                      value={pair.right}
+                      onChange={(e) => {
+                        const newPairs = [...form.pairs];
+                        newPairs[idx].right = e.target.value;
+                        setForm({...form, pairs: newPairs});
+                      }}
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white"
+                    />
+                    <button type="button" onClick={() => removeArrayItem("pairs", idx)} className="text-red-500">
+                      <Trash2 size={16}/>
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setForm({...form, pairs: [...form.pairs, {left: "", right: ""}]})} className="text-xs text-violet-400 flex items-center gap-1">
+                  <Plus size={14}/> Añadir par
+                </button>
+              </div>
+            )}
+
+            {/* Ordenar Elementos */}
+            {form.type === "order_items" && (
+              <div className="space-y-3">
+                <p className="text-[10px] text-gray-500 mb-2 italic uppercase">Orden correcto de arriba hacia abajo</p>
+                {form.items.map((item, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <span className="text-gray-600 font-mono text-xs w-4">{idx + 1}.</span>
+                    <input 
+                      type="text"
+                      value={item}
+                      onChange={(e) => handleArrayChange("items", idx, e.target.value)}
+                      className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-2 text-sm text-white"
+                    />
+                    <button type="button" onClick={() => removeArrayItem("items", idx)} className="text-red-500">
+                      <Trash2 size={16}/>
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => addArrayItem("items")} className="text-xs text-violet-400 flex items-center gap-1">
+                  <Plus size={14}/> Añadir elemento
+                </button>
+              </div>
+            )}
+
             {/* Puedes seguir agregando los otros tipos más adelante */}
           </div>
 

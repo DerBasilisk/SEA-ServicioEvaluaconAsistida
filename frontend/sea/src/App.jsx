@@ -3,11 +3,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
 
-// Componentes de protección
+// Protecciones
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 
-// Layout del Admin
+// Layout Admin
 import AdminLayout from "./components/admin/AdminLayout";
 
 // Pages normales
@@ -31,6 +31,8 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
 import QuestionsManagement from "./pages/admin/QuestionsManagement";
 import SubjectsManagement from "./pages/admin/SubjectsManagement";
+import UnitsManagement from "./pages/admin/UnitsManagement";        // ← Corregido (plural)
+import LessonsManagement from "./pages/admin/LessonsManagement";
 
 import DuelInviteToast from "./components/Duelinvitetoast";
 
@@ -46,14 +48,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ====================== RUTAS PÚBLICAS ====================== */}
+        {/* Rutas Públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* ====================== RUTAS PROTEGIDAS (Usuarios normales) ====================== */}
+        {/* Rutas Protegidas para usuarios normales */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/subject/:slug" element={<ProtectedRoute><SubjectMap /></ProtectedRoute>} />
         <Route path="/lesson/:id" element={<ProtectedRoute><Lesson /></ProtectedRoute>} />
@@ -64,7 +66,7 @@ function App() {
         <Route path="/league" element={<ProtectedRoute><League /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
-        {/* ====================== PANEL ADMINISTRATIVO ====================== */}
+        {/* ==================== PANEL ADMINISTRATIVO ==================== */}
         <Route 
           path="/admin" 
           element={
@@ -73,18 +75,18 @@ function App() {
             </AdminProtectedRoute>
           }
         >
-          {/* Rutas hijas del Admin */}
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<UsersManagement />} />
           <Route path="questions" element={<QuestionsManagement />} />
           <Route path="subjects" element={<SubjectsManagement />} />
+          <Route path="units" element={<UnitsManagement />} />        {/* ← Corregido */}
+          <Route path="lessons" element={<LessonsManagement />} />    {/* ← Corregido */}
         </Route>
 
-        {/* ====================== FALLBACK ====================== */}
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Toast global */}
       <DuelInviteToast />
     </BrowserRouter>
   );

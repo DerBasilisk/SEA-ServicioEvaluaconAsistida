@@ -63,6 +63,10 @@ const questionSchema = new mongoose.Schema(
 
     // ── Respuestas según tipo ─────────────────────────────────
 
+    // Opcional en questionSchema
+    unit: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit' },
+    subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
+
     // multiple_choice
     options: [optionSchema],
 

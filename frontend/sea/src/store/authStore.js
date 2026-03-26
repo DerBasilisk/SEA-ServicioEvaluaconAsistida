@@ -5,8 +5,27 @@ import api from "../api/axios";
 const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem("sea_token") || null,
-  loading: false,
+  loading: true, // 👈 CRUCIAL: Empezar en true
   error: null,
+
+  fetchMe: async () => {
+    const token = localStorage.getItem("sea_token");
+    
+    // Si ni siquiera hay token, no perdemos tiempo
+    if (!token) {
+      set({ user: null, loading: false });
+      return;
+    }
+
+    try {
+      // No seteamos loading aquí porque ya empezó en true
+      const { data } = await api.get("/users/me");
+      set({ user: data.data || data, loading: false });
+    } catch (err) {
+      localStorage.removeItem("sea_token");
+      set({ user: null, token: null, loading: false });
+    }
+  },
 
   // ==================== LOGIN NORMAL ====================
   login: async (email, password) => {
