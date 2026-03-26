@@ -19,6 +19,7 @@ export default function QuestionsManagement() {
   const [selUnit, setSelUnit] = useState("");
   const [selLesson, setSelLesson] = useState("");
   
+  
   // Paginación
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -93,6 +94,42 @@ export default function QuestionsManagement() {
     if (!confirm("¿Eliminar pregunta?")) return;
     await api.delete(`/admin/questions/${id}`);
     fetchQuestions();
+  };
+
+  // Dentro de QuestionsManagement.jsx
+  const handleSaveQuestion = async (payload) => {
+    try {
+      // 1. Identificamos si es edición o creación
+      if (editingQuestion && editingQuestion._id) {
+        console.log("Editando pregunta:", editingQuestion._id);
+        
+        // Enviamos el PUT al backend
+        await api.put(`/admin/questions/${editingQuestion._id}`, payload);
+      } else {
+        console.log("Creando nueva pregunta");
+        
+        // Enviamos el POST al backend
+        // Nos aseguramos de incluir los IDs de los filtros actuales si no están en el payload
+        await api.post("/admin/questions", {
+          ...payload,
+          subjectId: selSubject,
+          unitId: selUnit,
+          lessonId: selLesson
+        });
+      }
+
+      // 2. Si la API respondió con éxito (no saltó al catch):
+      setShowModal(false);     // Cerramos modal
+      setEditingQuestion(null); // Limpiamos selección
+      
+      // 3. AHORA SÍ refrescamos la lista (con await para seguridad)
+      await fetchQuestions(); 
+      
+      alert("¡Pregunta guardada con éxito!");
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      alert(err.response?.data?.message || "No se pudo guardar la pregunta");
+    }
   };
 
   return (
@@ -170,28 +207,22 @@ export default function QuestionsManagement() {
       </div>
 
       {/* Tabla de Resultados (Misma estructura que tenías, pero con loading state) */}
-      {loading ? (
-        <div className="py-20 text-center text-gray-500 animate-pulse">Cargando preguntas filtradas...</div>
-      ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
-           <table className="w-full text-left">
-              {/* Tabla de Resultados */}
-      {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center bg-gray-900/50 border border-gray-800 rounded-3xl">
-          <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-gray-500 animate-pulse">Cargando preguntas filtradas...</p>
-        </div>
-      ) : (
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
+      <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-500">Cargando preguntas...</p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gray-800 bg-gray-800/50">
-                  <th className="p-6 text-gray-400 font-medium text-sm uppercase tracking-wider">Pregunta</th>
-                  <th className="p-6 text-gray-400 font-medium text-sm uppercase tracking-wider">Tipo / Dificultad</th>
-                  <th className="p-6 text-gray-400 font-medium text-sm uppercase tracking-wider">Ubicación</th>
-                  <th className="p-6 text-center text-gray-400 font-medium text-sm uppercase tracking-wider">Estado</th>
-                  <th className="p-6 text-right text-gray-400 font-medium text-sm uppercase tracking-wider">Acciones</th>
+                  <th className="p-6 text-gray-400 font-medium text-sm uppercase">Pregunta</th>
+                  <th className="p-6 text-gray-400 font-medium text-sm uppercase">Tipo</th>
+                  <th className="p-6 text-gray-400 font-medium text-sm uppercase">Ubicación</th>
+                  <th className="p-6 text-center text-gray-400 font-medium text-sm uppercase">Estado</th>
+                  <th className="p-6 text-right text-gray-400 font-medium text-sm uppercase">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
@@ -279,12 +310,8 @@ export default function QuestionsManagement() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-           </table>
-           {questions.length === 0 && <div className="p-20 text-center text-gray-500">No se encontraron preguntas con estos filtros.</div>}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Paginación */}
       <div className="flex justify-center gap-4 items-center">
@@ -298,7 +325,7 @@ export default function QuestionsManagement() {
           isOpen={showModal} 
           onClose={() => { setShowModal(false); setEditingQuestion(null); }}
           question={editingQuestion}
-          onSave={fetchQuestions}
+          onSave={handleSaveQuestion}
           // Pasar IDs actuales para facilitar la creación
           initialData={{ lessonId: selLesson, unitId: selUnit }}
         />
