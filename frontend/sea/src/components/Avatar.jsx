@@ -1,7 +1,3 @@
-/**
- * Componente Avatar reutilizable con fallback a iniciales.
- * Usar este en lugar de divs manuales en toda la app.
- */
 export default function Avatar({ src, name, size = "md", className = "" }) {
   const sizes = {
     xs:  "w-7 h-7 text-xs",
@@ -13,9 +9,10 @@ export default function Avatar({ src, name, size = "md", className = "" }) {
   };
 
   const initial = name?.trim()?.[0]?.toUpperCase() || "?";
+  const shape = className.includes("rounded") ? "" : "rounded-2xl"; // ← usa la del className si viene, si no usa cuadrado
 
   return (
-    <div className={`${sizes[size]} rounded-full overflow-hidden flex-shrink-0 ${className}`}>
+    <div className={`${sizes[size]} ${shape} overflow-hidden flex-shrink-0 ${className}`}>
       {src ? (
         <img
           src={src}

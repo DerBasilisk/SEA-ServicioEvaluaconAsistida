@@ -85,18 +85,6 @@ export default function AdminSidebar() {
         <p className="px-5 text-xs uppercase tracking-widest text-gray-500 mb-3 mt-6">Contenido</p>
 
         <NavLink
-          to="/admin/questions"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-5 py-4 rounded-2xl transition-all ${
-              isActive ? "bg-violet-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
-            }`
-          }
-        >
-          <ListChecks size={22} />
-          <span className="font-medium">Preguntas</span>
-        </NavLink>
-
-        <NavLink
           to="/admin/subjects"
           className={({ isActive }) =>
             `flex items-center gap-3 px-5 py-4 rounded-2xl transition-all ${
@@ -131,6 +119,20 @@ export default function AdminSidebar() {
           <BookText size={22} />
           <span className="font-medium">Lecciones</span>
         </NavLink>
+
+        
+        <NavLink
+          to="/admin/questions"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-5 py-4 rounded-2xl transition-all ${
+              isActive ? "bg-violet-600 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
+            }`
+          }
+        >
+          <ListChecks size={22} />
+          <span className="font-medium">Preguntas</span>
+        </NavLink>
+        
       </nav>
 
       {/* Footer */}

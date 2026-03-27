@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
+import toast, { Toaster } from "react-hot-toast"; // <-- Importamos Toast
+import { ShieldAlert, Zap, Ghost, Trophy, X, Swords } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
 
@@ -12,25 +14,19 @@ import MatchPairs from "../components/lesson/MatchPairs";
 import SentenceBuilder from "../components/lesson/Sentencebuilder";
 
 const QUESTION_COMPONENTS = {
-  multiple_choice: MultipleChoice, true_false: TrueFalse,
-  fill_blank: FillBlank, order_items: OrderItems,
-  match_pairs: MatchPairs, sentence_builder: SentenceBuilder,
+  multiple_choice: MultipleChoice,
+  true_false: TrueFalse,
+  fill_blank: FillBlank,
+  order_items: OrderItems,
+  match_pairs: MatchPairs,
+  sentence_builder: SentenceBuilder,
 };
 
 const MODIFIERS = [
-  { id: "extra_questions", icon: "➕", label: "Preguntas extra", description: "+3 preguntas al oponente" },
-  { id: "reduced_time",    icon: "⏱️", label: "Tiempo reducido", description: "El oponente tiene 10s"   },
-  { id: "blackout",        icon: "🌑", label: "Pantalla oscura",  description: "3s de pantalla negra"    },
+  { id: "extra_questions", icon: "➕", label: "Extra", description: "+3 preguntas al oponente" },
+  { id: "reduced_time",    icon: "⏱️", label: "Tiempo", description: "El oponente tiene 10s"   },
+  { id: "blackout",        icon: "🌑", label: "Oscuridad",  description: "Ciega al oponente"    },
 ];
-
-function formatTime(ms) {
-  if (!ms) return "—";
-  const totalSeconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  if (minutes === 0) return `${seconds}s`;
-  return `${minutes}m ${seconds}s`;
-}
 
 export default function Duel() {
   const { duelId } = useParams();
@@ -38,7 +34,8 @@ export default function Duel() {
   const { user, token } = useAuthStore();
   const socketRef = useRef(null);
 
-  const [phase, setPhase] = useState("connecting"); // connecting | playing | feedback | result
+  // Estados... (se mantienen los tuyos)
+  const [phase, setPhase] = useState("connecting");
   const [questions, setQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [feedback, setFeedback] = useState(null);
@@ -58,68 +55,81 @@ export default function Duel() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("[Duel] Socket conectado, uniendo al duelo:", duelId);
+      console.log("[Duel] Socket conectado, emitiendo join:", duelId);
+      // Pequeño delay para asegurar que el middleware de auth procesó el socket
       setTimeout(() => {
         socket.emit("duel:join", { duelId });
-      }, 500);
-    });
-
-    socket.on("duel:state", (duel) => {
-      console.log("[Duel] Estado recibido:", duel);
-      if (duel.questions) {
-        setQuestions(duel.questions);
-        const oppId = Object.keys(duel.players).find((id) => id !== user?._id);
-        if (oppId) setOpponentId(oppId);
-        setPhase("playing");
-      }
+      }, 100);
     });
 
     socket.on("duel:start", ({ questions: qs, opponentId: oppId }) => {
+      console.log("[Duel] duel:start recibido:", data);
+      toast.success("¡Duelo Iniciado! Prepárate.", { icon: '⚔️' });
       setQuestions(qs);
       setOpponentId(oppId);
       setPhase("playing");
     });
 
-    socket.on("duel:answer_result", (data) => {
-      if (data.isCorrect) { setMyScore((s) => s + 2); setMyCorrect((c) => c + 1); }
-      setFeedback(data);
-      setPhase("feedback");
-    });
-
-    socket.on("duel:opponent_progress", (data) => {
-      setOpponentProgress(data);
+    socket.on("duel:state", (duel) => {
+      console.log("[Duel] duel:state recibido:", duel);
+      if (!duel || !duel.questions) return;
+      setQuestions(duel.questions);
+      // Encontrar el opponentId
+      const oppId = Object.keys(duel.players).find((id) => id !== user?._id);
+      setOpponentId(oppId);
+      // Restaurar progreso propio si reconectó
+      const me = duel.players[user?._id];
+      if (me) {
+        setCurrentIndex(me.currentIndex);
+        setMyScore(me.score);
+        setMyCorrect(me.correct);
+      }
+      const opp = duel.players[oppId];
+      if (opp) setOpponentProgress({ currentIndex: opp.currentIndex, score: opp.score, correct: opp.correct });
+      setPhase("playing");
     });
 
     socket.on("duel:modifier_received", ({ modifier }) => {
+      // Notificación de ataque recibido
+      toast.error(`¡ATAQUE! El oponente usó: ${modifier.label}`, {
+        duration: 4000,
+        icon: '⚠️',
+        style: { background: '#7f1d1d', color: '#fca5a5', border: '1px solid #ef4444' }
+      });
+
       if (modifier.id === "blackout") {
         setBlackout(true);
         setTimeout(() => setBlackout(false), 3000);
       }
     });
 
-    socket.on("duel:finished", (data) => {
-      console.log("[Duel] Finished recibido:", data);
-      setResult(data);
-      setPhase("result");
-    });
-
-    socket.on("duel:opponent_progress", (data) => {
-      console.log("[Duel] Progreso oponente:", data);
-      setOpponentProgress(data);
-    });
-
     socket.on("duel:opponent_abandoned", () => {
+      toast("El oponente se ha retirado de la batalla.", { icon: '🏳️' });
       setResult({ abandoned: true });
       setPhase("result");
     });
 
     socket.on("duel:error", ({ message }) => {
-      alert(message);
+      toast.error(message);
       navigate("/friends");
     });
 
     return () => socket.disconnect();
   }, [duelId, token]);
+
+  const handleUseModifier = (modifierId) => {
+    if (!opponentId || modifiersUsed.includes(modifierId)) return;
+    
+    socketRef.current?.emit("duel:use_modifier", { duelId, modifierId, targetId: opponentId });
+    setModifiersUsed((m) => [...m, modifierId]);
+    
+    // Toast de confirmación de ataque
+    const mod = MODIFIERS.find(m => m.id === modifierId);
+    toast(`Enviando ${mod.label}...`, {
+      icon: '🚀',
+      style: { background: '#1e3a8a', color: '#bfdbfe' }
+    });
+  };
 
   const handleAnswer = useCallback((answer) => {
     const question = questions[currentIndex];
@@ -127,176 +137,147 @@ export default function Duel() {
       duelId,
       questionId: question._id,
       answer,
-      timeSpent: 0,
+    });
+
+    socketRef.current?.once("duel:answer_result", (data) => {
+      if (data.isCorrect) {
+        setMyScore((s) => s + 2);
+        setMyCorrect((c) => c + 1);
+      }
+      setFeedback(data);
+      setPhase("feedback");
+    });
+
+    socketRef.current?.once("duel:finished", (data) => {
+      setResult(data);
+      setPhase("result");
+    });
+
+    socketRef.current?.once("duel:opponent_progress", (data) => {
+      setOpponentProgress(data);
     });
   }, [duelId, currentIndex, questions]);
 
   const handleContinue = useCallback(() => {
-    const next = currentIndex + 1;
-    if (next >= questions.length) return; // esperar resultado del servidor
-    setCurrentIndex(next);
     setFeedback(null);
+    setCurrentIndex((i) => i + 1);
     setPhase("playing");
-  }, [currentIndex, questions]);
+  }, []);
 
-  const handleUseModifier = (modifierId) => {
-    if (!opponentId || modifiersUsed.includes(modifierId)) return;
-    socketRef.current?.emit("duel:use_modifier", { duelId, modifierId, targetId: opponentId });
-    setModifiersUsed((m) => [...m, modifierId]);
-  };
-
-  const handleAbandon = () => {
-    socketRef.current?.emit("duel:abandon", { duelId });
-    navigate("/friends");
-  };
-
-  if (phase === "connecting") return <LoadingScreen text="Conectando al duelo..." />;
-
-  if (phase === "result") return (
-    <ResultScreen result={result} userId={user?._id} myScore={myScore} myCorrect={myCorrect}
-      total={questions.length} opponentProgress={opponentProgress} onBack={() => navigate("/friends")} />
-  );
+  if (phase === "connecting") return <LoadingScreen text="Estableciendo conexión segura..." />;
+  if (phase === "result") return <ResultScreen result={result} userId={user?._id} total={questions.length} onBack={() => navigate("/friends")} />;
 
   const question = questions[currentIndex];
   const QuestionComponent = QUESTION_COMPONENTS[question?.type];
 
   return (
-    <div className="min-h-screen bg-indigo-950 flex flex-col relative">
-      {/* Blackout */}
+    <div className="min-h-screen bg-[#0F172A] flex flex-col relative overflow-hidden">
+      <Toaster position="top-right" reverseOrder={false} />
+      
+      {/* Efecto de Blackout Táctico */}
       {blackout && (
-        <div className="absolute inset-0 bg-black z-50 flex items-center justify-center">
-          <p className="text-white text-2xl font-black animate-pulse">🌑 Pantalla oscura</p>
+        <div className="absolute inset-0 bg-black z-[100] flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <Ghost size={80} className="text-red-500 animate-bounce mb-4" />
+          <p className="text-red-500 text-xl font-black tracking-tighter uppercase italic">Sistema Cegado</p>
         </div>
       )}
 
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-indigo-800 flex items-center gap-3">
-        <button onClick={handleAbandon} className="text-indigo-400 hover:text-white text-xl font-bold">✕</button>
+      {/* Header Estilo SEA */}
+      <div className="px-6 py-4 border-b border-white/5 bg-white/5 backdrop-blur-md flex items-center gap-6">
+        <button onClick={() => navigate("/friends")} className="text-slate-500 hover:text-white transition-colors">
+          <X size={24} />
+        </button>
 
-        {/* Mi progreso */}
-        <div className="flex-1">
-          <div className="flex justify-between text-xs text-indigo-400 mb-1">
-            <span>Tú: {myCorrect} ✓</span>
-            <span>Oponente: {opponentProgress.correct} ✓</span>
+        <div className="flex-1 space-y-2">
+          <div className="flex justify-between items-end">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Tu Progreso</span>
+              <span className="text-white font-black italic text-lg">{myCorrect} <small className="text-[10px] opacity-50">ACERTOS</small></span>
+            </div>
+            <div className="flex flex-col items-end text-right">
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">Rival</span>
+              <span className="text-white font-black italic text-lg">{opponentProgress.correct} <small className="text-[10px] opacity-50">ACERTOS</small></span>
+            </div>
           </div>
-          <div className="w-full bg-indigo-800 rounded-full h-2 relative">
-            {/* Mi barra */}
-            <div className="bg-violet-500 h-2 rounded-full transition-all absolute"
-              style={{ width: `${(currentIndex / questions.length) * 100}%` }} />
-            {/* Barra oponente */}
-            <div className="bg-red-400 h-2 rounded-full transition-all absolute opacity-60"
-              style={{ width: `${(opponentProgress.currentIndex / questions.length) * 100}%` }} />
+          
+          {/* Barra de Progreso Dual */}
+          <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
+            <div 
+               className="absolute h-full bg-blue-500 transition-all duration-500 shadow-[0_0_10px_#3b82f6]" 
+               style={{ width: `${(currentIndex / questions.length) * 100}%` }} 
+            />
+            <div 
+               className="absolute h-full bg-rose-500 opacity-30 transition-all duration-700" 
+               style={{ width: `${(opponentProgress.currentIndex / questions.length) * 100}%` }} 
+            />
           </div>
         </div>
-
-        <span className="text-white text-sm font-bold">{currentIndex + 1}/{questions.length}</span>
       </div>
 
-      {/* Modificadores */}
-      <div className="flex gap-2 px-4 py-2 border-b border-indigo-900">
+      {/* Modificadores (Chips de Acción) */}
+      <div className="flex gap-3 px-6 py-3 bg-black/20 border-b border-white/5 overflow-x-auto no-scrollbar">
         {MODIFIERS.map((m) => (
           <button
             key={m.id}
             onClick={() => handleUseModifier(m.id)}
             disabled={modifiersUsed.includes(m.id)}
-            title={m.description}
-            className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold transition ${
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
               modifiersUsed.includes(m.id)
-                ? "bg-indigo-900 text-indigo-600 cursor-not-allowed"
-                : "bg-red-900 border border-red-600 text-red-300 hover:bg-red-800 active:scale-95"
+                ? "bg-slate-800 text-slate-600 opacity-50"
+                : "bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white active:scale-90"
             }`}
           >
-            {m.icon} {m.label}
+            <span>{m.icon}</span> {m.label}
           </button>
         ))}
       </div>
 
-      {/* Pregunta */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6 max-w-2xl mx-auto w-full">
-        <h2 className="text-white text-2xl font-bold text-center mb-8">{question?.prompt}</h2>
-
-        {QuestionComponent && phase === "playing" && (
-          <QuestionComponent question={question} onAnswer={handleAnswer} />
+      {/* Main Game Area */}
+      <div className="flex-1 flex flex-col p-6 max-w-2xl mx-auto w-full justify-center">
+        {phase === "playing" && (
+          <div className="animate-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-white text-2xl font-black italic text-center mb-10 tracking-tight leading-tight">
+              {question?.prompt}
+            </h2>
+            {QuestionComponent && (
+              <QuestionComponent question={question} onAnswer={handleAnswer} />
+            )}
+          </div>
         )}
 
         {phase === "feedback" && feedback && (
-          <div className={`w-full rounded-2xl p-6 border-2 ${
-            feedback.isCorrect ? "bg-emerald-900 border-emerald-500" : "bg-red-900 border-red-500"
+           <div className={`w-full rounded-[2.5rem] p-8 border-2 animate-in zoom-in-95 ${
+            feedback.isCorrect ? "bg-emerald-500/10 border-emerald-500/50 shadow-[0_0_40px_rgba(16,185,129,0.1)]" : "bg-rose-500/10 border-rose-500/50"
           }`}>
-            <div className="flex items-center gap-3 mb-3">
-              <span className="text-3xl">{feedback.isCorrect ? "✅" : "❌"}</span>
-              <h3 className={`text-xl font-black ${feedback.isCorrect ? "text-emerald-300" : "text-red-300"}`}>
-                {feedback.isCorrect ? "¡Correcto!" : "Incorrecto"}
-              </h3>
-            </div>
-            {!feedback.isCorrect && feedback.correctAnswer && (
-              <p className="text-white text-sm mb-3">
-                <span className="text-indigo-300">Respuesta correcta: </span>
-                <span className="font-bold">{String(feedback.correctAnswer)}</span>
-              </p>
-            )}
-            {feedback.explanation && <p className="text-indigo-200 text-sm mb-4">{feedback.explanation}</p>}
-            <button onClick={handleContinue} className={`w-full py-3 rounded-xl font-bold transition active:scale-95 ${
-              feedback.isCorrect ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "bg-red-500 hover:bg-red-400 text-white"
-            }`}>
-              Continuar
-            </button>
+             <div className="flex items-center gap-4 mb-6">
+                <div className={`p-3 rounded-2xl ${feedback.isCorrect ? "bg-emerald-500" : "bg-rose-500"}`}>
+                  {feedback.isCorrect ? <Trophy size={24} className="text-white" /> : <ShieldAlert size={24} className="text-white" />}
+                </div>
+                <div>
+                   <h3 className={`text-2xl font-black italic uppercase tracking-tighter ${feedback.isCorrect ? "text-emerald-400" : "text-rose-400"}`}>
+                    {feedback.isCorrect ? "Impacto Crítico" : "Fallo de Sistema"}
+                   </h3>
+                   <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">Respuesta Procesada</p>
+                </div>
+             </div>
+
+             {!feedback.isCorrect && feedback.correctAnswer && (
+               <div className="bg-white/5 rounded-2xl p-4 mb-6 border border-white/5">
+                 <p className="text-slate-400 text-xs uppercase font-black mb-1 tracking-widest">Respuesta Correcta</p>
+                 <p className="text-white font-bold">{String(feedback.correctAnswer)}</p>
+               </div>
+             )}
+
+             <button 
+                onClick={handleContinue} 
+                className={`w-full py-5 rounded-2xl font-black italic uppercase tracking-[0.2em] transition-all active:scale-95 shadow-lg ${
+                  feedback.isCorrect ? "bg-emerald-500 text-white shadow-emerald-500/20" : "bg-rose-500 text-white shadow-rose-500/20"
+                }`}
+             >
+               Continuar Duelo
+             </button>
           </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function ResultScreen({ result, userId, myScore, myCorrect, total, opponentProgress, onBack }) {
-  if (result?.abandoned) return (
-    <div className="min-h-screen bg-indigo-950 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-6xl mb-4">🏳️</div>
-        <h2 className="text-white font-black text-2xl mb-2">El oponente abandonó</h2>
-        <p className="text-emerald-400 font-bold mb-6">¡Ganaste por abandono!</p>
-        <button onClick={onBack} className="bg-violet-500 text-white font-bold px-6 py-3 rounded-xl">Volver</button>
-      </div>
-    </div>
-  );
-
-  const isWinner = result?.winner === userId;
-  const myEntry = result?.players?.find((p) => p.userId === userId);
-  const oppEntry = result?.players?.find((p) => p.userId !== userId);
-
-  return (
-    <div className="min-h-screen bg-indigo-950 flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <div className="text-7xl mb-3">{isWinner ? "🏆" : "😤"}</div>
-          <h1 className={`text-4xl font-black ${isWinner ? "text-green-400" : "text-red-400"}`}>
-            {isWinner ? "¡Ganaste!" : "Perdiste"}
-          </h1>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: "Tú", entry: myEntry, highlight: isWinner },
-            { label: "Oponente", entry: oppEntry, highlight: !isWinner },
-          ].map(({ label, entry, highlight }) => (
-            <div key={label} className={`rounded-2xl p-4 text-center border-2 ${
-              highlight ? "bg-green-900 border-green-500" : "bg-indigo-900 border-indigo-700"
-            }`}>
-              <p className={`font-bold text-sm mb-2 ${highlight ? "text-green-300" : "text-indigo-300"}`}>{label}</p>
-              <p className="text-white font-black text-2xl">{entry?.correct || 0}/{total}</p>
-              <p className="text-indigo-400 text-xs mb-1">respuestas correctas</p>
-              {entry?.timeSpent && (
-                <p className="text-indigo-300 text-xs">
-                  ⏱️ {formatTime(entry.timeSpent)}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <button onClick={onBack} className="w-full bg-violet-500 hover:bg-violet-400 text-white font-black py-4 rounded-xl transition active:scale-95">
-          Volver a amigos
-        </button>
       </div>
     </div>
   );
@@ -304,10 +285,70 @@ function ResultScreen({ result, userId, myScore, myCorrect, total, opponentProgr
 
 function LoadingScreen({ text }) {
   return (
-    <div className="min-h-screen bg-indigo-950 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-5xl mb-4 animate-bounce">⚔️</div>
-        <p className="text-indigo-300">{text}</p>
+    <div className="min-h-screen bg-[#0F172A] flex flex-col items-center justify-center gap-6">
+      <div className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+      <p className="text-blue-400 font-black italic uppercase tracking-widest text-sm">{text}</p>
+    </div>
+  );
+}
+
+function ResultScreen({ result, userId, total, onBack }) {
+  if (result?.abandoned) {
+    return (
+      <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-6">
+        <div className="text-center">
+          <div className="text-7xl mb-6">🏳️</div>
+          <h2 className="text-white font-black italic uppercase text-3xl mb-4">El oponente se retiró</h2>
+          <p className="text-slate-400 mb-8">Ganaste por abandono.</p>
+          <button onClick={onBack} className="bg-blue-500 text-white font-black px-8 py-4 rounded-2xl uppercase tracking-widest">
+            Volver
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const players = result?.players || [];
+  const winner = result?.winner;
+  const isWinner = winner === userId;
+  const me = players.find((p) => p.userId === userId);
+  const opponent = players.find((p) => p.userId !== userId);
+
+  const formatTime = (ms) => {
+    if (!ms) return "--";
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0F172A] flex items-center justify-center p-6">
+      <div className="w-full max-w-md text-center space-y-8">
+        <div>
+          <div className="text-8xl mb-4">{isWinner ? "🏆" : "💀"}</div>
+          <h2 className={`text-4xl font-black italic uppercase tracking-tighter ${isWinner ? "text-yellow-400" : "text-rose-400"}`}>
+            {isWinner ? "¡Victoria!" : "Derrota"}
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-5 text-center">
+            <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-2">Tú</p>
+            <p className="text-white text-3xl font-black italic">{me?.correct ?? 0}</p>
+            <p className="text-slate-500 text-xs">de {total} correctas</p>
+            <p className="text-blue-400 text-xs mt-1">{formatTime(me?.timeSpent)}</p>
+          </div>
+          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-5 text-center">
+            <p className="text-rose-400 text-[10px] font-black uppercase tracking-widest mb-2">Rival</p>
+            <p className="text-white text-3xl font-black italic">{opponent?.correct ?? 0}</p>
+            <p className="text-slate-500 text-xs">de {total} correctas</p>
+            <p className="text-rose-400 text-xs mt-1">{formatTime(opponent?.timeSpent)}</p>
+          </div>
+        </div>
+
+        <button onClick={onBack} className="w-full bg-blue-500 hover:bg-blue-400 text-white font-black py-4 rounded-2xl uppercase tracking-widest transition-all active:scale-95">
+          Volver a la base
+        </button>
       </div>
     </div>
   );

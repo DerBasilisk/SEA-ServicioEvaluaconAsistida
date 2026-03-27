@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
+import { Toaster } from "react-hot-toast";
 
 // Protecciones
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -88,6 +89,7 @@ function App() {
       </Routes>
 
       <DuelInviteToast />
+      <Toaster position="top-right" />
     </BrowserRouter>
   );
 }

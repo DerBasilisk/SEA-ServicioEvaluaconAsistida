@@ -38,8 +38,6 @@ function setupDuelSocket(httpServer) {
     try {
       const pendingDuelRaw = await redis.get(`pending_duel:${socket.userId}`);
       if (pendingDuelRaw) {
-        await redis.del(`duel_result:${socket.userId}`);
-        socket.emit("duel:finished", JSON.parse(pendingResultRaw));
         const pendingDuel = JSON.parse(pendingDuelRaw);
         await redis.del(`pending_duel:${socket.userId}`);
         socket.join(`duel:${pendingDuel.duelId}`);
@@ -161,9 +159,11 @@ function setupDuelSocket(httpServer) {
     // ── DURANTE EL DUELO ───────────────────────────────────────
 
     socket.on("duel:join", async ({ duelId }) => {
+      console.log("[Duel] join recibido, duelId:", duelId, "userId:", socket.userId);
       socket.join(`duel:${duelId}`);
       const duel = await getDuel(duelId);
       if (duel) socket.emit("duel:state", duel);
+      console.log("[Duel] getDuel resultado:", duel ? "encontrado" : "null");
     });
 
     socket.on("duel:answer", async ({ duelId, questionId, answer }) => {

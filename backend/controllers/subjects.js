@@ -69,11 +69,13 @@ const getSubjectBySlug = async (req, res) => {
           progressMap[p.lesson.toString()] = p;
         });
 
-        const lessonsWithStatus = lessons.map((lesson) => {
+        const lessonsWithStatus = lessons.map((lesson, index) => {
           const progress = progressMap[lesson._id.toString()];
+          // Si no hay progreso y es la primera lección de la unidad → available
+          const defaultStatus = index === 0 ? "available" : "locked";
           return {
             ...lesson.toJSON(),
-            status: progress?.status || "locked",
+            status: progress?.status || defaultStatus,
             bestScore: progress?.bestScore || 0,
             completions: progress?.completions || 0,
             nextReviewDate: progress?.spacedRepetition?.nextReviewDate || null,

@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { X, Heart, Lightbulb, ChevronRight, AlertCircle, Sparkles } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
 
+// Componentes de Pregunta (Asumiendo que los importarás con el mismo estilo)
 import MultipleChoice from "../components/lesson/MultipleChoice";
 import TrueFalse from "../components/lesson/TrueFalse";
 import FillBlank from "../components/lesson/FillBlank";
@@ -11,6 +13,42 @@ import MatchPairs from "../components/lesson/MatchPairs";
 import SentenceBuilder from "../components/lesson/Sentencebuilder";
 import ResultScreen from "../components/lesson/ResultScreen";
 import NoHeartsPanel from "../components/lesson/Noheartspanel";
+
+const LESSON_CSS = `
+  .lesson-container { 
+    background: linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%);
+    font-family: 'Nunito', sans-serif;
+  }
+  .sea-glass-panel {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(15px);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    box-shadow: 0 15px 35px rgba(43, 127, 232, 0.05);
+  }
+  .progress-track {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1.5px solid white;
+    height: 14px;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    background: linear-gradient(90deg, #2B7FE8, #5B9FFF);
+    box-shadow: 0 0 15px rgba(43, 127, 232, 0.4);
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .theory-card {
+    background: white;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  .theory-card::after {
+    content: ''; position: absolute; inset: -3px; z-index: -1;
+    background: linear-gradient(135deg, #2B7FE8, #B8CBFF);
+    border-radius: 2rem;
+  }
+`;
 
 const QUESTION_COMPONENTS = {
   multiple_choice: MultipleChoice,
@@ -26,7 +64,7 @@ export default function Lesson() {
   const navigate = useNavigate();
   const { fetchMe } = useAuthStore();
 
-  const [phase, setPhase] = useState("loading"); // loading | theory | playing | feedback | result
+  const [phase, setPhase] = useState("loading");
   const [lesson, setLesson] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [theorySlides, setTheorySlides] = useState([]);
@@ -39,7 +77,7 @@ export default function Lesson() {
   const [error, setError] = useState(null);
   const [hintUsed, setHintUsed] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const [conceptOpen, setConceptOpen] = useState(true); // panel izquierdo abierto por defecto
+  const [conceptOpen, setConceptOpen] = useState(true);
 
   useEffect(() => {
     api.post(`/lessons/${id}/start`)
@@ -90,7 +128,6 @@ export default function Lesson() {
   const handleContinue = useCallback(async () => {
     const nextIndex = currentIndex + 1;
     if (hearts === 0) {
-      // Sin corazones → terminar como fallida, no completada
       await api.post(`/lessons/${id}/abandon`).catch(() => {});
       setResult({ score: 0, xpEarned, newAchievements: [], failed: true });
       await fetchMe();
@@ -109,17 +146,6 @@ export default function Lesson() {
     setPhase("playing");
   }, [hearts, currentIndex, questions, handleComplete, id, xpEarned, fetchMe]);
 
-  const handleRefilled = useCallback(() => {
-    setHearts(5);
-    const nextIndex = currentIndex + 1;
-    if (nextIndex >= questions.length) { handleComplete(); return; }
-    setCurrentIndex(nextIndex);
-    setFeedback(null);
-    setHintUsed(false);
-    setShowHint(false);
-    setPhase("playing");
-  }, [currentIndex, questions, handleComplete]);
-
   const handleAbandon = async () => {
     await api.post(`/lessons/${id}/abandon`).catch(() => {});
     navigate(-1);
@@ -130,181 +156,189 @@ export default function Lesson() {
     setShowHint(true);
   };
 
-  // ── Renders ────────────────────────────────────────────────
-
   if (phase === "loading") return <LoadingScreen />;
-  if (phase === "error")   return <ErrorScreen message={error} onBack={() => navigate(-1)} />;
-  if (phase === "result")  return (
-    <ResultScreen result={result} lesson={lesson}
-      onContinue={() => navigate(-1)} onRetry={() => window.location.reload()} />
-  );
+  if (phase === "error") return <ErrorScreen message={error} onBack={() => navigate(-1)} />;
+  if (phase === "result") return <ResultScreen result={result} lesson={lesson} onContinue={() => navigate(-1)} onRetry={() => window.location.reload()} />;
 
-  // Pantalla de teoría
+  // ── RENDER TEORÍA ────────────────────────────────────────────────
   if (phase === "theory") {
     const slide = theorySlides[theoryIndex];
     const isLast = theoryIndex >= theorySlides.length - 1;
     return (
-      <div className="min-h-screen bg-indigo-950 flex flex-col">
-        <div className="px-4 py-3 flex items-center gap-4 border-b border-indigo-800">
-          <button onClick={handleAbandon} className="text-indigo-400 hover:text-white transition text-xl font-bold">✕</button>
-          <div className="flex-1 flex gap-1">
+      <div className="lesson-container min-h-screen flex flex-col items-center">
+        <style>{LESSON_CSS}</style>
+        
+        <header className="w-full px-6 py-4 flex items-center gap-6">
+          <button onClick={handleAbandon} className="p-2 hover:bg-white/50 rounded-xl transition text-slate-500"><X size={24} /></button>
+          <div className="flex-1 flex gap-2">
             {theorySlides.map((_, i) => (
-              <div key={i} className={`flex-1 h-2 rounded-full transition-all ${i <= theoryIndex ? "bg-violet-500" : "bg-indigo-800"}`} />
+              <div key={i} className={`flex-1 h-2.5 rounded-full transition-all duration-500 ${i <= theoryIndex ? "bg-[#2B7FE8] shadow-[0_0_10px_rgba(43,127,232,0.3)]" : "bg-white/40"}`} />
             ))}
           </div>
-          <span className="text-indigo-400 text-sm">{theoryIndex + 1}/{theorySlides.length}</span>
-        </div>
+        </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 max-w-2xl mx-auto w-full">
-          <div className="text-6xl mb-4">{slide?.icon || "📖"}</div>
-          <h2 className="text-white font-black text-2xl text-center mb-6">{slide?.title}</h2>
-
-          <div className="bg-indigo-900 border border-indigo-700 rounded-2xl p-6 w-full mb-6">
-            <p className="text-indigo-100 text-lg leading-relaxed">{slide?.content}</p>
+        <main className="flex-1 flex flex-col items-center justify-between max-w-2xl w-full px-6 py-8 gap-8">
+          <div className="text-7xl mb-8 animate-bounce-slow drop-shadow-xl">{slide?.icon || "📖"}</div>
+          
+          <div className="theory-card rounded-[2.5rem] p-10 w-full mb-10 text-center shadow-2xl">
+            <h2 className="text-[#0F2547] font-black italic uppercase text-3xl tracking-tighter mb-6">{slide?.title}</h2>
+            <p className="text-slate-600 text-xl leading-relaxed font-semibold">{slide?.content}</p>
+            
             {slide?.example && (
-              <div className="mt-4 bg-indigo-800 rounded-xl px-4 py-3 text-center">
-                <p className="text-indigo-300 text-xs mb-1">Ejemplo</p>
-                <p className="text-white font-black text-xl">{slide.example}</p>
+              <div className="mt-8 bg-blue-50 border-2 border-dashed border-blue-200 rounded-[1.5rem] p-6">
+                <p className="text-[#2B7FE8] text-[10px] font-black uppercase tracking-[0.2em] mb-2">Protocolo de Ejemplo</p>
+                <p className="text-[#0F2547] font-black text-2xl italic">"{slide.example}"</p>
               </div>
             )}
           </div>
 
           <button
-            onClick={() => {
-              if (isLast) setPhase("playing");
-              else setTheoryIndex((i) => i + 1);
-            }}
-            className="w-full bg-violet-500 hover:bg-violet-400 text-white font-black py-4 rounded-xl transition active:scale-95 text-lg"
+            onClick={() => isLast ? setPhase("playing") : setTheoryIndex(i => i + 1)}
+            className="w-full bg-[#2B7FE8] hover:bg-[#1A6FD8] text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95 text-lg uppercase tracking-widest italic"
           >
-            {isLast ? "¡Empezar ejercicios! →" : "Siguiente →"}
+            {isLast ? "Iniciar Evaluación →" : "Siguiente Protocolo"}
           </button>
-        </div>
+        </main>
       </div>
     );
   }
 
+  // ── RENDER EJERCICIOS ─────────────────────────────────────────────
   const question = questions[currentIndex];
   const QuestionComponent = QUESTION_COMPONENTS[question?.type];
   const progress = (currentIndex / questions.length) * 100;
 
-  if (phase === "playing" && (!question || !QuestionComponent)) return <LoadingScreen />;
-
   return (
-    <div className="min-h-screen bg-indigo-950 flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-3 flex items-center gap-4 border-b border-indigo-800 flex-shrink-0">
-        <button onClick={handleAbandon} className="text-indigo-400 hover:text-white transition text-xl font-bold">✕</button>
-        <div className="flex-1 bg-indigo-800 rounded-full h-3">
-          <div className="bg-violet-500 h-3 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+    <div className="lesson-container min-h-screen flex flex-col overflow-hidden">
+      <style>{LESSON_CSS}</style>
+      
+      {/* Header Táctico */}
+      <header className="px-6 py-4 flex items-center gap-6 bg-white/30 backdrop-blur-md sticky top-0 z-50">
+        <button onClick={handleAbandon} className="p-2 hover:bg-white/50 rounded-xl transition text-slate-500"><X size={24} /></button>
+        <div className="flex-1 progress-track">
+          <div className="progress-fill h-full" style={{ width: `${progress}%` }} />
         </div>
-        <div className="flex gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} className={`text-lg ${i < hearts ? "opacity-100" : "opacity-20"}`}>❤️</span>
-          ))}
+        <div className="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-2xl border border-white">
+          <Heart size={20} className="text-rose-500 fill-rose-500 animate-pulse" />
+          <span className="font-black text-[#0F2547] text-sm">{hearts}</span>
         </div>
-      </div>
+      </header>
 
-      {/* Contador */}
-      <p className="text-indigo-400 text-xs text-center py-2 flex-shrink-0">
-        Pregunta {currentIndex + 1} de {questions.length}
-      </p>
-
-      {/* Layout dividido */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-0 lg:gap-4 px-4 pb-4 max-w-5xl mx-auto w-full">
-
-        {/* Panel izquierdo — Concepto */}
+      <main className="flex-1 flex flex-col lg:flex-row gap-8 px-8 py-6 max-w-6xl mx-auto w-full items-start lg:items-stretch">
+        
+        {/* Panel de Inteligencia (Concepto) */}
         {question?.conceptExplanation && (
-          <div className="lg:w-2/5 flex-shrink-0">
-            {/* Mobile: colapsable */}
-            <div className="lg:hidden mb-3">
-              <button
-                onClick={() => setConceptOpen((o) => !o)}
-                className="w-full flex items-center justify-between bg-indigo-800 border border-indigo-600 rounded-xl px-4 py-2 text-sm text-indigo-300 font-bold"
-              >
-                <span>💡 Ver concepto</span>
-                <span>{conceptOpen ? "▲" : "▼"}</span>
-              </button>
-            </div>
-
-            {/* Panel */}
-            <div className={`${conceptOpen ? "block" : "hidden"} lg:block bg-indigo-900 border border-indigo-700 rounded-2xl p-5 h-full`}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xl">💡</span>
-                <h3 className="text-violet-300 font-bold text-sm">Concepto clave</h3>
+          <aside className="lg:w-[350px] flex-shrink-0">
+            <div className="sea-glass-panel rounded-[2rem] p-6 h-fit sticky top-24">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="bg-[#2B7FE8] p-2 rounded-lg"><Lightbulb size={18} className="text-white" /></div>
+                <h3 className="text-[#0F2547] font-black uppercase italic text-sm tracking-tight">Manual de Nodo</h3>
               </div>
-              <p className="text-indigo-100 text-sm leading-relaxed">{question.conceptExplanation}</p>
+              <p className="text-slate-700 text-sm leading-relaxed font-medium mb-6">
+                {question.conceptExplanation}
+              </p>
 
-              {/* Pista */}
-              <div className="mt-4 border-t border-indigo-700 pt-4">
+              <div className="border-t border-white/40 pt-6">
                 {!showHint ? (
                   <button
                     onClick={handleUseHint}
                     disabled={hintUsed || phase !== "playing"}
-                    className="w-full flex items-center justify-center gap-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 font-bold py-2 rounded-xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-full group flex items-center justify-between bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-600 font-black py-3 px-4 rounded-xl text-[10px] uppercase tracking-widest transition-all disabled:opacity-40"
                   >
-                    🔍 {hintUsed ? "Pista usada (-50% XP)" : "Ver pista (-50% XP)"}
+                    <span>{hintUsed ? "Pista Consumida" : "Solicitar Pista"}</span>
+                    {!hintUsed && <span className="text-amber-400 group-hover:translate-x-1 transition-transform">-50% XP</span>}
                   </button>
                 ) : (
-                  <div className="bg-amber-900/30 border border-amber-500/40 rounded-xl p-3">
-                    <p className="text-amber-300 text-xs font-bold mb-1">🔍 Pista</p>
-                    <p className="text-amber-100 text-sm">{question.hint}</p>
+                  <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 animate-in zoom-in-95">
+                    <p className="text-amber-700 text-xs font-bold italic leading-snug">{question.hint}</p>
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </aside>
         )}
 
-        {/* Panel derecho — Pregunta */}
-        <div className="flex-1 flex flex-col justify-center">
-          <h2 className="text-white text-xl lg:text-2xl font-bold text-center mb-6 leading-snug">
-            {question?.prompt}
-          </h2>
+        {/* Zona de Ejercicio */}
+        <div className="flex-1 flex flex-col justify-between gap-8">
+          <div className="text-center lg:text-left">
+            <p className="text-[#2B7FE8] text-[10px] font-black uppercase tracking-[0.3em] mb-3">
+              Objetivo {currentIndex + 1} de {questions.length}
+            </p>
+            <h2 className="text-[#0F2547] text-2xl lg:text-3xl font-black italic tracking-tighter leading-tight">
+              {question?.prompt}
+            </h2>
+          </div>
 
-          {QuestionComponent && phase === "playing" && (
-            <QuestionComponent question={question} onAnswer={handleAnswer} />
-          )}
+          <div className="flex-1 min-h-[400px]">
+            {QuestionComponent && phase === "playing" && (
+              <QuestionComponent question={question} onAnswer={handleAnswer} />
+            )}
 
-          {phase === "feedback" && feedback && hearts > 0 && (
-            <FeedbackPanel feedback={feedback} onContinue={handleContinue} />
-          )}
-
-          {phase === "feedback" && hearts === 0 && (
-            <NoHeartsPanel onRefilled={handleRefilled} onContinue={handleComplete} />
-          )}
+            {phase === "feedback" && feedback && (
+              <FeedbackPanel 
+                feedback={feedback} 
+                hearts={hearts}
+                onContinue={handleContinue} 
+                onRefilled={() => setHearts(5)}
+                onComplete={handleComplete}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
 
-function FeedbackPanel({ feedback, onContinue }) {
+// ── SUB-COMPONENTES ───────────────────────────────────────────────
+
+function FeedbackPanel({ feedback, hearts, onContinue, onRefilled, onComplete }) {
   const { isCorrect, explanation, correctAnswer } = feedback;
+  
+  if (hearts === 0 && !isCorrect) {
+    return <NoHeartsPanel onRefilled={onRefilled} onContinue={onComplete} />;
+  }
+
   return (
-    <div className={`w-full rounded-2xl p-6 border-2 ${isCorrect ? "bg-emerald-900 border-emerald-500" : "bg-red-900 border-red-500"}`}>
-      <div className="flex items-center gap-3 mb-3">
-        <span className="text-3xl">{isCorrect ? "✅" : "❌"}</span>
-        <h3 className={`text-xl font-black ${isCorrect ? "text-emerald-300" : "text-red-300"}`}>
-          {isCorrect ? "¡Correcto!" : "Incorrecto"}
+    <div className={`w-full rounded-[2.5rem] p-8 border-4 animate-in slide-in-from-bottom-6 duration-500 shadow-2xl ${
+      isCorrect 
+        ? "bg-emerald-50 border-emerald-200 text-emerald-900" 
+        : "bg-rose-50 border-rose-200 text-rose-900"
+    }`}>
+      <div className="flex items-center gap-4 mb-6">
+        <div className={`p-3 rounded-2xl shadow-lg ${isCorrect ? "bg-emerald-500 shadow-emerald-200" : "bg-rose-500 shadow-rose-200"}`}>
+          {isCorrect ? <Sparkles className="text-white" /> : <AlertCircle className="text-white" />}
+        </div>
+        <h3 className="text-2xl font-black italic uppercase tracking-tighter">
+          {isCorrect ? "¡Sincronía Perfecta!" : "Error de Conexión"}
         </h3>
       </div>
-      {!isCorrect && correctAnswer !== undefined && correctAnswer !== null && (
-        <p className="text-white text-sm mb-2">
-          <span className="text-indigo-300">Respuesta correcta: </span>
-          <span className="font-bold">
-            {Array.isArray(correctAnswer) && correctAnswer[0]?.left
-              ? correctAnswer.map((p, i) => <span key={i} className="block">{p.left} → {p.right}</span>)
-              : Array.isArray(correctAnswer) ? correctAnswer.join(", ")
-              : typeof correctAnswer === "boolean" ? (correctAnswer ? "Verdadero" : "Falso")
-              : typeof correctAnswer === "object" ? correctAnswer.text || JSON.stringify(correctAnswer)
-              : String(correctAnswer)}
-          </span>
+
+      {!isCorrect && correctAnswer && (
+        <div className="bg-white/60 p-5 rounded-2xl mb-6 border border-rose-200/50">
+          <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-2">Protocolo Correcto:</p>
+          <div className="text-lg font-black text-rose-700 italic">
+             {/* Renderizado de respuesta simplificado */}
+             {String(correctAnswer)}
+          </div>
+        </div>
+      )}
+
+      {explanation && (
+        <p className="text-slate-600 font-semibold mb-8 leading-relaxed italic border-l-4 border-slate-200 pl-4">
+          {explanation}
         </p>
       )}
-      {explanation && <p className="text-indigo-200 text-sm mb-4">{explanation}</p>}
-      <button onClick={onContinue}
-        className={`w-full py-3 rounded-xl font-bold transition active:scale-95 ${isCorrect ? "bg-emerald-500 hover:bg-emerald-400 text-white" : "bg-red-500 hover:bg-red-400 text-white"}`}>
-        Continuar
+
+      <button 
+        onClick={onContinue}
+        className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
+          isCorrect 
+            ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200" 
+            : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200"
+        }`}
+      >
+        Continuar Misión
       </button>
     </div>
   );
@@ -312,10 +346,12 @@ function FeedbackPanel({ feedback, onContinue }) {
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-indigo-950 flex items-center justify-center">
+    <div className="min-h-screen lesson-container flex items-center justify-center">
       <div className="text-center">
-        <div className="text-5xl mb-4 animate-bounce">🎓</div>
-        <p className="text-indigo-300">Cargando lección...</p>
+        <div className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl animate-bounce-slow mb-6">
+           <Sparkles size={40} className="text-[#2B7FE8]" />
+        </div>
+        <p className="text-[#0F2547] font-black italic uppercase tracking-widest text-sm">Preparando Entorno...</p>
       </div>
     </div>
   );
@@ -323,12 +359,14 @@ function LoadingScreen() {
 
 function ErrorScreen({ message, onBack }) {
   return (
-    <div className="min-h-screen bg-indigo-950 flex items-center justify-center">
-      <div className="text-center">
-        <div className="text-5xl mb-4">😕</div>
-        <p className="text-white font-bold mb-2">No se pudo cargar la lección</p>
-        <p className="text-indigo-400 mb-6">{message}</p>
-        <button onClick={onBack} className="bg-violet-500 text-white font-bold px-6 py-3 rounded-xl">Volver</button>
+    <div className="min-h-screen lesson-container flex items-center justify-center p-6">
+      <div className="sea-glass-panel rounded-[3rem] p-12 text-center max-w-md">
+        <div className="text-6xl mb-6">🛰️</div>
+        <h2 className="text-[#0F2547] font-black italic uppercase text-2xl mb-4 text-balance">Se ha perdido el enlace</h2>
+        <p className="text-slate-500 font-bold mb-8 italic">{message}</p>
+        <button onClick={onBack} className="w-full bg-[#0F2547] text-white font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest">
+          Regresar a Base
+        </button>
       </div>
     </div>
   );

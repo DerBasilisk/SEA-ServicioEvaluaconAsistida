@@ -1,12 +1,39 @@
 import { useState } from "react";
+import { Link2, CheckCircle2 } from "lucide-react";
+
+const PAIR_COLORS = [
+  { hex: "#3B82F6" },
+  { hex: "#8B5CF6" },
+  { hex: "#F59E0B" },
+  { hex: "#10B981" },
+  { hex: "#F43F5E" },
+];
+
+const MATCH_CSS = `
+  .node-card {
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    border: 2px solid white;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sea-btn-confirm {
+    background: #2B7FE8;
+    box-shadow: 0 10px 25px rgba(43, 127, 232, 0.3);
+  }
+`;
 
 export default function MatchPairs({ question, onAnswer }) {
   const [selectedLeft, setSelectedLeft] = useState(null);
-  const [matches, setMatches] = useState({}); // { leftId: rightId }
+  const [matches, setMatches] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   const leftItems = question.leftItems || [];
   const rightItems = question.rightItems || [];
+
+  const getPairColor = (leftId) => {
+    const index = leftItems.findIndex(item => item._id === leftId);
+    return PAIR_COLORS[index % PAIR_COLORS.length].hex;
+  };
 
   const handleLeftClick = (id) => {
     if (submitted) return;
@@ -15,88 +42,118 @@ export default function MatchPairs({ question, onAnswer }) {
 
   const handleRightClick = (id) => {
     if (submitted || !selectedLeft) return;
-
-    // Si este rightId ya está matcheado, desmatchear
-    const existingLeft = Object.keys(matches).find((l) => matches[l] === id);
     const newMatches = { ...matches };
+    const existingLeft = Object.keys(newMatches).find((l) => newMatches[l] === id);
     if (existingLeft) delete newMatches[existingLeft];
-
     newMatches[selectedLeft] = id;
     setMatches(newMatches);
     setSelectedLeft(null);
   };
 
-  const isMatched = (leftId) => matches[leftId] !== undefined;
-  const getRightMatch = (leftId) => rightItems.find((r) => r._id === matches[leftId]);
-  const isRightUsed = (rightId) => Object.values(matches).includes(rightId);
+  const getMatchByRightId = (rightId) => {
+    const leftId = Object.keys(matches).find(l => matches[l] === rightId);
+    return leftId ? { leftId, color: getPairColor(leftId) } : null;
+  };
 
   const allMatched = leftItems.length > 0 && Object.keys(matches).length === leftItems.length;
 
-  const handleSubmit = () => {
-    if (!allMatched || submitted) return;
-    setSubmitted(true);
-    const answer = Object.keys(matches).map((leftId) => ({
-      leftId,
-      rightId: matches[leftId],
-    }));
-    onAnswer(answer);
+  const getLeftStyle = (item) => {
+    const matched = matches[item._id] !== undefined;
+    const isSelected = selectedLeft === item._id;
+    const color = getPairColor(item._id);
+
+    if (matched) return {
+      backgroundColor: color + "25",
+      borderColor: color,
+      color: color,
+      transform: "scale(1.02)",
+    };
+    if (isSelected) return {
+      backgroundColor: "white",
+      borderColor: "#2B7FE8",
+      color: "#1e40af",
+      boxShadow: "0 0 20px rgba(43,127,232,0.3)",
+      transform: "scale(1.05)",
+    };
+    if (selectedLeft) return { opacity: 0.4 };
+    return {};
+  };
+
+  const getRightStyle = (item) => {
+    const matchData = getMatchByRightId(item._id);
+    if (matchData) return {
+      backgroundColor: matchData.color + "25",
+      borderColor: matchData.color,
+      color: matchData.color,
+      transform: "scale(0.97)",
+    };
+    if (selectedLeft) return {
+      borderColor: "#2B7FE8",
+      backgroundColor: "rgba(219,234,254,0.3)",
+      cursor: "pointer",
+    };
+    return { opacity: 0.4 };
   };
 
   return (
-    <div className="w-full space-y-4">
-      <p className="text-indigo-400 text-sm text-center">Seleccioná un elemento de la izquierda y luego el que corresponde a la derecha</p>
+    <div className="w-full max-w-3xl mx-auto space-y-6">
+      <style>{MATCH_CSS}</style>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Columna izquierda */}
-        <div className="space-y-2">
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <Link2 size={16} className="text-[#2B7FE8]" />
+        <p className="text-[#7A9CC5] text-[10px] font-black uppercase tracking-widest text-center">
+          Seleccioná un elemento de cada columna para enlazarlos
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Columna Izquierda */}
+        <div className="space-y-3">
           {leftItems.map((item) => (
             <button
               key={item._id}
               onClick={() => handleLeftClick(item._id)}
               disabled={submitted}
-              className={`
-                w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
-                ${selectedLeft === item._id ? "bg-violet-600 border-violet-400 text-white" :
-                  isMatched(item._id) ? "bg-emerald-800 border-emerald-500 text-emerald-300" :
-                  "bg-indigo-800 border-indigo-600 text-white hover:border-violet-400"}
-                disabled:cursor-default
-              `}
+              style={getLeftStyle(item)}
+              className="node-card w-full text-left px-5 py-4 rounded-[1.2rem]"
             >
-              {item.text}
-              {isMatched(item._id) && (
-                <span className="block text-xs text-emerald-400 mt-1">→ {getRightMatch(item._id)?.text}</span>
+              <span className="font-black italic text-sm block">{item.text}</span>
+              {matches[item._id] && (
+                <div className="flex items-center gap-1 mt-1 text-[9px] font-bold uppercase opacity-80">
+                  <CheckCircle2 size={10} />
+                  <span>Enlace activo</span>
+                </div>
               )}
             </button>
           ))}
         </div>
 
-        {/* Columna derecha */}
-        <div className="space-y-2">
+        {/* Columna Derecha */}
+        <div className="space-y-3">
           {rightItems.map((item) => (
             <button
               key={item._id}
               onClick={() => handleRightClick(item._id)}
-              disabled={submitted || (!selectedLeft && !isRightUsed(item._id))}
-              className={`
-                w-full text-left px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all
-                ${isRightUsed(item._id) ? "bg-emerald-800 border-emerald-500 text-emerald-300 opacity-50" :
-                  selectedLeft ? "bg-indigo-700 border-violet-500 text-white hover:bg-violet-700 cursor-pointer" :
-                  "bg-indigo-800 border-indigo-600 text-indigo-400"}
-                disabled:cursor-default
-              `}
+              disabled={submitted || (!selectedLeft && !getMatchByRightId(item._id))}
+              style={getRightStyle(item)}
+              className="node-card w-full text-left px-5 py-4 rounded-[1.2rem]"
             >
-              {item.text}
+              <span className="font-black italic text-sm">{item.text}</span>
             </button>
           ))}
         </div>
       </div>
 
       <button
-        onClick={handleSubmit}
+        onClick={() => {
+          if (!allMatched || submitted) return;
+          setSubmitted(true);
+          onAnswer(Object.keys(matches).map(l => ({ leftId: l, rightId: matches[l] })));
+        }}
         disabled={!allMatched || submitted}
-        className="w-full bg-violet-500 hover:bg-violet-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold py-4 rounded-xl transition active:scale-95"
+        className="sea-btn-confirm w-full flex items-center justify-center gap-3 text-white font-black italic uppercase tracking-[0.2em] py-5 rounded-[1.5rem] transition-all active:scale-95 disabled:opacity-20 mt-4"
       >
-        {allMatched ? "Confirmar" : `Faltan ${leftItems.length - Object.keys(matches).length} conexiones`}
+        {allMatched ? "Confirmar Enlaces" : `Faltan ${leftItems.length - Object.keys(matches).length} conexiones`}
       </button>
     </div>
   );

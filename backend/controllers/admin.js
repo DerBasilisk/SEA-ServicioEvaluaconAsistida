@@ -2,6 +2,7 @@ const User = require("../models/user");
 const UserProgress = require("../models/userProgress");
 const { Subject, Unit, Lesson, Question } = require("../models");
 const mongoose = require("mongoose");
+const { exportToCSV } = require("../services/csv.service");
 
 // ── USUARIOS ──────────────────────────────────────────────────
 
@@ -363,6 +364,68 @@ const getAllLessons = async (req, res) => {
   }
 };
 
+
+// Exportar e Importar
+// ==================== EXPORT CSV ====================
+
+const exportSubjects = async (req, res) => {
+  try {
+    const subjects = await Subject.find().sort({ order: 1 });
+    const { csv, filename } = exportToCSV(subjects, 'subjects');
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(filename);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+const exportUnits = async (req, res) => {
+  try {
+    const units = await Unit.find()
+      .populate("subject", "name")
+      .sort({ order: 1 });
+    const { csv, filename } = exportToCSV(units, 'units');
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(filename);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+const exportLessons = async (req, res) => {
+  try {
+    const lessons = await Lesson.find()
+      .populate("unit", "name")
+      .sort({ order: 1 });
+    const { csv, filename } = exportToCSV(lessons, 'lessons');
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(filename);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+const exportQuestions = async (req, res) => {
+  try {
+    const questions = await Question.find()
+      .populate("lesson", "name")
+      .sort({ createdAt: -1 });
+    const { csv, filename } = exportToCSV(questions, 'questions');
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment(filename);
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
 module.exports = {
   getUsers, getUserProgress, updateUser, banUser, deleteUser,
   getSubjects, createSubject, updateSubject, deleteSubject,
@@ -386,6 +449,12 @@ module.exports = {
   updateQuestion, 
   reviewQuestion, 
   deleteQuestion,
+
+  // Export CSV
+  exportSubjects,
+  exportUnits,
+  exportLessons,
+  exportQuestions,
 
   getStats,
 };

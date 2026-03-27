@@ -44,4 +44,10 @@ router.put("/questions/:id", ctrl.updateQuestion);
 router.put("/questions/:id/review", ctrl.reviewQuestion);
 router.delete("/questions/:id", ctrl.deleteQuestion);
 
+// Import/Export
+router.get("/export/subjects", ctrl.exportSubjects);
+router.get("/export/units", ctrl.exportUnits);
+router.get("/export/lessons", ctrl.exportLessons);
+router.get("/export/questions", ctrl.exportQuestions);
+
 module.exports = router;

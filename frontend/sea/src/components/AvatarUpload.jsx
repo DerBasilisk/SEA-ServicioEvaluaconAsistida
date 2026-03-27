@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import ReactCrop, { centerCrop, makeAspectCrop } from "react-image-crop";
+import { Camera, AlertTriangle, Check, X } from "lucide-react";
 import "react-image-crop/dist/ReactCrop.css";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
@@ -18,20 +19,24 @@ async function getCroppedBlob(imageSrc, crop) {
   await new Promise((res) => { image.onload = res; });
 
   const canvas = document.createElement("canvas");
-  const scaleX = image.naturalWidth / image.width;
-  const scaleY = image.naturalHeight / image.height;
   const size = 400;
   canvas.width = size;
   canvas.height = size;
-
   const ctx = canvas.getContext("2d");
-  ctx.beginPath();
-  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-  ctx.clip();
+
+  // crop viene en porcentaje si unit="%" o en píxeles si unit="px"
+  // ReactCrop onComplete devuelve píxeles relativos al elemento renderizado
+  // necesitamos escalar a píxeles naturales
+  const imgEl = document.querySelector("img[alt='Crop']");
+  const scaleX = image.naturalWidth / (imgEl?.width || image.naturalWidth);
+  const scaleY = image.naturalHeight / (imgEl?.height || image.naturalHeight);
+
   ctx.drawImage(
     image,
-    crop.x * scaleX, crop.y * scaleY,
-    crop.width * scaleX, crop.height * scaleY,
+    crop.x * scaleX,
+    crop.y * scaleY,
+    crop.width * scaleX,
+    crop.height * scaleY,
     0, 0, size, size
   );
 
@@ -41,36 +46,30 @@ async function getCroppedBlob(imageSrc, crop) {
 export default function AvatarUpload({ currentAvatar, username, size = "lg" }) {
   const { fetchMe } = useAuthStore();
   const inputRef = useRef(null);
-  const imgRef = useRef(null);
-
-  const [rawSrc, setRawSrc] = useState(null);   // imagen antes del crop
+  const [rawSrc, setRawSrc] = useState(null);
   const [crop, setCrop] = useState(null);
   const [completedCrop, setCompletedCrop] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  const sizeClasses = { sm: "w-12 h-12 text-lg", md: "w-16 h-16 text-xl", lg: "w-24 h-24 text-4xl" };
+  const sizeClasses = { 
+    sm: "w-12 h-12 text-sm", 
+    md: "w-20 h-20 text-xl", 
+    lg: "w-32 h-32 text-4xl" 
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = "";
     const reader = new FileReader();
     reader.onload = (ev) => {
       setRawSrc(ev.target.result);
-      if (currentAvatar) {
-        setShowConfirm(true); // ya tiene foto → pedir confirmación
-      } else {
-        setShowModal(true);   // no tiene foto → ir directo al crop
-      }
+      if (currentAvatar) setShowConfirm(true);
+      else setShowModal(true);
     };
     reader.readAsDataURL(file);
-  };
-
-  const onImageLoad = (e) => {
-    const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height));
+    e.target.value = "";
   };
 
   const handleUpload = async () => {
@@ -82,105 +81,93 @@ export default function AvatarUpload({ currentAvatar, username, size = "lg" }) {
       formData.append("avatar", blob, "avatar.jpg");
       await api.post("/upload/avatar", formData, { headers: { "Content-Type": "multipart/form-data" } });
       await fetchMe();
-      setShowModal(false);
-      setRawSrc(null);
+      handleCancel();
     } catch (err) {
-      alert(err.response?.data?.message || "Error al subir la imagen");
-    } finally {
-      setUploading(false);
-    }
+      alert("Error al subir imagen");
+    } finally { setUploading(false); }
   };
 
   const handleCancel = () => {
-    setShowModal(false);
-    setShowConfirm(false);
-    setRawSrc(null);
-    setCrop(null);
-    setCompletedCrop(null);
+    setShowModal(false); setShowConfirm(false); setRawSrc(null); setCrop(null);
   };
 
   return (
     <>
-      {/* Avatar clickeable */}
-      <div
-        className="relative group cursor-pointer"
-        onClick={() => inputRef.current?.click()}
-        title="Cambiar foto de perfil"
-      >
-        <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-4 border-indigo-800 shadow-lg`}>
+      <div className="relative group cursor-pointer inline-block" onClick={() => inputRef.current?.click()}>
+        <div className={`${sizeClasses[size]} rounded-[2.5rem] overflow-hidden border-4 border-white shadow-xl bg-white relative z-10`}>
           {currentAvatar ? (
             <img src={currentAvatar} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full bg-gradient-to-tr from-violet-600 to-fuchsia-500 flex items-center justify-center text-white font-black">
-              {username?.[0]?.toUpperCase() || "?"}
+            <div className="w-full h-full bg-slate-100 flex items-center justify-center text-[#2B7FE8] font-black italic">
+              {username?.[0]?.toUpperCase()}
             </div>
           )}
-        </div>
-        <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-white text-lg">📷</span>
+          <div className="absolute inset-0 bg-[#0F2547]/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+            <Camera className="text-white" size={24} />
+          </div>
         </div>
       </div>
 
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
-      {/* Modal de confirmación (si ya tiene foto) */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
-          <div className="bg-indigo-900 border border-indigo-700 rounded-2xl p-6 w-full max-w-sm text-center space-y-4">
-            <div className="text-4xl">⚠️</div>
-            <h3 className="text-white font-black text-lg">¿Cambiar foto de perfil?</h3>
-            <p className="text-indigo-400 text-sm">Tu foto actual será reemplazada.</p>
-            <div className="flex gap-3">
-              <button onClick={handleCancel} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-indigo-300 font-bold py-3 rounded-xl transition">
-                Cancelar
-              </button>
-              <button onClick={() => { setShowConfirm(false); setShowModal(true); }}
-                className="flex-1 bg-violet-500 hover:bg-violet-400 text-white font-bold py-3 rounded-xl transition">
-                Continuar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL DE CONFIRMACIÓN */}
+{showConfirm && (
+  <div className="fixed inset-0 bg-[#0F2547]/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+    <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-white flex flex-col items-center animate-in zoom-in-95 duration-200"
+         style={{ width: '400px', maxWidth: '95vw', minHeight: '300px' }}>
+      
+      <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mb-6">
+        <AlertTriangle size={40} />
+      </div>
+      
+      <h3 className="text-[#0F2547] font-black italic uppercase text-2xl mb-2 text-center">
+        ¿Actualizar Foto?
+      </h3>
+      
+      <p className="text-[#7A9CC5] text-[11px] font-bold mb-8 uppercase tracking-widest text-center leading-relaxed">
+        Tu identidad visual actual <br/> será reemplazada en el nexo.
+      </p>
+      
+      <div className="flex gap-3 w-full mt-auto">
+        <button onClick={handleCancel} className="flex-1 py-4 rounded-2xl bg-slate-100 text-[#7A9CC5] font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">
+          Cancelar
+        </button>
+        <button onClick={() => { setShowConfirm(false); setShowModal(true); }} className="flex-1 py-4 rounded-2xl bg-[#2B7FE8] text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-200 hover:brightness-110 transition-all">
+          Continuar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
-      {/* Modal de recorte */}
-      {showModal && rawSrc && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-4">
-          <div className="bg-indigo-900 border border-indigo-700 rounded-2xl p-6 w-full max-w-lg space-y-4">
-            <h3 className="text-white font-black text-lg text-center">Recortar foto de perfil</h3>
-            <p className="text-indigo-400 text-xs text-center">Arrastrá y redimensioná el círculo para elegir el área</p>
+{/* MODAL DE RECORTE */}
+{showModal && rawSrc && (
+  <div className="fixed inset-0 bg-[#0F2547]/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+    <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-white flex flex-col animate-in zoom-in-95 duration-200"
+         style={{ width: '550px', maxWidth: '95vw' }}>
+      
+      <h3 className="text-[#0F2547] font-black italic uppercase text-center text-xl mb-6">
+        Ajustar Perfil
+      </h3>
+      
+      <div className="flex justify-center mb-8 bg-slate-50 rounded-2xl p-4 overflow-hidden border border-slate-100 shadow-inner w-full">
+        <ReactCrop crop={crop} onChange={c => setCrop(c)} onComplete={c => setCompletedCrop(c)} aspect={1}>
+          <img src={rawSrc} alt="Crop" onLoad={e => setCrop(centerAspectCrop(e.currentTarget.width, e.currentTarget.height))} 
+               className="max-h-[350px] w-auto object-contain" />
+        </ReactCrop>
+      </div>
 
-            <div className="flex justify-center max-h-96 overflow-auto">
-              <ReactCrop
-                crop={crop}
-                onChange={(c) => setCrop(c)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={1}
-                circularCrop
-                minWidth={50}
-              >
-                <img
-                  ref={imgRef}
-                  src={rawSrc}
-                  alt="Recortar"
-                  onLoad={onImageLoad}
-                  className="max-w-full max-h-80 object-contain"
-                />
-              </ReactCrop>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={handleCancel} className="flex-1 bg-indigo-800 hover:bg-indigo-700 text-indigo-300 font-bold py-3 rounded-xl transition">
-                Cancelar
-              </button>
-              <button onClick={handleUpload} disabled={!completedCrop || uploading}
-                className="flex-1 bg-violet-500 hover:bg-violet-400 disabled:opacity-40 text-white font-bold py-3 rounded-xl transition active:scale-95">
-                {uploading ? "Subiendo..." : "Guardar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <div className="flex gap-4 w-full">
+        <button onClick={handleCancel} className="flex-1 py-4 rounded-2xl bg-slate-100 text-[#7A9CC5] font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2">
+          <X size={14}/> Cancelar
+        </button>
+        <button onClick={handleUpload} disabled={uploading} className="flex-1 py-4 rounded-2xl bg-[#2B7FE8] text-white font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+          <Check size={14}/> {uploading ? "Subiendo..." : "Finalizar"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 }

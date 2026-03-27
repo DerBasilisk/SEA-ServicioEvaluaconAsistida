@@ -1,8 +1,36 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { 
+  User, Settings, LogOut, Heart, 
+  Zap, Trophy, Users, Star 
+} from "lucide-react";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
 
+const NAV_CSS = `
+  .sea-nav {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1.5px solid rgba(255, 255, 255, 0.8);
+  }
+  .stat-capsule {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid white;
+    box-shadow: 0 4px 15px rgba(43, 127, 232, 0.05);
+    transition: all 0.3s ease;
+  }
+  .stat-capsule:hover {
+    background: white;
+    transform: translateY(-2px);
+  }
+  .nav-dropdown {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(25px);
+    border: 1.5px solid white;
+    box-shadow: 0 20px 40px rgba(15, 37, 71, 0.1);
+  }
+`;
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -10,49 +38,15 @@ export default function Navbar() {
   const { user, logout, fetchMe } = useAuthStore();
   const [refilling, setRefilling] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
   const [heartsOpen, setHeartsOpen] = useState(false);
+  
+  const dropdownRef = useRef(null);
   const heartsRef = useRef(null);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  const handleRefill = async () => {
-    if (refilling) return;
-    setRefilling(true);
-    try {
-      await api.post("/progress/refill-hearts");
-      await fetchMe();
-    } catch (err) {
-      alert(err.response?.data?.message || "Error al recargar vidas");
-    } finally {
-      setRefilling(false);
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    setDeleting(true);
-    try {
-      await api.delete("/auth/delete-account");
-      logout();
-      navigate("/login");
-    } catch (err) {
-      alert(err.response?.data?.message || "Error al eliminar la cuenta");
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-    }
-  };
-
-  // Cerrar dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-        setShowDeleteConfirm(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
+      if (heartsRef.current && !heartsRef.current.contains(e.target)) setHeartsOpen(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -60,143 +54,163 @@ export default function Navbar() {
 
   if (location.pathname.startsWith("/lesson/")) return null;
 
+  const handleLogout = () => { logout(); navigate("/login"); };
+
+  const handleRefill = async () => {
+    if (refilling) return;
+    setRefilling(true);
+    try {
+      await api.post("/progress/refill-hearts");
+      await fetchMe();
+      setHeartsOpen(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRefilling(false);
+    }
+  };
+
   const hearts = user?.hearts?.current ?? 5;
   const gems = user?.gems || 0;
   const canRefill = hearts < 5 && gems >= 50;
 
   return (
-    <nav className="bg-indigo-900 border-b border-indigo-700 px-4 py-3 sticky top-0 z-50">
-      <div className="max-w-4xl mx-auto flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <img src="/sealogo.png" width="60" alt="SEA" />
+    <nav className="sea-nav sticky top-0 z-[100] px-6 py-3">
+      <style>{NAV_CSS}</style>
+      <div className="max-w-[98%] mx-auto flex items-center justify-between">
+        
+        {/* LOGO */}
+        <Link to="/" className="flex items-center gap-2 group transition-transform active:scale-95">
+          <div className="bg-[#2B7FE8] p-1.5 rounded-xl shadow-lg shadow-blue-200 rotate-[-3deg] group-hover:rotate-0 transition-all">
+             <img src="/sealogo.png" width="40" alt="SEA" className="brightness-0 invert" />
+          </div>
+          <span className="text-[#0F2547] font-black italic tracking-tighter text-xl uppercase">SEA</span>
         </Link>
 
-        {/* Stats */}
+        {/* STATS & ACTIONS */}
         {user && (
-          <div className="flex items-center gap-4">
-            <Link to="/league" className="text-indigo-400 hover:text-white transition text-sm"><img className="w-9"
-                src={`/league.png`}
-              /></Link>
-            <Link to="/friends" className="text-indigo-400 hover:text-white transition text-sm"><img className="w-9"
-                src={`/friends.png`}
-              /></Link>
-
-            <div className="flex items-center gap-1 text-orange-400">
-              <img className="w-9"
-                src={`/streak.png`}
-              />
-              <span className="font-bold text-sm">{user.streak?.current || 0}</span>
+          <div className="flex items-center gap-3">
+            
+            {/* Nav Links Iconos */}
+            <div className="hidden md:flex items-center gap-2 mr-4 border-r border-slate-200 pr-4">
+               <NavLink to="/league" icon={<Trophy size={18} />} label="Liga" color="text-yellow-500" />
+               <NavLink to="/friends" icon={<Users size={18} />} label="Social" color="text-[#2B7FE8]" />
             </div>
 
-            <div className="flex items-center gap-1 text-cyan-400">
-              <img className="w-9"
-                src={`/gems.png`}
-              />
-              <span className="font-bold text-sm">{gems}</span>
+            {/* Streak */}
+            <div className="stat-capsule flex items-center gap-2 px-3 py-1.5 rounded-2xl">
+              <img src="/streak.png" className="w-6 h-6 object-contain" alt="racha" />
+              <span className="font-black text-[#0F2547] text-xs">{user.streak?.current || 0}</span>
             </div>
 
-            {/* Corazones — un ícono con contador y popover */}
-            <div className="relative">
+            {/* Gems */}
+            <div className="stat-capsule flex items-center gap-2 px-3 py-1.5 rounded-2xl">
+              <img src="/gems.png" className="w-6 h-6 object-contain" alt="gemas" />
+              <span className="font-black text-[#0F2547] text-xs">{gems}</span>
+            </div>
+
+            {/* XP */}
+            <div className="hidden sm:flex stat-capsule items-center gap-2 px-3 py-1.5 rounded-2xl bg-violet-50/50">
+              <Zap size={16} className="text-violet-500 fill-violet-500" />
+              <span className="font-black text-violet-600 text-[10px] uppercase">{user.xp || 0} XP</span>
+            </div>
+
+            {/* Hearts Popover */}
+            <div className="relative" ref={heartsRef}>
               <button
-                onClick={() => setHeartsOpen((o) => !o)}
-                className="flex items-center gap-1 hover:scale-110 transition active:scale-95"
+                onClick={() => setHeartsOpen(!heartsOpen)}
+                className={`stat-capsule flex items-center gap-2 px-3 py-1.5 rounded-2xl ${hearts === 0 ? "bg-red-50" : ""}`}
               >
-                <span className={`text-lg ${hearts === 0 ? "opacity-40" : "opacity-100"}`}>❤️</span>
-                <span className={`font-bold text-sm ${hearts === 0 ? "text-red-400" : "text-white"}`}>
-                  {hearts}
-                </span>
+                <Heart size={18} className={`${hearts === 0 ? "text-red-400 fill-red-400" : "text-rose-500 fill-rose-500"} animate-pulse`} />
+                <span className={`font-black text-xs ${hearts === 0 ? "text-red-500" : "text-[#0F2547]"}`}>{hearts}</span>
               </button>
 
               {heartsOpen && (
-                <div ref={heartsRef} className="absolute right-0 mt-2 w-56 bg-indigo-900 border border-indigo-700 rounded-xl shadow-xl z-50 p-4">
-                  {/* Corazones visuales */}
-                  <div className="flex justify-center gap-1 mb-3">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span key={i} className={`text-xl ${i < hearts ? "opacity-100" : "opacity-20"}`}>❤️</span>
+                <div className="nav-dropdown absolute right-0 mt-4 w-64 rounded-[2rem] p-6 animate-in zoom-in-95 duration-200">
+                  <div className="flex justify-center gap-1.5 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Heart key={i} size={20} className={i < hearts ? "text-rose-500 fill-rose-500" : "text-slate-200"} />
                     ))}
                   </div>
-
-                  <p className="text-white font-bold text-sm text-center mb-1">{hearts}/5 vidas</p>
-
-                  {hearts < 5 ? (
-                    <>
-                      <p className="text-indigo-400 text-xs text-center mb-3">
-                        {hearts === 0 ? "¡Sin vidas! Recargá para seguir." : "Se recargan automáticamente cada 30 min."}
-                      </p>
-                      <button
-                        onClick={async () => { await handleRefill(); setHeartsOpen(false); }}
-                        disabled={!canRefill || refilling}
-                        className="w-full bg-cyan-500 hover:bg-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black py-2.5 rounded-xl text-sm transition active:scale-95"
-                      >
-                        {refilling ? "Recargando..." : canRefill ? `Recargar por 50 💎` : `Necesitás 50 💎 (tenés ${gems})`}
-                      </button>
-                    </>
-                  ) : (
-                    <p className="text-emerald-400 text-xs text-center">¡Vidas completas!</p>
+                  <h4 className="text-[#0F2547] font-black uppercase italic text-center text-sm mb-1">{hearts} / 5 Vidas</h4>
+                  <p className="text-[#7A9CC5] text-[10px] font-bold text-center uppercase tracking-widest mb-4 leading-relaxed">
+                    {hearts < 5 ? "Las vidas se regeneran con el tiempo o con gemas." : "¡Energía al máximo, Agente!"}
+                  </p>
+                  
+                  {hearts < 5 && (
+                    <button
+                      onClick={handleRefill}
+                      disabled={!canRefill || refilling}
+                      className="w-full bg-[#2B7FE8] hover:bg-[#1A6FD8] disabled:opacity-30 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.2em] transition-all shadow-lg shadow-blue-100"
+                    >
+                      {refilling ? "Procesando..." : `Recargar (50 💎)`}
+                    </button>
                   )}
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-1 text-violet-400">
-              <img className="w-9"
-                src={`/xp.png`}
-              />
-              <span className="font-bold text-sm">{user.xp || 0} XP</span>
-            </div>
 
-            {/* Avatar con dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            {/* User Dropdown */}
+            <div className="relative ml-2" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-8 h-8 rounded-full overflow-hidden border-2 border-violet-500 hover:border-violet-300 transition flex-shrink-0"
+                className="w-10 h-10 rounded-2xl overflow-hidden border-2 border-white shadow-md hover:scale-105 transition-all flex-shrink-0 bg-gradient-to-br from-[#2B7FE8] to-[#5B9FFF]"
               >
                 {user.avatar ? (
                   <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full bg-violet-500 flex items-center justify-center text-white font-bold text-sm">
-                    {(user.displayName || user.username)?.[0]?.toUpperCase()}
-                  </div>
+                  <span className="w-full h-full flex items-center justify-center text-white font-black text-sm italic">
+                    {user.username?.[0].toUpperCase()}
+                  </span>
                 )}
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-indigo-900 border border-indigo-700 rounded-xl shadow-xl overflow-hidden z-50">
-                  {/* Header del dropdown */}
-                  <div className="px-4 py-3 border-b border-indigo-700">
-                    <p className="text-white font-bold text-sm truncate">{user.displayName || user.username}</p>
-                    <p className="text-indigo-400 text-xs truncate">@{user.username}</p>
+                <div className="nav-dropdown absolute right-0 mt-4 w-56 rounded-[2rem] overflow-hidden animate-in slide-in-from-top-2 duration-200">
+                  <div className="p-5 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
+                    <p className="text-[#0F2547] font-black text-xs uppercase truncate">{user.displayName || user.username}</p>
+                    <p className="text-[#7A9CC5] text-[9px] font-black uppercase tracking-widest">Nivel {user.level || 1} • Agente</p>
                   </div>
-
-                  {/* Opciones */}
-                  <div className="py-1">
-                    <Link
-                      to="/profile"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-indigo-200 hover:bg-indigo-800 hover:text-white transition"
-                    >
-                      👤 Mi perfil
-                    </Link>
-                    <Link
-                      to="/settings"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-indigo-200 hover:bg-indigo-800 hover:text-white transition"
-                    >
-                      ⚙️ Configuración
-                    </Link>
+                  
+                  <div className="p-2">
+                    <DropdownLink to="/profile" icon={<User size={16} />} text="Mi Expediente" onClick={() => setDropdownOpen(false)} />
+                    <DropdownLink to="/settings" icon={<Settings size={16} />} text="Configuración" onClick={() => setDropdownOpen(false)} />
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left flex items-center gap-2 px-4 py-2.5 text-sm text-indigo-200 hover:bg-indigo-800 hover:text-white transition"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-[#0F2547] font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all"
                     >
-                      🚪 Cerrar sesión
+                      <LogOut size={16} /> Salir del Sistema
                     </button>
                   </div>
                 </div>
               )}
             </div>
+
           </div>
         )}
       </div>
     </nav>
+  );
+}
+
+// Subcomponentes para mantener el código limpio
+function NavLink({ to, icon, label, color }) {
+  return (
+    <Link to={to} className={`flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white transition-all group`}>
+      <span className={`${color} group-hover:scale-110 transition-transform`}>{icon}</span>
+      <span className="text-[#0F2547] font-black text-[9px] uppercase tracking-widest hidden lg:block">{label}</span>
+    </Link>
+  );
+}
+
+function DropdownLink({ to, icon, text, onClick }) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className="flex items-center gap-3 px-4 py-3 text-[#0F2547] font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 hover:text-[#2B7FE8] rounded-2xl transition-all"
+    >
+      {icon} {text}
+    </Link>
   );
 }
