@@ -22,9 +22,15 @@ import League from "./pages/League";
 function App() {
   const { token, fetchMe } = useAuthStore();
 
+  // App.jsx
   useEffect(() => {
-    if (token) fetchMe();
-  }, []);
+    if (token) {
+      fetchMe();
+      // Opcional: Refrescar datos cada 2 minutos en segundo plano
+      const interval = setInterval(fetchMe, 120000); 
+      return () => clearInterval(interval);
+    }
+  }, [token, fetchMe]); // Se vuelve a ejecutar si el token cambia (login/logout)
 
   return (
     <BrowserRouter>

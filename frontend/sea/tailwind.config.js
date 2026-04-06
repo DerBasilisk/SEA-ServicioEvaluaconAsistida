@@ -6,6 +6,7 @@ export default {
   ],
   theme: {
     extend: {
+      // TUS COLORES ORIGINALES DEL SEA
       colors: {
         sea: {
           bg: '#FCFDF2',
@@ -23,7 +24,23 @@ export default {
             tbody: '#8CCED3',
           }
         }
+      },
+      // --- AQUÍ PEGAMOS LA MAGIA NUEVA ---
+      animation: {
+        'float-slow': 'floating 6s ease-in-out infinite',
+        'shimmer': 'shimmer 2s infinite',
+        'spin-slow': 'spin 8s linear infinite',
+      },
+      keyframes: {
+        floating: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        }
       }
+      // ----------------------------------
     }
   },
   plugins: [],

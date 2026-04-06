@@ -2,11 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
+  background-color: #f0f4f8; /* Un gris azulado muy, muy claro */
+  color: #002050;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* El truco del color está en estos orbes de fondo */
+.bg-blobs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: 
+    radial-gradient(circle at 20% 20%, #e0f2fe 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, #dbeafe 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, #f0f9ff 0%, transparent 100%);
 }
