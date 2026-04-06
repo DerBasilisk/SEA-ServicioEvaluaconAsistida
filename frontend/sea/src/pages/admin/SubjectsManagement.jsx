@@ -161,14 +161,14 @@ export default function SubjectsManagement() {
                     <button
                       onClick={() => moveOrder(subject._id, "up")}
                       disabled={index === 0}
-                      className="p-2 hover:bg-gray-700 rounded-xl disabled:opacity-30"
+                      className="p-2 hover:bg-gray-700 text-white rounded-xl disabled:opacity-30"
                     >
                       <ArrowUp size={18} />
                     </button>
                     <button
                       onClick={() => moveOrder(subject._id, "down")}
                       disabled={index === subjects.length - 1}
-                      className="p-2 hover:bg-gray-700 rounded-xl disabled:opacity-30"
+                      className="p-2 hover:bg-gray-700 text-white rounded-xl disabled:opacity-30"
                     >
                       <ArrowDown size={18} />
                     </button>

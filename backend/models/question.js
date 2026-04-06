@@ -149,6 +149,28 @@ const questionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Dentro del questionSchema, agrega este campo:
+
+    reports: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+      },
+      reason: {
+        type: String,
+        enum: ["wrong_answer", "unclear", "typo", "too_hard", "other"],
+        required: true
+      },
+      comment: {
+        type: String,
+        maxlength: 300
+      },
+      reportedAt: {
+        type: Date,
+        default: Date.now
+      }
+    }]
 
   },
   {
@@ -188,6 +210,8 @@ questionSchema.pre("validate", function () {
       }
       break;
   }
+    // Al final del schema
+  questionSchema.index({ "reports.0": 1 }); // Para buscar preguntas reportadas rápidamente
 });
 
 // Índice para búsqueda eficiente al armar sesiones de repaso

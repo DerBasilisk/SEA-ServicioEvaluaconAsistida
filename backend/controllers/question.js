@@ -80,6 +80,42 @@ const reviewQuestion = async (req, res) => {
   }
 };
 
+// POST /api/questions/:questionId/report
+const reportQuestion = async (req, res) => {
+  try {
+    const { reason, comment } = req.body;
+
+    if (!["wrong_answer", "unclear", "typo", "too_hard", "other"].includes(reason)) {
+      return res.status(400).json({ ok: false, message: "Motivo inválido" });
+    }
+
+    const question = await Question.findByIdAndUpdate(
+      req.params.questionId,
+      {
+        $push: {
+          reports: {
+            user: req.usuario._id,
+            reason,
+            comment: comment || "",
+          }
+        }
+      },
+      { new: true }
+    );
+
+    if (!question) {
+      return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
+    }
+
+    res.json({ 
+      ok: true, 
+      message: "Pregunta reportada correctamente. Gracias por tu feedback." 
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
 // POST /api/admin/questions/generate
 const generateWithAI = async (req, res) => {
   try {
@@ -134,6 +170,7 @@ const generateWithAI = async (req, res) => {
 
 module.exports = {
   getQuestions,
+  reportQuestion,
   createQuestion,
   updateQuestion,
   deleteQuestion,

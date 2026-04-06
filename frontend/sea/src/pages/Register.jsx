@@ -27,8 +27,8 @@ const REGISTER_CSS = `
   }
 
   .sea-register-logo {
-    animation: register-float 3s ease-in-out infinite;
-    box-shadow: 0 12px 32px rgba(43,127,232,.2);
+    animation: login-float 3s ease-in-out infinite;
+    box-shadow: 0 12px 32px rgba(43,127,232,.2), inset 0 1px 0 rgba(255,255,255,.6);
   }
 
   .sea-input {
@@ -98,10 +98,10 @@ export default function Register() {
           
           {/* Logo SEA */}
           <div className="text-center mb-8" style={{ animation: "register-fadeUp .45s ease both" }}>
-            <div className="sea-register-logo inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] mb-4 border-2 border-white/70 bg-white/60">
-              <span className="text-2xl font-black italic tracking-tighter bg-gradient-to-br from-[#2B7FE8] to-[#6B9FFF] bg-clip-text text-transparent">
-                SEA
-              </span>
+            <div className="sea-register-logo inline-flex items-center justify-center w-40 h-20 rounded-[2rem] mb-6 border-2 border-white/70 bg-white/60">
+            <div className="bg-[#2B7FE8] p-1.5 rounded-3xl shadow-lg shadow-blue-200 rotate-[-3deg] group-hover:rotate-0 transition-all">
+             <img src="/sealogo.png" width="120" alt="SEA" className="brightness-0 invert" />
+            </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[#0F2547]">
               Crear Cuenta

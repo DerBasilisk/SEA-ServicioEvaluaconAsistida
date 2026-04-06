@@ -1,25 +1,25 @@
+// frontend/sea/src/pages/admin/QuestionsManagement.jsx
 import { useState, useEffect } from "react";
-import { Search, Edit, Trash2, CheckCircle, XCircle, Sparkles, Plus, Filter, RotateCcw } from "lucide-react";
+import { Search, Edit, Trash2, CheckCircle, XCircle, Sparkles, Plus, RotateCcw } from "lucide-react";
 import api from "../../api/axios";
 import QuestionModal from "../../components/admin/QuestionModal";
 
 export default function QuestionsManagement() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Data para Selects
+
+  // Datos para filtros jerárquicos
   const [subjects, setSubjects] = useState([]);
   const [units, setUnits] = useState([]);
   const [lessons, setLessons] = useState([]);
 
-  // Estados de Filtro
+  // Filtros
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selSubject, setSelSubject] = useState("");
   const [selUnit, setSelUnit] = useState("");
   const [selLesson, setSelLesson] = useState("");
-  
-  
+
   // Paginación
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -28,33 +28,36 @@ export default function QuestionsManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
 
-  // 1. Cargar Materias al montar el componente
+  // Estado para generación IA
+  const [generating, setGenerating] = useState(false);
+
+  // Cargar materias
   useEffect(() => {
-    api.get("/admin/subjects").then(res => setSubjects(res.data.data));
+    api.get("/admin/subjects").then(res => setSubjects(res.data.data || []));
   }, []);
 
-  // 2. Cargar Unidades cuando cambie la Materia
+  // Cargar unidades cuando cambia materia
   useEffect(() => {
     if (selSubject) {
-      api.get(`/admin/subjects/${selSubject}/units`).then(res => setUnits(res.data.data));
+      api.get(`/admin/subjects/${selSubject}/units`).then(res => setUnits(res.data.data || []));
     } else {
       setUnits([]);
     }
-    setSelUnit(""); // Reset downstream
+    setSelUnit("");
     setSelLesson("");
   }, [selSubject]);
 
-  // 3. Cargar Lecciones cuando cambie la Unidad
+  // Cargar lecciones cuando cambia unidad
   useEffect(() => {
     if (selUnit) {
-      api.get(`/admin/units/${selUnit}/lessons`).then(res => setLessons(res.data.data));
+      api.get(`/admin/units/${selUnit}/lessons`).then(res => setLessons(res.data.data || []));
     } else {
       setLessons([]);
     }
-    setSelLesson(""); // Reset downstream
+    setSelLesson("");
   }, [selUnit]);
 
-  // 4. Cargar Preguntas (Se dispara con cualquier cambio de filtro o página)
+  // Cargar preguntas
   const fetchQuestions = async () => {
     try {
       setLoading(true);
@@ -69,12 +72,34 @@ export default function QuestionsManagement() {
       };
 
       const { data } = await api.get("/admin/questions", { params });
-      setQuestions(data.data.questions);
-      setTotalPages(data.data.pages);
+      setQuestions(data.data.questions || []);
+      setTotalPages(data.data.pages || 1);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Toggle rápido de Revisada / Pendiente
+  const handleToggleReview = async (id, newReviewed) => {
+    try {
+      await api.put(`/admin/questions/${id}/review`, { approved: newReviewed });
+      fetchQuestions(); // Refrescar lista
+    } catch (err) {
+      alert("Error al actualizar estado de revisión");
+      console.error(err);
+    }
+  };
+
+  // Toggle rápido de Activa / Inactiva
+  const handleToggleActive = async (id, newActive) => {
+    try {
+      await api.put(`/admin/questions/${id}`, { isActive: newActive });
+      fetchQuestions();
+    } catch (err) {
+      alert("Error al actualizar estado activo");
+      console.error(err);
     }
   };
 
@@ -86,127 +111,145 @@ export default function QuestionsManagement() {
     setSearch("");
     setFilterStatus("all");
     setSelSubject("");
+    setSelUnit("");
+    setSelLesson("");
     setPage(1);
   };
 
-  // Handlers de acción (Delete, Review, etc.) similares a los anteriores...
+  // ==================== GENERACIÓN CON IA ====================
+  const handleGenerateAI = async () => {
+    if (!selLesson) {
+      alert("Por favor selecciona una Lección antes de generar preguntas con IA.");
+      return;
+    }
+
+    setGenerating(true);
+
+    try {
+      const { data } = await api.post("/admin/questions/generate", {
+        lessonId: selLesson,
+        count: 5,           // puedes hacer esto configurable
+        difficulty: "medium"
+      });
+
+      alert(data.message || `${data.data?.length || 0} preguntas generadas correctamente.`);
+      fetchQuestions();   // Refrescar la lista
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Error al generar preguntas con IA");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleDelete = async (id) => {
-    if (!confirm("¿Eliminar pregunta?")) return;
+    if (!confirm("¿Eliminar esta pregunta?")) return;
     await api.delete(`/admin/questions/${id}`);
     fetchQuestions();
   };
 
-  // Dentro de QuestionsManagement.jsx
   const handleSaveQuestion = async (payload) => {
     try {
-      // 1. Identificamos si es edición o creación
-      if (editingQuestion && editingQuestion._id) {
-        console.log("Editando pregunta:", editingQuestion._id);
-        
-        // Enviamos el PUT al backend
+      if (editingQuestion?._id) {
         await api.put(`/admin/questions/${editingQuestion._id}`, payload);
       } else {
-        console.log("Creando nueva pregunta");
-        
-        // Enviamos el POST al backend
-        // Nos aseguramos de incluir los IDs de los filtros actuales si no están en el payload
-        await api.post("/admin/questions", {
-          ...payload,
-          subjectId: selSubject,
-          unitId: selUnit,
-          lessonId: selLesson
-        });
+        await api.post("/admin/questions", payload);
       }
-
-      // 2. Si la API respondió con éxito (no saltó al catch):
-      setShowModal(false);     // Cerramos modal
-      setEditingQuestion(null); // Limpiamos selección
-      
-      // 3. AHORA SÍ refrescamos la lista (con await para seguridad)
-      await fetchQuestions(); 
-      
-      alert("¡Pregunta guardada con éxito!");
+      setShowModal(false);
+      setEditingQuestion(null);
+      fetchQuestions();
+      alert("Pregunta guardada correctamente");
     } catch (err) {
-      console.error("Error al guardar:", err);
-      alert(err.response?.data?.message || "No se pudo guardar la pregunta");
+      alert(err.response?.data?.message || "Error al guardar la pregunta");
     }
   };
 
   return (
     <div className="space-y-6 pb-20">
-      {/* Header con acciones principales */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Filter className="text-violet-400" /> Gestión de Preguntas
-          </h1>
-          <p className="text-gray-400">Control de calidad y generación de contenido</p>
+          <h1 className="text-3xl font-bold text-white">Gestión de Preguntas</h1>
+          <p className="text-gray-400">Control de calidad y generación con IA</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => setShowModal(true)} className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-2xl flex items-center gap-2 transition-all">
-            <Plus size={20} /> Manual
+
+        <div className="flex gap-3">
+          <button 
+            onClick={handleGenerateAI}
+            disabled={generating || !selLesson}
+            className="bg-violet-600 hover:bg-violet-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl flex items-center gap-2 transition-all"
+          >
+            <Sparkles size={20} />
+            {generating ? "Generando..." : "Generar con IA"}
           </button>
-          <button className="bg-violet-600 hover:bg-violet-500 text-white px-5 py-3 rounded-2xl flex items-center gap-2 transition-all">
-            <Sparkles size={20} /> Generar IA
+
+          <button 
+            onClick={() => { setEditingQuestion(null); setShowModal(true); }}
+            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-2xl flex items-center gap-2 transition-all"
+          >
+            <Plus size={20} /> Nueva Manual
           </button>
         </div>
       </div>
 
-      {/* Barra de Filtros Avanzada */}
-      <div className="bg-gray-900/50 border border-gray-800 p-6 rounded-3xl space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Select Materia */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase ml-1">Materia</label>
-            <select value={selSubject} onChange={(e) => setSelSubject(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-2xl px-4 py-3 focus:ring-2 ring-violet-500 outline-none">
+      {/* Filtros Jerárquicos */}
+      <div className="bg-gray-900 border border-gray-800 p-6 rounded-3xl">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Materia</label>
+            <select value={selSubject} onChange={(e) => setSelSubject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white">
               <option value="">Todas las materias</option>
               {subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
             </select>
           </div>
 
-          {/* Select Unidad */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase ml-1">Unidad</label>
-            <select value={selUnit} onChange={(e) => setSelUnit(e.target.value)} disabled={!selSubject}
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-2xl px-4 py-3 disabled:opacity-30 outline-none">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Unidad</label>
+            <select value={selUnit} onChange={(e) => setSelUnit(e.target.value)} disabled={!selSubject} className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white disabled:opacity-50">
               <option value="">Todas las unidades</option>
               {units.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
             </select>
           </div>
 
-          {/* Select Lección */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase ml-1">Lección</label>
-            <select value={selLesson} onChange={(e) => setSelLesson(e.target.value)} disabled={!selUnit}
-              className="w-full bg-gray-800 border border-gray-700 text-white rounded-2xl px-4 py-3 disabled:opacity-30 outline-none">
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">Lección</label>
+            <select value={selLesson} onChange={(e) => setSelLesson(e.target.value)} disabled={!selUnit} className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white disabled:opacity-50">
               <option value="">Todas las lecciones</option>
               {lessons.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
             </select>
           </div>
+
+          <div className="flex items-end">
+            <button onClick={resetFilters} className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl text-white flex items-center justify-center gap-2">
+              <RotateCcw size={18} /> Limpiar Filtros
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-1">
+        {/* Buscador y estado */}
+        <div className="mt-4 flex gap-4">
+          <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-            <input type="text" placeholder="Buscar en el enunciado..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-2xl pl-12 pr-4 py-3 text-white focus:border-violet-500 outline-none" />
+            <input 
+              type="text" 
+              placeholder="Buscar en el enunciado..." 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-2xl pl-12 pr-4 py-3 text-white"
+            />
           </div>
-          
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-gray-800 border border-gray-700 text-white rounded-2xl px-6 py-3 outline-none">
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="bg-gray-800 border border-gray-700 text-white rounded-2xl px-6 py-3">
             <option value="all">Todos los estados</option>
-            <option value="pending">Pendientes ⏳</option>
-            <option value="reviewed">Revisadas ✅</option>
+            <option value="pending">Pendientes</option>
+            <option value="reviewed">Revisadas</option>
           </select>
-
           <button onClick={resetFilters} className="p-3 text-gray-400 hover:text-white transition-colors" title="Reiniciar filtros">
             <RotateCcw size={22} />
-          </button>
+            </button>
+
         </div>
       </div>
 
-      {/* Tabla de Resultados (Misma estructura que tenías, pero con loading state) */}
+      {/* Tabla de Resultados */}
       <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center">
@@ -263,19 +306,41 @@ export default function QuestionsManagement() {
                         </div>
                       </td>
 
+                      {/* Nueva columna: Toggle de Revisión */}
                       <td className="p-6">
-                        <div className="flex justify-center">
-                          {q.isReviewed ? (
-                            <div className="flex items-center gap-1.5 text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                              <CheckCircle size={14} />
-                              <span className="text-xs font-medium">Revisada</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5 text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-                              <XCircle size={14} />
-                              <span className="text-xs font-medium">Pendiente</span>
-                            </div>
-                          )}
+                        <div className="flex flex-col items-center gap-2">
+                          <button
+                            onClick={() => handleToggleReview(q._id, !q.isReviewed)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                              q.isReviewed 
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20" 
+                                : "bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
+                            }`}
+                          >
+                            {q.isReviewed ? (
+                              <>
+                                <CheckCircle size={16} />
+                                Revisada
+                              </>
+                            ) : (
+                              <>
+                                <XCircle size={16} />
+                                Pendiente
+                              </>
+                            )}
+                          </button>
+
+                          {/* Toggle de Activa */}
+                          <button
+                            onClick={() => handleToggleActive(q._id, !q.isActive)}
+                            className={`text-xs px-3 py-1 rounded-full transition-all ${
+                              q.isActive 
+                                ? "bg-emerald-600/80 text-white" 
+                                : "bg-gray-700 text-gray-400 hover:bg-gray-600"
+                            }`}
+                          >
+                            {q.isActive ? "Activa" : "Inactiva"}
+                          </button>
                         </div>
                       </td>
 
@@ -283,13 +348,13 @@ export default function QuestionsManagement() {
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button 
                             onClick={() => { setEditingQuestion(q); setShowModal(true); }}
-                            className="p-2.5 bg-gray-800 hover:bg-gray-700 text-blue-400 rounded-xl transition-all shadow-lg"
+                            className="p-2.5 bg-gray-800 hover:bg-gray-700 text-blue-400 rounded-xl transition-all"
                           >
                             <Edit size={18} />
                           </button>
                           <button 
                             onClick={() => handleDelete(q._id)}
-                            className="p-2.5 bg-gray-800 hover:bg-red-500/20 text-red-400 rounded-xl transition-all shadow-lg"
+                            className="p-2.5 bg-gray-800 hover:bg-red-500/20 text-red-400 rounded-xl transition-all"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -326,8 +391,6 @@ export default function QuestionsManagement() {
           onClose={() => { setShowModal(false); setEditingQuestion(null); }}
           question={editingQuestion}
           onSave={handleSaveQuestion}
-          // Pasar IDs actuales para facilitar la creación
-          initialData={{ lessonId: selLesson, unitId: selUnit }}
         />
       )}
     </div>

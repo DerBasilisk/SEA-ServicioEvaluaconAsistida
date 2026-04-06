@@ -181,7 +181,7 @@ export default function Friends() {
         {/* COLUMNA 1: Perfil y Navegación */}
         <aside className="lg:col-span-3 space-y-6">
           <div className="sea-glass-card p-8 text-center rounded-[2.5rem]">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#2B7FE8] to-[#5B9FFF] rounded-[2rem] mx-auto mb-4 flex items-center justify-center text-4xl font-black italic text-white shadow-xl rotate-[-3deg]">
+            <div className="w-30 h-30 mx-auto mb-4 flex items-center justify-center text-4xl font-black italic text-white rotate-[-3deg]">
               <Avatar src={user?.avatar} name={user?.displayName || user?.username} size="xl" className="rounded-[2rem] border-4 border-white shadow-xl" />
             </div>
             <h2 className="text-2xl font-black tracking-tighter text-[#0F2547] uppercase italic">{user?.username}</h2>

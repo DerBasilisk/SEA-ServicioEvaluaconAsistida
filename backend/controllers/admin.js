@@ -3,6 +3,7 @@ const UserProgress = require("../models/userProgress");
 const { Subject, Unit, Lesson, Question } = require("../models");
 const mongoose = require("mongoose");
 const { exportToCSV } = require("../services/csv.service");
+const { generateQuestions } = require("../services/ai.service");
 
 // ── USUARIOS ──────────────────────────────────────────────────
 
@@ -283,7 +284,19 @@ const getQuestions = async (req, res) => {
 
 const updateQuestion = async (req, res) => {
   try {
-    const question = await Question.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const question = await Question.findByIdAndUpdate(
+      req.params.id, 
+      req.body, 
+      { 
+        new: true,           // ← Esta opción está deprecada
+        returnDocument: 'after'   // ← Reemplazo correcto
+      }
+    );
+
+    if (!question) {
+      return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
+    }
+
     res.json({ ok: true, data: question });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
@@ -352,32 +365,93 @@ const getAllUnits = async (req, res) => {
   }
 };
 
-// GET /api/admin/lessons - Todas las lecciones
+// GET /api/admin/lessons - Todas las lecciones con jerarquía completa
 const getAllLessons = async (req, res) => {
   try {
     const lessons = await Lesson.find()
-      .populate("unit", "name")
-      .sort({ order: 1 });
+      .populate({
+        path: "unit",
+        select: "name order",
+        populate: {
+          path: "subject",
+          select: "name icon color"
+        }
+      })
+      .sort({ "unit.order": 1, "order": 1 })   // Orden lógico: por unidad y luego por lección
+      .lean();   // ← Muy importante para evitar objetos Mongoose complejos
+
     res.json({ ok: true, data: lessons });
   } catch (err) {
+    console.error("Error en getAllLessons:", err);
+    res.status(500).json({ ok: false, message: "Error al obtener las lecciones" });
+  }
+};
+
+// ==================== GENERACIÓN DE PREGUNTAS CON IA ====================
+
+// POST /api/admin/questions/generate
+const generateWithAI = async (req, res) => {
+  try {
+    const { lessonId, count = 5, difficulty = "medium", allowedTypes } = req.body;
+
+    const lesson = await Lesson.findById(lessonId).populate({
+      path: "unit",
+      populate: { path: "subject" },
+    });
+
+    if (!lesson) {
+      return res.status(404).json({ ok: false, message: "Lección no encontrada" });
+    }
+
+    const subject = lesson.unit.subject;
+    const unit = lesson.unit;
+
+    const generatedQuestions = await generateQuestions({
+      subjectName: subject.name,
+      unitName: unit.name,
+      lessonName: lesson.name,
+      topicHint: lesson.aiTopicHint || lesson.name,
+      difficulty,
+      subjectContext: subject.aiPromptContext || "",
+      count,
+      allowedTypes,
+    });
+
+    // Guardar como pendientes de revisión
+    const saved = await Question.insertMany(
+      generatedQuestions.map((q) => ({ 
+        ...q, 
+        lesson: lessonId,
+        isReviewed: false,
+        isActive: false 
+      }))
+    );
+
+    res.status(201).json({
+      ok: true,
+      message: `${saved.length} preguntas generadas con IA. Deben ser revisadas antes de activarse.`,
+      data: saved,
+    });
+  } catch (err) {
+    console.error("Error generando preguntas con IA:", err);
     res.status(500).json({ ok: false, message: err.message });
   }
 };
 
 
-// Exportar e Importar
-// ==================== EXPORT CSV ====================
+// ==================== EXPORT CSV (Versión Corregida) ====================
 
 const exportSubjects = async (req, res) => {
   try {
-    const subjects = await Subject.find().sort({ order: 1 });
+    const subjects = await Subject.find().sort({ order: 1 }).lean(); // .lean() es clave
     const { csv, filename } = exportToCSV(subjects, 'subjects');
-
+    
     res.header('Content-Type', 'text/csv');
     res.attachment(filename);
     res.send(csv);
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Error al exportar materias" });
   }
 };
 
@@ -385,14 +459,16 @@ const exportUnits = async (req, res) => {
   try {
     const units = await Unit.find()
       .populate("subject", "name")
-      .sort({ order: 1 });
+      .sort({ order: 1 })
+      .lean();
     const { csv, filename } = exportToCSV(units, 'units');
-
+    
     res.header('Content-Type', 'text/csv');
     res.attachment(filename);
     res.send(csv);
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Error al exportar unidades" });
   }
 };
 
@@ -400,14 +476,16 @@ const exportLessons = async (req, res) => {
   try {
     const lessons = await Lesson.find()
       .populate("unit", "name")
-      .sort({ order: 1 });
+      .sort({ order: 1 })
+      .lean();
     const { csv, filename } = exportToCSV(lessons, 'lessons');
-
+    
     res.header('Content-Type', 'text/csv');
     res.attachment(filename);
     res.send(csv);
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Error al exportar lecciones" });
   }
 };
 
@@ -415,14 +493,37 @@ const exportQuestions = async (req, res) => {
   try {
     const questions = await Question.find()
       .populate("lesson", "name")
-      .sort({ createdAt: -1 });
-    const { csv, filename } = exportToCSV(questions, 'questions');
+      .sort({ createdAt: -1 })
+      .lean();   // ← Muy importante
 
+    // Limpiar datos complejos antes de exportar
+    const cleanQuestions = questions.map(q => ({
+      _id: q._id,
+      prompt: q.prompt,
+      type: q.type,
+      difficulty: q.difficulty,
+      xpValue: q.xpValue,
+      explanation: q.explanation,
+      hint: q.hint,
+      conceptExplanation: q.conceptExplanation,
+      tags: q.tags ? q.tags.join("; ") : "",
+      isAIGenerated: q.isAIGenerated,
+      aiModel: q.aiModel,
+      isReviewed: q.isReviewed,
+      isActive: q.isActive,
+      lessonName: q.lesson ? q.lesson.name : "",
+      createdAt: q.createdAt,
+      updatedAt: q.updatedAt
+    }));
+
+    const { csv, filename } = exportToCSV(cleanQuestions, 'questions');
+    
     res.header('Content-Type', 'text/csv');
     res.attachment(filename);
     res.send(csv);
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Error al exportar preguntas" });
   }
 };
 
@@ -455,6 +556,10 @@ module.exports = {
   exportUnits,
   exportLessons,
   exportQuestions,
+
+  // Generación de preguntas con IA
+  generateWithAI,     // ← Debe estar aquí
+  exportSubjects,
 
   getStats,
 };

@@ -10,17 +10,14 @@ const DEMOTE_COUNT = 10;
  * Se llama cada lunes a las 00:00.
  */
 async function processWeeklyLeagues() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  
-  // Semana anterior
-  const lastWeekStart = new Date(now);
-  lastWeekStart.setDate(diff - 7);
-  lastWeekStart.setHours(0, 0, 0, 0);
+  // En lugar de calcular la semana anterior exacta,
+  // buscá todas las salas no procesadas cuyo weekStart sea anterior a hoy
+  const currentWeekStart = LeagueRoom.getWeekStart();
 
-  const rooms = await LeagueRoom.find({ weekStart: lastWeekStart, processed: false })
-    .populate("members.user", "username displayName league");
+  const rooms = await LeagueRoom.find({
+    weekStart: { $lt: currentWeekStart },
+    processed: false,
+  }).populate("members.user", "username displayName league");
 
   let processed = 0;
 
@@ -33,19 +30,16 @@ async function processWeeklyLeagues() {
       const leagueIndex = LEAGUES.indexOf(room.league);
 
       if (i < PROMOTE_COUNT && leagueIndex < LEAGUES.length - 1) {
-        // Promover
         member.promoted = true;
         const newLeague = LEAGUES[leagueIndex + 1];
         await User.findByIdAndUpdate(member.user._id, { league: newLeague });
         await LeagueRoom.assignUser(member.user._id, newLeague);
       } else if (i >= total - DEMOTE_COUNT && leagueIndex > 0) {
-        // Descender
         member.demoted = true;
         const newLeague = LEAGUES[leagueIndex - 1];
         await User.findByIdAndUpdate(member.user._id, { league: newLeague });
         await LeagueRoom.assignUser(member.user._id, newLeague);
       } else {
-        // Mantener
         await User.findByIdAndUpdate(member.user._id, { league: room.league });
         await LeagueRoom.assignUser(member.user._id, room.league);
       }

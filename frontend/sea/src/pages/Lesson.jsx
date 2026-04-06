@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { X, Heart, Lightbulb, ChevronRight, AlertCircle, Sparkles } from "lucide-react";
+import { X, Heart, Lightbulb, Flag, AlertCircle, Sparkles } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
 
@@ -330,9 +330,10 @@ function FeedbackPanel({ feedback, hearts, onContinue, onRefilled, onComplete })
         </p>
       )}
 
-      <button 
+      <div className="grid grid-cols-8 gap-4">
+        <button 
         onClick={onContinue}
-        className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
+        className={`w-full col-start-1 col-end-7 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
           isCorrect 
             ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200" 
             : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200"
@@ -340,6 +341,19 @@ function FeedbackPanel({ feedback, hearts, onContinue, onRefilled, onComplete })
       >
         Continuar Misión
       </button>
+
+      <button
+        onClick={() => reportCurrentQuestion(question._id)}
+        className={`w-full col-start-7 col-end-9 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
+          isCorrect 
+            ? "bg-rose-500 hover:bg-rose-600 text-white shadow-emerald-200" 
+            : "bg-gray-500 hover:bg-gray-600 text-white shadow-rose-200"
+        }`}
+      >
+        Reportar pregunta
+      </button>
+      </div>
+      
     </div>
   );
 }

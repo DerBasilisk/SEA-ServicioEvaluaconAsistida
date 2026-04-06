@@ -8,6 +8,7 @@ const {
   deleteQuestion,
   reviewQuestion,
   generateWithAI,
+  reportQuestion,
 } = require("../controllers/question");
 
 router.get("/", verificarToken, isAdmin, getQuestions);
@@ -16,5 +17,6 @@ router.post("/generate", verificarToken, isAdmin, generateWithAI);
 router.put("/:id", verificarToken, isAdmin, updateQuestion);
 router.put("/:id/review", verificarToken, isAdmin, reviewQuestion);
 router.delete("/:id", verificarToken, isAdmin, deleteQuestion);
+router.post("/:questionId/report", verificarToken, reportQuestion);
 
 module.exports = router;

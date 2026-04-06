@@ -39,7 +39,7 @@ export default function LessonsManagement() {
       setUnits(unitsRes.data.data || []);
       setSubjects(subjectsRes.data.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Error cargando datos:", err);
     } finally {
       setLoading(false);
     }
@@ -49,10 +49,16 @@ export default function LessonsManagement() {
     fetchData();
   }, []);
 
-  // ==================== FILTRO CORREGIDO ====================
+  // ==================== FILTRO CORREGIDO Y ROBUSTO ====================
+  // ==================== FILTRO ROBUSTO ====================
   const filteredLessons = lessons.filter((lesson) => {
-    const unitId = lesson.unit?._id || lesson.unit;                    // Puede ser string u ObjectId
-    const subjectId = lesson.unit?.subject?._id || lesson.unit?.subject;
+    // Extraer IDs de forma segura
+    const unitId = lesson.unit?._id || lesson.unit;
+    let subjectId = null;
+
+    if (lesson.unit && typeof lesson.unit === 'object') {
+      subjectId = lesson.unit.subject?._id || lesson.unit.subject;
+    }
 
     const matchesSearch = !search || 
       lesson.name.toLowerCase().includes(search.toLowerCase());
@@ -116,7 +122,7 @@ export default function LessonsManagement() {
       fetchData();
     } catch (err) {
       if (err.response?.data?.message?.includes("duplicate key")) {
-        alert("Ya existe una lección con ese orden en la unidad. Elige otro orden.");
+        alert("Ya existe una lección con ese orden en la unidad. Por favor elige otro orden.");
       } else {
         alert(err.response?.data?.message || "Error al guardar la lección");
       }
@@ -159,7 +165,7 @@ export default function LessonsManagement() {
             value={selectedSubject}
             onChange={(e) => {
               setSelectedSubject(e.target.value);
-              setSelectedUnit(""); // Reset unidad al cambiar materia
+              setSelectedUnit(""); // Reset unidad cuando cambia la materia
             }}
             className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-white"
           >
@@ -205,12 +211,12 @@ export default function LessonsManagement() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-800">
-              <th className="text-left p-6">Unidad</th>
-              <th className="text-left p-6">Lección</th>
-              <th className="text-center p-6">Orden</th>
-              <th className="text-center p-6">Dificultad</th>
-              <th className="text-center p-6">Preguntas</th>
-              <th className="text-center p-6">Acciones</th>
+              <th className="text-left p-6 text-white">Unidad</th>
+              <th className="text-left p-6 text-white">Lección</th>
+              <th className="text-center p-6 text-white">Orden</th>
+              <th className="text-center p-6 text-white">Dificultad</th>
+              <th className="text-center p-6 text-white">Preguntas</th>
+              <th className="text-center p-6 text-white">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-800">
@@ -222,24 +228,26 @@ export default function LessonsManagement() {
               </tr>
             ) : (
               filteredLessons.map((lesson) => (
-                <tr key={lesson._id} className="hover:bg-gray-800/50">
-                  <td className="p-6">{lesson.unit?.name || "—"}</td>
-                  <td className="p-6 font-medium">{lesson.name}</td>
-                  <td className="p-6 text-center font-mono">{lesson.order}</td>
+                <tr key={lesson._id} className="hover:bg-gray-800/50 transition-colors">
+                  <td className="p-6 text-gray-300">{lesson.unit?.name || "—"}</td>
+                  <td className="p-6 font-medium text-white">{lesson.name}</td>
+                  <td className="p-6 text-center font-mono text-gray-300">{lesson.order}</td>
                   <td className="p-6 text-center">
                     <span className={`px-4 py-1 text-xs rounded-full ${
-                      lesson.difficulty === "easy" ? "bg-emerald-500/10 text-emerald-400" :
-                      lesson.difficulty === "medium" ? "bg-amber-500/10 text-amber-400" :
-                      "bg-red-500/10 text-red-400"
+                      lesson.difficulty === "easy" || lesson.difficulty === "beginner" 
+                        ? "bg-emerald-500/10 text-emerald-400" 
+                        : lesson.difficulty === "medium" || lesson.difficulty === "intermediate"
+                        ? "bg-amber-500/10 text-amber-400" 
+                        : "bg-red-500/10 text-red-400"
                     }`}>
                       {lesson.difficulty}
                     </span>
                   </td>
-                  <td className="p-6 text-center">{lesson.questionCount}</td>
+                  <td className="p-6 text-center text-gray-300">{lesson.questionCount}</td>
                   <td className="p-6 text-center">
                     <button 
                       onClick={() => openModal(lesson)} 
-                      className="p-3 hover:bg-gray-700 rounded-2xl text-gray-300 hover:text-white"
+                      className="p-3 hover:bg-gray-700 rounded-2xl text-gray-300 hover:text-white transition-colors"
                     >
                       <Edit size={20} />
                     </button>

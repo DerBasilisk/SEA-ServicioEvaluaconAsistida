@@ -1,6 +1,6 @@
 // src/pages/admin/AdminDashboard.jsx
 import { useEffect, useState } from "react";
-import { Users, BookOpen, ListChecks, Award, TrendingUp } from "lucide-react";
+import { Users, BookOpen, ListChecks, Award, TrendingUp, Download, Upload, Layers, BookText } from "lucide-react";
 import api from "../../api/axios";
 import useAuthStore from "../../store/authStore";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,26 @@ export default function AdminDashboard() {
       setError("Error al cargar las estadísticas");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async (type) => {
+    try {
+      const response = await api.get(`/admin/export/${type}`, {
+        responseType: 'blob'
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${type}-${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert(`Error al descargar el archivo ${type}`);
     }
   };
 
@@ -115,6 +135,52 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Sección Import/Export */}
+<div className="bg-gray-900 border border-gray-800 rounded-3xl p-8 mt-8">
+  <h2 className="text-2xl font-semibold text-white mb-6 flex items-center gap-3">
+    <Download className="w-7 h-7 text-violet-400" />
+    Exportar Datos (CSV)
+  </h2>
+
+  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <button 
+      onClick={() => handleExport('subjects')}
+      className="p-6 bg-gray-800 hover:bg-gray-700 rounded-2xl transition-all text-left group"
+    >
+      <BookOpen className="w-8 h-8 text-violet-400 mb-3" />
+      <h3 className="font-semibold text-white">Materias</h3>
+      <p className="text-xs text-gray-400 mt-1">Estructura base</p>
+    </button>
+
+    <button 
+      onClick={() => handleExport('units')}
+      className="p-6 bg-gray-800 hover:bg-gray-700 rounded-2xl transition-all text-left group"
+    >
+      <Layers className="w-8 h-8 text-amber-400 mb-3" />
+      <h3 className="font-semibold text-white">Unidades</h3>
+      <p className="text-xs text-gray-400 mt-1">Dentro de materias</p>
+    </button>
+
+    <button 
+      onClick={() => handleExport('lessons')}
+      className="p-6 bg-gray-800 hover:bg-gray-700 rounded-2xl transition-all text-left group"
+    >
+      <BookText className="w-8 h-8 text-blue-400 mb-3" />
+      <h3 className="font-semibold text-white">Lecciones</h3>
+      <p className="text-xs text-gray-400 mt-1">Contenido por unidad</p>
+    </button>
+
+    <button 
+      onClick={() => handleExport('questions')}
+      className="p-6 bg-gray-800 hover:bg-gray-700 rounded-2xl transition-all text-left group"
+    >
+      <ListChecks className="w-8 h-8 text-emerald-400 mb-3" />
+      <h3 className="font-semibold text-white">Preguntas</h3>
+      <p className="text-xs text-gray-400 mt-1">Preguntas generadas</p>
+    </button>
+  </div>
+</div>
 
       {/* Quick Actions */}
       <div className="bg-gray-900 border border-gray-800 rounded-3xl p-8">

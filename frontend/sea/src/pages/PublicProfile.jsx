@@ -71,6 +71,8 @@ export default function PublicProfile() {
     finally { setLoading(false); }
   };
 
+  
+
   const handleSendRequest = async () => {
     setActionLoading(true);
     try {
@@ -100,7 +102,8 @@ export default function PublicProfile() {
 
   const league = LEAGUE_CONFIG[profile.league || "bronze"];
   const displayName = profile.displayName || profile.username;
-
+  console.log("profile.banner:", profile.banner);
+  
   return (
     <div className="min-h-screen sea-public pb-20 relative overflow-hidden" 
          style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
@@ -119,6 +122,7 @@ export default function PublicProfile() {
           {/* SECCIÓN DEL BANNER (Igual que el perfil regular) */}
           <div className="banner-container bg-[#2B7FE8]/10">
             {profile.banner ? (
+              
               <img src={profile.banner} alt="User Banner" className="banner-img" />
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-blue-600/20 to-cyan-500/20" />

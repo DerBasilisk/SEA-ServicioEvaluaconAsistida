@@ -8,6 +8,7 @@ import {
 import Navbar from "../components/Navbar";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
+import Avatar from "../components/Avatar";
 
 // ─── Estilos Globales SEA (Actualizados para expansión) ─────────────────────
 const HOME_CSS = `
@@ -88,8 +89,8 @@ export default function Home() {
         {/* COLUMNA 1: Perfil Compacto (Ocupa 2 de 12) */}
         <aside className="lg:col-span-2 space-y-5">
           <section className="sea-glass-main rounded-[2.5rem] p-6 text-center border-white/80 shadow-xl">
-             <div className="w-20 h-20 bg-gradient-to-br from-[#2B7FE8] to-[#5B9FFF] rounded-3xl mx-auto mb-4 flex items-center justify-center text-white font-black italic text-3xl shadow-lg rotate-[-3deg]">
-               {user?.username?.[0].toUpperCase()}
+             <div className="w-20 h-20 rounded-3xl mx-auto mb-4 flex items-center justify-center text-white font-black italic text-3xl shadow-lg rotate-[-3deg]">
+               <Avatar src={user?.avatar} name={user?.displayName || user?.username} size="xl" className="rounded-[2rem] border-4 border-white shadow-xl" />
              </div>
              <h2 className="text-lg font-black italic text-[#0F2547] uppercase tracking-tighter leading-none mb-4">
                Agente {user?.username}
