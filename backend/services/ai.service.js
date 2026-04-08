@@ -137,6 +137,56 @@ Devuelve solo el array JSON.`;
   }));
 }
 
+/**
+ * Evalúa una respuesta abierta (free_text) usando Groq
+ */
+async function evaluateOpenResponse({
+  prompt,
+  userAnswer,
+  evaluationCriteria,
+  maxScore = 10,
+  isCodeExercise = false
+}) {
+  const promptAI = `
+Eres un profesor experto. Evalúa la siguiente respuesta del estudiante.
+
+**Pregunta / Tarea:**  
+${prompt}
+
+**Criterios de evaluación:**  
+${evaluationCriteria}
+
+**Respuesta del estudiante:**  
+${userAnswer}
+
+${isCodeExercise ? "Es un ejercicio de código Python. Verifica que el código sea correcto, eficiente y cumpla con la tarea." : ""}
+
+Responde **ÚNICAMENTE** con un JSON válido con esta estructura exacta:
+{
+  "score": número del 0 al ${maxScore},
+  "approved": true o false,
+  "feedback": "explicación clara y educativa para el estudiante",
+  "strengths": "puntos fuertes",
+  "improvements": "qué se puede mejorar"
+}
+`;
+
+  try {
+    const result = await callGroq(promptAI);
+    const parsed = JSON.parse(cleanJsonResponse(result));
+    return parsed;
+  } catch (err) {
+    console.error("Error evaluando respuesta abierta:", err);
+    return {
+      score: 0,
+      approved: false,
+      feedback: "No se pudo evaluar la respuesta en este momento.",
+      strengths: "",
+      improvements: ""
+    };
+  }
+}
+
 /* =============================================
    2. GENERAR SLIDES DE TEORÍA
    ============================================= */
@@ -231,4 +281,5 @@ module.exports = {
   generateTheorySlides,
   generateHint,
   evaluateFillBlankAnswer,
+  evaluateOpenResponse,
 };

@@ -24,7 +24,7 @@ const ORDER_CSS = `
   }
 `;
 
-export default function OrderItems({ question, onAnswer }) {
+export default function OrderItems({ question, onAnswer, onReport, }) {
   const [items, setItems] = useState(() =>
     [...(question.shuffledItems || question.items || [])].map((text, i) => ({ id: i, text }))
   );

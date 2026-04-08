@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { X, Heart, Lightbulb, Flag, AlertCircle, Sparkles } from "lucide-react";
+import { X, Heart, Lightbulb, ShieldAlert, AlertTriangle, AlertCircle, Sparkles } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
+import toast from "react-hot-toast";
 
 // Componentes de Pregunta (Asumiendo que los importarás con el mismo estilo)
 import MultipleChoice from "../components/lesson/MultipleChoice";
@@ -13,6 +14,7 @@ import MatchPairs from "../components/lesson/MatchPairs";
 import SentenceBuilder from "../components/lesson/Sentencebuilder";
 import ResultScreen from "../components/lesson/ResultScreen";
 import NoHeartsPanel from "../components/lesson/Noheartspanel";
+import FreeText from "../components/lesson/FreeText";
 
 const LESSON_CSS = `
   .lesson-container { 
@@ -57,6 +59,7 @@ const QUESTION_COMPONENTS = {
   order_items: OrderItems,
   match_pairs: MatchPairs,
   sentence_builder: SentenceBuilder,
+  free_text: FreeText,
 };
 
 export default function Lesson() {
@@ -77,7 +80,17 @@ export default function Lesson() {
   const [error, setError] = useState(null);
   const [hintUsed, setHintUsed] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  
+  // Estados para el reporte
+  const [reportModal, setReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState(null);
+  const [reportComment, setReportComment] = useState("");
   const [conceptOpen, setConceptOpen] = useState(true);
+
+  // 1. DEFINICIÓN DE LA FUNCIÓN QUE FALTABA
+  const reportCurrentQuestion = useCallback(() => {
+    setReportModal(true);
+  }, []);
 
   useEffect(() => {
     api.post(`/lessons/${id}/start`)
@@ -117,11 +130,24 @@ export default function Lesson() {
       });
       const remaining = data.data.heartsRemaining;
       if (!data.data.isCorrect && remaining !== null) setHearts(remaining);
-      setXpEarned((prev) => prev + (data.data.xpEarned || 0));
-      setFeedback(data.data);
+      if (question.type === "free_text") {
+        setFeedback({
+          isCorrect: data.data.isCorrect,
+          score: data.data.score,
+          feedback: data.data.feedback,
+          strengths: data.data.strengths,
+          improvements: data.data.improvements,
+          fullEvaluation: data.data.fullEvaluation,
+        });
+      } else {
+        setFeedback(data.data);
+      }
+      
       setPhase("feedback");
+      return data.data;   // importante para FreeText
     } catch (err) {
       console.error(err);
+      return { isCorrect: false };
     }
   }, [id, currentIndex, questions, hintUsed]);
 
@@ -146,6 +172,37 @@ export default function Lesson() {
     setPhase("playing");
   }, [hearts, currentIndex, questions, handleComplete, id, xpEarned, fetchMe]);
 
+  const handleSendReport = async () => {
+    if (!reportReason) {
+      toast.error("Selecciona un motivo antes de enviar");
+      return;
+    }
+
+    const loadingToast = toast.loading("Enviando reporte...");
+
+    try {
+      const reasonOptions = [
+        "wrong_answer",
+        "unclear",
+        "typo",
+        "too_hard",
+        "other"
+      ];
+
+      await api.post(`/questions/${questions[currentIndex]._id}/report`, {
+        reason: reasonOptions[reportReason - 1],
+        comment: reportComment
+      });
+
+      toast.success("Anomalía reportada. ¡Gracias, recluta!", { id: loadingToast });
+      setReportModal(false);
+      setReportReason(null);
+      setReportComment("");
+    } catch (err) {
+      toast.error("Fallo al enviar el reporte", { id: loadingToast });
+    }
+  };
+
   const handleAbandon = async () => {
     await api.post(`/lessons/${id}/abandon`).catch(() => {});
     navigate(-1);
@@ -162,48 +219,34 @@ export default function Lesson() {
 
   // ── RENDER TEORÍA ────────────────────────────────────────────────
   if (phase === "theory") {
-    const slide = theorySlides[theoryIndex];
-    const isLast = theoryIndex >= theorySlides.length - 1;
-    return (
-      <div className="lesson-container min-h-screen flex flex-col items-center">
-        <style>{LESSON_CSS}</style>
-        
-        <header className="w-full px-6 py-4 flex items-center gap-6">
-          <button onClick={handleAbandon} className="p-2 hover:bg-white/50 rounded-xl transition text-slate-500"><X size={24} /></button>
-          <div className="flex-1 flex gap-2">
-            {theorySlides.map((_, i) => (
-              <div key={i} className={`flex-1 h-2.5 rounded-full transition-all duration-500 ${i <= theoryIndex ? "bg-[#2B7FE8] shadow-[0_0_10px_rgba(43,127,232,0.3)]" : "bg-white/40"}`} />
-            ))}
-          </div>
-        </header>
-
-        <main className="flex-1 flex flex-col items-center justify-between max-w-2xl w-full px-6 py-8 gap-8">
-          <div className="text-7xl mb-8 animate-bounce-slow drop-shadow-xl">{slide?.icon || "📖"}</div>
-          
-          <div className="theory-card rounded-[2.5rem] p-10 w-full mb-10 text-center shadow-2xl">
-            <h2 className="text-[#0F2547] font-black italic uppercase text-3xl tracking-tighter mb-6">{slide?.title}</h2>
-            <p className="text-slate-600 text-xl leading-relaxed font-semibold">{slide?.content}</p>
-            
-            {slide?.example && (
-              <div className="mt-8 bg-blue-50 border-2 border-dashed border-blue-200 rounded-[1.5rem] p-6">
-                <p className="text-[#2B7FE8] text-[10px] font-black uppercase tracking-[0.2em] mb-2">Protocolo de Ejemplo</p>
-                <p className="text-[#0F2547] font-black text-2xl italic">"{slide.example}"</p>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => isLast ? setPhase("playing") : setTheoryIndex(i => i + 1)}
-            className="w-full bg-[#2B7FE8] hover:bg-[#1A6FD8] text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95 text-lg uppercase tracking-widest italic"
-          >
-            {isLast ? "Iniciar Evaluación →" : "Siguiente Protocolo"}
-          </button>
-        </main>
-      </div>
-    );
+     const slide = theorySlides[theoryIndex];
+      const isLast = theoryIndex >= theorySlides.length - 1;
+      return (
+        <div className="lesson-container min-h-screen flex flex-col items-center">
+          <style>{LESSON_CSS}</style>
+          <header className="w-full px-6 py-4 flex items-center gap-6">
+            <button onClick={handleAbandon} className="p-2 hover:bg-white/50 rounded-xl transition text-slate-500"><X size={24} /></button>
+            <div className="flex-1 flex gap-2">
+              {theorySlides.map((_, i) => (
+                <div key={i} className={`flex-1 h-2.5 rounded-full transition-all duration-500 ${i <= theoryIndex ? "bg-[#2B7FE8]" : "bg-white/40"}`} />
+              ))}
+            </div>
+          </header>
+          <main className="flex-1 flex flex-col items-center justify-between max-w-2xl w-full px-6 py-8 gap-8">
+            <div className="text-7xl mb-8 animate-bounce-slow">{slide?.icon || "📖"}</div>
+            <div className="theory-card rounded-[2.5rem] p-10 w-full mb-10 text-center shadow-2xl">
+              <h2 className="text-[#0F2547] font-black italic uppercase text-3xl mb-6">{slide?.title}</h2>
+              <p className="text-slate-600 text-xl leading-relaxed font-semibold">{slide?.content}</p>
+            </div>
+            <button onClick={() => isLast ? setPhase("playing") : setTheoryIndex(i => i + 1)} className="w-full bg-[#2B7FE8] text-white font-black py-5 rounded-2xl">
+              {isLast ? "Iniciar Evaluación →" : "Siguiente Protocolo"}
+            </button>
+          </main>
+        </div>
+      );
   }
 
-  // ── RENDER EJERCICIOS ─────────────────────────────────────────────
+  // ── RENDER EJERCICIOS ──
   const question = questions[currentIndex];
   const QuestionComponent = QUESTION_COMPONENTS[question?.type];
   const progress = (currentIndex / questions.length) * 100;
@@ -212,7 +255,6 @@ export default function Lesson() {
     <div className="lesson-container min-h-screen flex flex-col overflow-hidden">
       <style>{LESSON_CSS}</style>
       
-      {/* Header Táctico */}
       <header className="px-6 py-4 flex items-center gap-6 bg-white/30 backdrop-blur-md sticky top-0 z-50">
         <button onClick={handleAbandon} className="p-2 hover:bg-white/50 rounded-xl transition text-slate-500"><X size={24} /></button>
         <div className="flex-1 progress-track">
@@ -226,7 +268,7 @@ export default function Lesson() {
 
       <main className="flex-1 flex flex-col lg:flex-row gap-8 px-8 py-6 max-w-6xl mx-auto w-full items-start lg:items-stretch">
         
-        {/* Panel de Inteligencia (Concepto) */}
+        {/* Panel de Inteligencia */}
         {question?.conceptExplanation && (
           <aside className="lg:w-[350px] flex-shrink-0">
             <div className="sea-glass-panel rounded-[2rem] p-6 h-fit sticky top-24">
@@ -234,23 +276,16 @@ export default function Lesson() {
                 <div className="bg-[#2B7FE8] p-2 rounded-lg"><Lightbulb size={18} className="text-white" /></div>
                 <h3 className="text-[#0F2547] font-black uppercase italic text-sm tracking-tight">Manual de Nodo</h3>
               </div>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium mb-6">
-                {question.conceptExplanation}
-              </p>
-
+              <p className="text-slate-700 text-sm leading-relaxed font-medium mb-6">{question.conceptExplanation}</p>
               <div className="border-t border-white/40 pt-6">
                 {!showHint ? (
-                  <button
-                    onClick={handleUseHint}
-                    disabled={hintUsed || phase !== "playing"}
-                    className="w-full group flex items-center justify-between bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-600 font-black py-3 px-4 rounded-xl text-[10px] uppercase tracking-widest transition-all disabled:opacity-40"
-                  >
+                  <button onClick={handleUseHint} disabled={hintUsed || phase !== "playing"} className="w-full flex items-center justify-between bg-amber-50 border-2 border-amber-200 text-amber-600 font-black py-3 px-4 rounded-xl text-[10px] uppercase">
                     <span>{hintUsed ? "Pista Consumida" : "Solicitar Pista"}</span>
-                    {!hintUsed && <span className="text-amber-400 group-hover:translate-x-1 transition-transform">-50% XP</span>}
+                    {!hintUsed && <span className="text-amber-400">-50% XP</span>}
                   </button>
                 ) : (
                   <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 animate-in zoom-in-95">
-                    <p className="text-amber-700 text-xs font-bold italic leading-snug">{question.hint}</p>
+                    <p className="text-amber-700 text-xs font-bold italic">{question.hint}</p>
                   </div>
                 )}
               </div>
@@ -261,17 +296,25 @@ export default function Lesson() {
         {/* Zona de Ejercicio */}
         <div className="flex-1 flex flex-col justify-between gap-8">
           <div className="text-center lg:text-left">
-            <p className="text-[#2B7FE8] text-[10px] font-black uppercase tracking-[0.3em] mb-3">
-              Objetivo {currentIndex + 1} de {questions.length}
-            </p>
-            <h2 className="text-[#0F2547] text-2xl lg:text-3xl font-black italic tracking-tighter leading-tight">
-              {question?.prompt}
-            </h2>
+            <p className="text-[#2B7FE8] text-[10px] font-black uppercase tracking-[0.3em] mb-3">Objetivo {currentIndex + 1} de {questions.length}</p>
+            <h2 className="text-[#0F2547] text-2xl lg:text-3xl font-black italic tracking-tighter leading-tight">{question?.prompt}</h2>
           </div>
 
           <div className="flex-1 min-h-[400px]">
-            {QuestionComponent && phase === "playing" && (
-              <QuestionComponent question={question} onAnswer={handleAnswer} />
+            {phase === "playing" && question && (
+              <>
+                {QuestionComponent ? (
+                  <QuestionComponent 
+                    question={question} 
+                    onAnswer={handleAnswer}
+                    onReport={reportCurrentQuestion}     // ← Para el botón de reporte
+                  />
+                ) : (
+                  <div className="p-10 text-center text-red-400">
+                    Tipo de pregunta no soportado: {question.type}
+                  </div>
+                )}
+              </>
             )}
 
             {phase === "feedback" && feedback && (
@@ -285,6 +328,36 @@ export default function Lesson() {
             )}
           </div>
         </div>
+
+        {/* MODAL DE REPORTE TÁCTICO */}
+        {reportModal && (
+          <div className="fixed inset-0 bg-[#0F172A]/80 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-[#1E293B] border-2 border-indigo-500/30 w-full max-w-md rounded-[2.5rem] p-8">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="bg-amber-500/10 p-3 rounded-2xl"><AlertTriangle className="text-amber-500" size={24} /></div>
+                <div>
+                  <h3 className="text-xl font-black italic text-white uppercase">Reportar Anomalía</h3>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase">Control de Calidad de Datos</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-6">
+                {["Respuesta incorrecta", "No está clara", "Error ortográfico", "Muy difícil", "Otro"].map((text, i) => (
+                  <button key={i} onClick={() => setReportReason(i + 1)} className={`w-full text-left px-5 py-3 rounded-xl text-xs font-bold transition-all border ${reportReason === i + 1 ? "bg-indigo-600 border-indigo-400 text-white translate-x-2" : "bg-slate-800/50 border-white/5 text-slate-400"}`}>
+                    {i + 1}. {text}
+                  </button>
+                ))}
+              </div>
+
+              <textarea value={reportComment} onChange={(e) => setReportComment(e.target.value)} placeholder="Detalles adicionales..." className="w-full bg-slate-900 border border-white/5 rounded-2xl p-4 text-white text-sm h-24 mb-6" />
+
+              <div className="flex gap-3">
+                <button onClick={handleSendReport} className="flex-1 bg-indigo-600 text-white font-black py-4 rounded-2xl">Enviar Informe</button>
+                <button onClick={() => setReportModal(false)} className="px-6 bg-slate-800 text-slate-400 font-black py-4 rounded-2xl">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
@@ -292,7 +365,7 @@ export default function Lesson() {
 
 // ── SUB-COMPONENTES ───────────────────────────────────────────────
 
-function FeedbackPanel({ feedback, hearts, onContinue, onRefilled, onComplete }) {
+function FeedbackPanel({ feedback, hearts, question, onContinue, onRefilled, onComplete, onReport }) {
   const { isCorrect, explanation, correctAnswer } = feedback;
   
   if (hearts === 0 && !isCorrect) {
@@ -330,27 +403,27 @@ function FeedbackPanel({ feedback, hearts, onContinue, onRefilled, onComplete })
         </p>
       )}
 
-      <div className="grid grid-cols-8 gap-4">
+      <div className="grid grid-cols-15 gap-4">
         <button 
         onClick={onContinue}
-        className={`w-full col-start-1 col-end-7 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
+        className={`w-full col-start-1 col-end-11 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
           isCorrect 
-            ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200" 
-            : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200"
+            ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200 border-2 border-emerald-300" 
+            : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200 border-2 border-rose-300"
         }`}
       >
         Continuar Misión
       </button>
 
       <button
-        onClick={() => reportCurrentQuestion(question._id)}
-        className={`w-full col-start-7 col-end-9 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
+        onClick={() => onReport(question._id)}
+        className={`w-full col-start-11 col-end-16 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
           isCorrect 
-            ? "bg-rose-500 hover:bg-rose-600 text-white shadow-emerald-200" 
-            : "bg-gray-500 hover:bg-gray-600 text-white shadow-rose-200"
+            ? "bg-rose-500 hover:bg-rose-600 text-white shadow-emerald-200 border-2 border-rose-300" 
+            : "bg-gray-800 hover:bg-gray-900 text-rose-500 shadow-rose-200 border-2 border-rose-300"
         }`}
       >
-        Reportar pregunta
+        <ShieldAlert size={30} className="ml-1.5 inline-block mr-2 font-bold" alt="Reportar Pregunta"/>
       </button>
       </div>
       

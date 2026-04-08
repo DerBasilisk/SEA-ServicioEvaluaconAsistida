@@ -1,6 +1,6 @@
 // frontend/sea/src/pages/admin/QuestionsManagement.jsx
 import { useState, useEffect } from "react";
-import { Search, Edit, Trash2, CheckCircle, XCircle, Sparkles, Plus, RotateCcw } from "lucide-react";
+import { Search, Edit, Trash2, CheckCircle, ShieldAlert, XCircle, Sparkles, Plus, RotateCcw } from "lucide-react";
 import api from "../../api/axios";
 import QuestionModal from "../../components/admin/QuestionModal";
 
@@ -30,6 +30,9 @@ export default function QuestionsManagement() {
 
   // Estado para generación IA
   const [generating, setGenerating] = useState(false);
+
+  // Reportes
+  const [showReportedOnly, setShowReportedOnly] = useState(false);
 
   // Cargar materias
   useEffect(() => {
@@ -68,7 +71,8 @@ export default function QuestionsManagement() {
         reviewed: filterStatus === "all" ? undefined : (filterStatus === "reviewed"),
         subjectId: selSubject || undefined,
         unitId: selUnit || undefined,
-        lessonId: selLesson || undefined
+        lessonId: selLesson || undefined,
+        reported: showReportedOnly ? "true" : undefined   // ← Nuevo
       };
 
       const { data } = await api.get("/admin/questions", { params });
@@ -81,6 +85,19 @@ export default function QuestionsManagement() {
     }
   };
 
+  const handleClearReports = async (questionId) => {
+    if (!confirm("¿Estás seguro de eliminar todos los reportes de esta pregunta?")) return;
+
+    try {
+      await api.put(`/admin/questions/${questionId}/clear-reports`);
+      alert("Reportes eliminados correctamente.");
+      fetchQuestions(); // Refrescar la lista
+    } catch (err) {
+      alert("Error al limpiar los reportes");
+      console.error(err);
+    }
+  };
+
   // Toggle rápido de Revisada / Pendiente
   const handleToggleReview = async (id, newReviewed) => {
     try {
@@ -88,6 +105,40 @@ export default function QuestionsManagement() {
       fetchQuestions(); // Refrescar lista
     } catch (err) {
       alert("Error al actualizar estado de revisión");
+      console.error(err);
+    }
+  };
+
+  const handleReportQuestion = async (questionId) => {
+    const reasons = {
+      "wrong_answer": "La respuesta correcta es incorrecta",
+      "unclear": "La pregunta no está clara",
+      "typo": "Tiene errores de tipeo o gramática",
+      "too_hard": "Es demasiado difícil para el nivel",
+      "other": "Otro motivo"
+    };
+
+    const reasonKey = prompt(
+      "¿Por qué quieres reportar esta pregunta?\n\n" +
+      "1. Respuesta correcta incorrecta\n" +
+      "2. Pregunta poco clara\n" +
+      "3. Error de tipeo/gramática\n" +
+      "4. Demasiado difícil\n" +
+      "5. Otro\n\n" +
+      "Escribe el número:"
+    );
+
+    if (!reasonKey) return;
+
+    const reason = Object.keys(reasons)[parseInt(reasonKey) - 1] || "other";
+    const comment = prompt("Comentario adicional (opcional):") || "";
+
+    try {
+      await api.post(`/questions/${questionId}/report`, { reason, comment });
+      alert("¡Reporte enviado correctamente! Gracias por tu ayuda.");
+      fetchQuestions(); // refrescar lista
+    } catch (err) {
+      alert("Error al enviar el reporte");
       console.error(err);
     }
   };
@@ -105,7 +156,7 @@ export default function QuestionsManagement() {
 
   useEffect(() => {
     fetchQuestions();
-  }, [page, filterStatus, search, selSubject, selUnit, selLesson]);
+  }, [page, filterStatus, search, selSubject, selUnit, selLesson, showReportedOnly]);
 
   const resetFilters = () => {
     setSearch("");
@@ -150,16 +201,31 @@ export default function QuestionsManagement() {
 
   const handleSaveQuestion = async (payload) => {
     try {
-      if (editingQuestion?._id) {
-        await api.put(`/admin/questions/${editingQuestion._id}`, payload);
-      } else {
-        await api.post("/admin/questions", payload);
+      let finalPayload = { ...payload };
+
+      // Si estamos creando una nueva pregunta y tenemos una lección seleccionada, la asignamos
+      if (!editingQuestion && selLesson) {
+        finalPayload.lesson = selLesson;
       }
+
+      // Si estamos editando, no sobrescribimos el lesson a menos que se envíe explícitamente
+      if (editingQuestion?._id) {
+        await api.put(`/admin/questions/${editingQuestion._id}`, finalPayload);
+        alert("Pregunta actualizada correctamente");
+      } else {
+        if (!finalPayload.lesson) {
+          alert("Debes seleccionar una lección para crear la pregunta");
+          return;
+        }
+        await api.post("/admin/questions", finalPayload);
+        alert("Pregunta creada correctamente");
+      }
+
       setShowModal(false);
       setEditingQuestion(null);
-      fetchQuestions();
-      alert("Pregunta guardada correctamente");
+      fetchQuestions();        // Refrescar la lista
     } catch (err) {
+      console.error(err);
       alert(err.response?.data?.message || "Error al guardar la pregunta");
     }
   };
@@ -183,7 +249,10 @@ export default function QuestionsManagement() {
           </button>
 
           <button 
-            onClick={() => { setEditingQuestion(null); setShowModal(true); }}
+            onClick={() => { 
+              setEditingQuestion(null); 
+              setShowModal(true); 
+            }}
             className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-2xl flex items-center gap-2 transition-all"
           >
             <Plus size={20} /> Nueva Manual
@@ -246,6 +315,17 @@ export default function QuestionsManagement() {
             <RotateCcw size={22} />
             </button>
 
+            <button
+              onClick={() => setShowReportedOnly(!showReportedOnly)}
+              className={`px-5 py-2.5 rounded-2xl text-sm font-medium transition-all flex items-center gap-2 border ${
+                showReportedOnly 
+                  ? "bg-orange-600 text-white border-orange-500" 
+                  : "bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
+              }`}
+            >
+              <ShieldAlert size={18} />
+              {showReportedOnly ? "Reportadas: ON" : "Reportadas: OFF"}
+            </button>
         </div>
       </div>
 
@@ -332,7 +412,7 @@ export default function QuestionsManagement() {
 
                           {/* Toggle de Activa */}
                           <button
-                            onClick={() => handleToggleActive(q._id, !q.isActive)}
+                            disabled onClick={() => handleToggleActive(q._id, !q.isActive)}
                             className={`text-xs px-3 py-1 rounded-full transition-all ${
                               q.isActive 
                                 ? "bg-emerald-600/80 text-white" 
@@ -341,6 +421,14 @@ export default function QuestionsManagement() {
                           >
                             {q.isActive ? "Activa" : "Inactiva"}
                           </button>
+
+                          {/* Badge de reportes */}
+                            {q.reports && q.reports.length > 0 && (
+                              <div className="inline-flex items-center gap-1 bg-red-500/10 text-red-400 text-xs px-3 py-1 rounded-full border border-red-500/30">
+                                <ShieldAlert size={14} />
+                                {q.reports.length} reporte{q.reports.length > 1 ? "s" : ""}
+                              </div>
+                            )}
                         </div>
                       </td>
 
@@ -358,6 +446,16 @@ export default function QuestionsManagement() {
                           >
                             <Trash2 size={18} />
                           </button>
+
+                          {q.reports && q.reports.length > 0 && (
+                            <button 
+                              onClick={() => handleClearReports(q._id)}
+                              className="p-2.5 bg-gray-800 hover:bg-green-500/20 text-green-400 rounded-xl transition-all"
+                              title="Limpiar todos los reportes"
+                            >
+                              <ShieldAlert size={18} /> {/* o usa un icono de "check" si prefieres */}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -388,9 +486,17 @@ export default function QuestionsManagement() {
       {showModal && (
         <QuestionModal 
           isOpen={showModal} 
-          onClose={() => { setShowModal(false); setEditingQuestion(null); }}
+          onClose={() => { 
+            setShowModal(false); 
+            setEditingQuestion(null); 
+          }}
           question={editingQuestion}
           onSave={handleSaveQuestion}
+          // Pasamos los datos jerárquicos
+          subjects={subjects}
+          units={units}
+          lessons={lessons}
+          selectedLessonId={selLesson}   // lección actualmente seleccionada
         />
       )}
     </div>

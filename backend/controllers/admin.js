@@ -206,6 +206,7 @@ const deleteLesson = async (req, res) => {
 
 // ── PREGUNTAS ─────────────────────────────────────────────────
 
+// GET /api/admin/questions
 const getQuestions = async (req, res) => {
   try {
     const { 
@@ -214,54 +215,60 @@ const getQuestions = async (req, res) => {
       lessonId, 
       reviewed, 
       search, 
+      reported,
       page = 1, 
       limit = 15 
     } = req.query;
 
     const query = {};
 
-    // 1. Filtrado por Jerarquía (Materia -> Unidad -> Lección)
+    // Filtros jerárquicos
     if (lessonId) {
-      // Caso más específico: ya tenemos la lección
       query.lesson = lessonId;
     } else if (unitId) {
-      // Caso intermedio: buscar todas las lecciones de esta unidad
       const Lesson = mongoose.model("Lesson");
       const lessons = await Lesson.find({ unit: unitId }).select("_id");
       query.lesson = { $in: lessons.map(l => l._id) };
     } else if (subjectId) {
-      // Caso general: buscar unidades -> luego sus lecciones
       const Unit = mongoose.model("Unit");
       const Lesson = mongoose.model("Lesson");
-      
       const units = await Unit.find({ subject: subjectId }).select("_id");
-      const unitIds = units.map(u => u._id);
-      
-      const lessons = await Lesson.find({ unit: { $in: unitIds } }).select("_id");
+      const lessons = await Lesson.find({ unit: { $in: units.map(u => u._id) } }).select("_id");
       query.lesson = { $in: lessons.map(l => l._id) };
     }
 
-    // 2. Filtro por estado de revisión
     if (reviewed !== undefined && reviewed !== "all") {
       query.isReviewed = reviewed === "true";
     }
 
-    // 3. Filtro por búsqueda de texto (en el prompt/enunciado)
     if (search) {
-      query.prompt = { $regex: search, $options: "i" }; // "i" para insensible a mayúsculas
+      query.prompt = { $regex: search, $options: "i" };
     }
 
-    // 4. Ejecución de la consulta con paginación
+    // Filtro de reportadas
+    if (reported === "true") {
+      query.reports = { $exists: true, $ne: [] };   // solo preguntas que tengan reportes
+    }
+
+    // Nuevo: Filtro para preguntas reportadas
+    const sort = {};
+    if (req.query.reported === "true") {
+      query.reports = { $exists: true, $ne: [] };
+      sort["reports.0.reportedAt"] = -1;   // más recientes primero
+    } else {
+      sort.createdAt = -1;
+    }
+
     const skip = (Number(page) - 1) * Number(limit);
-    
+
     const [questions, total] = await Promise.all([
       Question.find(query)
         .populate({
           path: "lesson",
           select: "name",
-          populate: { path: "unit", select: "name" } // Opcional: ver a qué unidad pertenece en la tabla
+          populate: { path: "unit", select: "name" }
         })
-        .sort({ createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(Number(limit)),
       Question.countDocuments(query)
@@ -280,7 +287,7 @@ const getQuestions = async (req, res) => {
     console.error("Error en getQuestions:", err);
     res.status(500).json({ ok: false, message: err.message });
   }
-};
+};;
 
 const updateQuestion = async (req, res) => {
   try {
@@ -322,6 +329,30 @@ const deleteQuestion = async (req, res) => {
     await Question.findByIdAndDelete(req.params.id);
     res.json({ ok: true, message: "Pregunta eliminada" });
   } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+// PUT /api/admin/questions/:id/clear-reports
+const clearReports = async (req, res) => {
+  try {
+    const question = await Question.findByIdAndUpdate(
+      req.params.id,
+      { $set: { reports: [] } },   // Borra todos los reportes
+      { new: true }
+    );
+
+    if (!question) {
+      return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
+    }
+
+    res.json({ 
+      ok: true, 
+      message: "Todos los reportes de esta pregunta han sido eliminados.",
+      data: question 
+    });
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ ok: false, message: err.message });
   }
 };
@@ -546,10 +577,12 @@ module.exports = {
   deleteLesson,
 
   // Preguntas
-  getQuestions, 
+  getQuestions,
+  createQuestion, 
   updateQuestion, 
   reviewQuestion, 
   deleteQuestion,
+  clearReports,
 
   // Export CSV
   exportSubjects,
@@ -558,7 +591,7 @@ module.exports = {
   exportQuestions,
 
   // Generación de preguntas con IA
-  generateWithAI,     // ← Debe estar aquí
+  generateWithAI,
   exportSubjects,
 
   getStats,

@@ -38,7 +38,7 @@ const SB_CSS = `
   }
 `;
 
-export default function SentenceBuilder({ question, onAnswer }) {
+export default function SentenceBuilder({ question, onAnswer, onReport }) {
   const parts = question.prompt.split("___");
   const blanksCount = parts.length - 1;
   const [selected, setSelected] = useState(Array(blanksCount).fill(null));

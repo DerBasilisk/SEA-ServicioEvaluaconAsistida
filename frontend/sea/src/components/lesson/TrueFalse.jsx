@@ -30,7 +30,7 @@ const TF_CSS = `
   }
 `;
 
-export default function TrueFalse({ question, onAnswer }) {
+export default function TrueFalse({ question, onAnswer, onReport, }) {
   const [selected, setSelected] = useState(null);
 
   const handleConfirm = () => {

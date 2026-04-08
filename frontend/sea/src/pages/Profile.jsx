@@ -139,7 +139,7 @@ export default function Profile() {
             </div>
             
             <div className="px-8 pb-10 text-center -mt-16 relative">
-              <div className="inline-block p-1.5 bg-white/80 backdrop-blur-md rounded-2xl shadow-2xl mb-4 relative">
+              <div className="inline-block rounded-[2.8rem] mb-4 relative">
                 <AvatarUpload currentAvatar={user.avatar} username={user.displayName} size="lg" />
               </div>
               

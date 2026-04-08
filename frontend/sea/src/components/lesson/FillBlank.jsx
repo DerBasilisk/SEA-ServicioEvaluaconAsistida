@@ -26,7 +26,7 @@ const INPUT_CSS = `
   }
 `;
 
-export default function FillBlank({ question, onAnswer }) {
+export default function FillBlank({ question, onAnswer, onReport, }) {
   const [value, setValue] = useState("");
   const [submitted, setSubmitted] = useState(false);
 

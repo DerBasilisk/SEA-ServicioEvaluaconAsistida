@@ -52,5 +52,8 @@ router.get("/export/questions", ctrl.exportQuestions);
 
 // Generación de preguntas con IA
 router.post("/questions/generate", ctrl.generateWithAI);
+router.post("/questions", ctrl.createQuestion);
+
+router.put("/questions/:id/clear-reports", ctrl.clearReports);
 
 module.exports = router;

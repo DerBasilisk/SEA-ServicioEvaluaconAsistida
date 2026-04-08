@@ -42,7 +42,26 @@ const questionSchema = new mongoose.Schema(
         "order_items",      // Ordenar elementos en secuencia correcta
         "match_pairs",      // Relacionar columna A con columna B
         "sentence_builder", // Crear oraciones
+        "free_text",
       ],
+    },
+
+    // Dentro de questionSchema
+
+    evaluationCriteria: {          // Instrucciones que la IA usará para evaluar
+      type: String,
+      default: null,
+    },
+
+    maxScore: {
+      type: Number,
+      default: 10,
+    },
+
+    // Opcional: si es código Python
+    isCodeExercise: {
+      type: Boolean,
+      default: false,
     },
 
     // ── Enunciado ─────────────────────────────────────────────
@@ -210,12 +229,12 @@ questionSchema.pre("validate", function () {
       }
       break;
   }
-    // Al final del schema
-  questionSchema.index({ "reports.0": 1 }); // Para buscar preguntas reportadas rápidamente
+  
 });
 
 // Índice para búsqueda eficiente al armar sesiones de repaso
 questionSchema.index({ lesson: 1, isActive: 1, difficulty: 1 });
 questionSchema.index({ tags: 1 });
+questionSchema.index({ "reports.0": 1 }); // Para buscar preguntas reportadas rápidamente
 
 module.exports = mongoose.model("Question", questionSchema);

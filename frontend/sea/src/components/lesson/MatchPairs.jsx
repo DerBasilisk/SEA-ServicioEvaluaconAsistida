@@ -22,7 +22,7 @@ const MATCH_CSS = `
   }
 `;
 
-export default function MatchPairs({ question, onAnswer }) {
+export default function MatchPairs({ question, onAnswer, onReport, }) {
   const [selectedLeft, setSelectedLeft] = useState(null);
   const [matches, setMatches] = useState({});
   const [submitted, setSubmitted] = useState(false);

@@ -3,7 +3,7 @@ const { checkAndGrantAchievements } = require("../services/achievement.service")
 const { getAdaptiveConfig, selectQuestions, getAdaptiveXPReward } = require("../services/adaptive.service");
 const { refreshStaleQuestions, recordShownQuestions } = require("../services/questionRefresh.service");
 const { addLeagueXP } = require("../services/league.service");
-const { generateQuestions, evaluateFillBlankAnswer, generateTheorySlides } = require("../services/ai.service");
+const { generateQuestions, evaluateFillBlankAnswer, generateTheorySlides, evaluateOpenResponse } = require("../services/ai.service");
 
 const unlockNextLesson = async (userId, completedLesson) => {
   // Verificar cuántas veces completó esta lección
@@ -208,36 +208,42 @@ const startLesson = async (req, res) => {
 
 const answerQuestion = async (req, res) => {
   try {
-    const { questionId, answer, hintUsed  } = req.body;
+    const { questionId, answer, hintUsed } = req.body;
+
     if (!questionId || answer === undefined) {
       return res.status(400).json({ ok: false, message: "questionId y answer son requeridos" });
     }
 
     const question = await Question.findById(questionId);
-    if (!question) return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
+    if (!question) {
+      return res.status(404).json({ ok: false, message: "Pregunta no encontrada" });
+    }
 
     let isCorrect = false;
     let correctAnswer = null;
+    let evaluationData = null;
 
     switch (question.type) {
       case "sentence_builder": {
-        console.log("[Debug] correctAnswers:", question.correctAnswers);
         const userWords = Array.isArray(answer) ? answer : [];
         isCorrect = JSON.stringify(userWords) === JSON.stringify(question.correctAnswers);
         correctAnswer = question.correctAnswers;
         break;
       }
+
       case "multiple_choice": {
         const correctOption = question.options.find((o) => o.isCorrect);
         isCorrect = correctOption?._id.toString() === answer;
         correctAnswer = correctOption ? { id: correctOption._id, text: correctOption.text } : null;
         break;
       }
+
       case "true_false": {
         isCorrect = question.correctBoolean === (answer === true || answer === "true");
         correctAnswer = question.correctBoolean;
         break;
       }
+
       case "fill_blank": {
         const userAns = String(answer).trim();
         const accepted = question.caseSensitive
@@ -245,34 +251,33 @@ const answerQuestion = async (req, res) => {
           : question.correctAnswers.map((a) => a.toLowerCase());
         const compare = question.caseSensitive ? userAns : userAns.toLowerCase();
         isCorrect = accepted.includes(compare);
+
         if (!isCorrect) {
           try {
             isCorrect = await evaluateFillBlankAnswer(question.prompt, userAns, question.correctAnswers);
           } catch (err) {
-            console.error("Error evaluando con IA:", err.message);
+            console.error("Error evaluando fill_blank con IA:", err.message);
           }
         }
         correctAnswer = question.correctAnswers[0];
         break;
       }
+
       case "order_items": {
         const userOrder = Array.isArray(answer) ? answer : [];
         isCorrect = JSON.stringify(userOrder) === JSON.stringify(question.items);
         correctAnswer = question.items;
         break;
       }
+
       case "match_pairs": {
         const userPairs = Array.isArray(answer) ? answer : [];
-        
-        // Verificar que cada leftId esté correctamente mapeado a su rightId
         isCorrect = userPairs.length === question.pairs.length &&
           userPairs.every((up) => {
             const pair = question.pairs.find((p) => p._id.toString() === up.leftId);
-            // El rightId del usuario debe coincidir con el _id del par correcto
             return pair && pair._id.toString() === up.rightId;
           });
 
-        // Si todos los right values son iguales, cualquier combinación es válida
         const rightValues = question.pairs.map((p) => p.right);
         const allSameRight = rightValues.every((v) => v === rightValues[0]);
         if (allSameRight && userPairs.length === question.pairs.length) {
@@ -282,13 +287,69 @@ const answerQuestion = async (req, res) => {
         correctAnswer = question.pairs;
         break;
       }
+
+      // ==================== NUEVO: free_text ====================
+      case "free_text": {
+        if (!question.evaluationCriteria) {
+          return res.status(400).json({ 
+            ok: false, 
+            message: "Esta pregunta no tiene criterios de evaluación definidos" 
+          });
+        }
+
+        const evaluation = await evaluateOpenResponse({
+          prompt: question.prompt,
+          userAnswer: String(answer).trim(),
+          evaluationCriteria: question.evaluationCriteria,
+          maxScore: question.maxScore || 10,
+          isCodeExercise: question.isCodeExercise || false
+        });
+
+        isCorrect = evaluation.approved;
+        evaluationData = evaluation;   // Guardamos toda la evaluación rica
+
+        // Guardar en el progreso del usuario
+        await UserProgress.findOneAndUpdate(
+          { user: req.usuario._id, lesson: req.params.id },
+          {
+            $push: {
+              "currentSession.attempts": {
+                question: questionId,
+                isCorrect,
+                answeredAt: new Date(),
+                openResponseEvaluation: evaluation
+              }
+            }
+          }
+        );
+
+        return res.json({
+          ok: true,
+          data: {
+            isCorrect,
+            score: evaluation.score,
+            feedback: evaluation.feedback,
+            strengths: evaluation.strengths,
+            improvements: evaluation.improvements,
+            fullEvaluation: evaluation
+          }
+        });
+      }
+
+      default:
+        return res.status(400).json({ ok: false, message: "Tipo de pregunta no soportado" });
     }
 
+    // Código común para todos los tipos excepto free_text
     await UserProgress.findOneAndUpdate(
       { user: req.usuario._id, lesson: req.params.id },
       {
         $push: {
-          "currentSession.attempts": { question: questionId, isCorrect, answeredAt: new Date() },
+          "currentSession.attempts": { 
+            question: questionId, 
+            isCorrect, 
+            answeredAt: new Date() 
+          },
         },
       }
     );
@@ -302,8 +363,15 @@ const answerQuestion = async (req, res) => {
 
     res.json({
       ok: true,
-      data: { isCorrect, correctAnswer, explanation: question.explanation, heartsRemaining, xpEarned: isCorrect ? (hintUsed ? Math.floor(question.xpValue * 0.5) : question.xpValue) : 0 },
+      data: { 
+        isCorrect, 
+        correctAnswer, 
+        explanation: question.explanation, 
+        heartsRemaining, 
+        xpEarned: isCorrect ? (hintUsed ? Math.floor(question.xpValue * 0.5) : question.xpValue) : 0 
+      },
     });
+
   } catch (err) {
     console.error("[answerQuestion] Error completo:", err);
     res.status(500).json({ ok: false, message: err.message });
