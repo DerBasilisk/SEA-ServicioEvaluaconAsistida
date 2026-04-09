@@ -13,6 +13,7 @@ const NAV_CSS = `
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1.5px solid rgba(255, 255, 255, 0.8);
+    border-radius: 30px 30px 30px 30px;
   }
   .stat-capsule {
     background: rgba(255, 255, 255, 0.5);
@@ -75,7 +76,8 @@ export default function Navbar() {
   const canRefill = hearts < 5 && gems >= 50;
 
   return (
-    <nav className="sea-nav sticky top-0 z-[100] px-6 py-3">
+    <div className="sticky top-0 z-[100] mb-12">
+    <nav className="sea-nav fixed w-[75%] left-[10%] mt-1 top-0 z-[100] px-6 py-3">
       <style>{NAV_CSS}</style>
       <div className="max-w-[98%] mx-auto flex items-center justify-between">
         
@@ -190,6 +192,7 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+    </div>
   );
 }
 

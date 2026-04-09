@@ -361,14 +361,15 @@ const clearReports = async (req, res) => {
 
 const getStats = async (req, res) => {
   try {
-    const [totalUsers, totalSubjects, totalLessons, totalQuestions, pendingQuestions] = await Promise.all([
+    const [totalUsers, totalSubjects, totalUnits, totalLessons, totalQuestions, pendingQuestions] = await Promise.all([
       User.countDocuments(),
       Subject.countDocuments(),
+      Unit.countDocuments(),
       Lesson.countDocuments(),
       Question.countDocuments(),
       Question.countDocuments({ isReviewed: false }),
     ]);
-    res.json({ ok: true, data: { totalUsers, totalSubjects, totalLessons, totalQuestions, pendingQuestions } });
+    res.json({ ok: true, data: { totalUsers, totalSubjects, totalUnits, totalLessons, totalQuestions, pendingQuestions } });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

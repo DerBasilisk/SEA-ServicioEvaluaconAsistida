@@ -83,7 +83,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 hover:border-violet-500/50 transition-all group">
           <div className="flex items-center justify-between">
             <div>
@@ -104,6 +104,18 @@ export default function AdminDashboard() {
             </div>
             <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
               <BookOpen className="w-8 h-8 text-emerald-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 hover:border-violet-500/50 transition-all group">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-sm">Unidades</p>
+              <p className="text-4xl font-bold text-white mt-2">{stats?.totalUnits || 0}</p>
+            </div>
+            <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Layers className="w-8 h-8 text-rose-400" />
             </div>
           </div>
         </div>
