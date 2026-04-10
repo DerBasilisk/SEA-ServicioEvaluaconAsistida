@@ -1,6 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg-gradient: linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%);
+  --glass-bg: rgba(255, 255, 255, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: rgba(43, 127, 232, 0.1);
+  --sidebar-bg: rgba(255, 255, 255, 0.6);
+  --sidebar-border: rgba(255, 255, 255, 0.9);
+  --card-bg: rgba(243, 243, 243, 0.897);
+  --card-border: #E2E8F0;
+  --text-primary: #0F2547;
+  --text-secondary: #7A9CC5;
+  --text-muted: #AAC0D8;
+  --text-accent: #2B7FE8;
+  --deco-blob: rgba(255, 255, 255, 0.3);
+  --deco-blob2: rgba(96, 165, 250, 0.1);
+  --progress-track: rgba(255, 255, 255, 0.4);
+  --subject-icon-bg: #f8fafc;
+  --subject-icon-border: #e2e8f0;
+  --progress-bar-bg: #f1f5f9;
+  --rank-1-bg: #fefce8;
+  --rank-1-text: #ca8a04;
+  --rank-n-bg: #f1f5f9;
+  --rank-n-text: #94a3b8;
+  --btn-primary: #2B7FE8;
+  --btn-text: white;
+  --correct: #10B981;
+  --incorrect: #EF4444;
+  --panel-feedback-bg: #F0FDF4;
+  --clue-bg: #FFFBEB;
+  --clue-border: #FDE68A;
+  --clue-text: #D97706;
+  --afirmative: #2B7FE8;
+  --negative: #EF4444;
+  --google: #ad0909;
+  --facebook: #1877F2;
+}
+
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(145deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+  --glass-bg: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(148, 163, 184, 0.1); 
+  --glass-shadow: rgba(0, 0, 0, 0.5);
+  --sidebar-bg: rgba(7, 10, 25, 0.8);
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --card-bg: #1e293b;
+  --card-border: rgba(51, 65, 85, 0.5);
+  --text-primary: #f8fafc;    /* Casi blanco */
+  --text-secondary: #cbd5e1;  /* Gris azulado claro */
+  --text-muted: #64748b;      /* Para detalles menos importantes */
+  --text-accent: #60a5fa;     /* Un azul más eléctrico y visible */
+  --deco-blob: rgba(59, 130, 246, 0.03);
+  --deco-blob2: rgba(139, 92, 246, 0.04);
+  --progress-track: rgba(255, 255, 255, 0.05);
+  --subject-icon-bg: #0f172a;
+  --subject-icon-border: #334155;
+  --progress-bar-bg: #334155;
+  --rank-1-bg: rgba(251, 191, 36, 0.15);
+  --rank-1-text: #fbbf24;
+  --rank-n-bg: rgba(71, 85, 105, 0.4);
+  --rank-n-text: #94a3b8;
+  --btn-primary: #3b82f6;
+  --btn-text: #ffffff;
+  --correct: #10b981;
+  --incorrect: #f43f5e;
+  --panel-feedback-bg: rgba(16, 185, 129, 0.08);
+  --clue-bg: #04164b;
+  --clue-border: #8a9ffd;
+  --clue-text: #0066ff;
+  --afirmative: #2b9ce8;
+  --negative: #c72e2e;
+}
+
+[data-theme="high-contrast"] {
+  --bg-gradient: #000000;
+  --glass-bg: #000000;
+  --glass-border: #FFFFFF; 
+  --glass-shadow: none;
+  --sidebar-bg: #000000;
+  --sidebar-border: #FFFFFF;
+  --card-bg: #000000;
+  --card-border: #FFFFFF;
+  --text-primary: #FFFFFF;
+  --text-secondary: #FFFFFF; 
+  --text-muted: #FFFF00; /* El amarillo sobre negro es el contraste más alto posible */
+  --text-accent: #00FFFF; /* Cian brillante */
+  --deco-blob: transparent;
+  --deco-blob2: transparent;
+  --progress-track: #333333;
+  --subject-icon-bg: #000000;
+  --subject-icon-border: #FFFFFF;
+  --progress-bar-bg: #FFFFFF;
+  --rank-1-bg: #000000;
+  --rank-1-text: #FFFF00;
+  --rank-n-bg: #000000;
+  --rank-n-text: #FFFFFF;
+  --btn-primary: #FFFFFF;
+  --btn-text: #000000;
+  --correct: #00FF00; /* Verde puro */
+  --incorrect: #FF0000; /* Rojo puro */
+  --panel-feedback-bg: #000000;
+  --clue-bg: #fffbeb00;
+  --clue-border: #eefc2a;
+  --clue-text: #ffd900;
+  --afirmative: #00FFFF;
+  --negative: #ff0000;
+}
+
+[data-theme="high-contrast"] * {
+  /* Eliminamos desenfoques para mejorar rendimiento y claridad */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  /* Forzamos que los bordes sean sólidos y visibles */
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+[data-theme="high-contrast"] .sea-nav, 
+[data-theme="high-contrast"] .sea-glass-main {
+  /* Aseguramos que el fondo no tenga transparencia */
+  background: #000000 !important;
+  border-width: 2px !important;
+}
+
+[data-theme="high-contrast"] .progress-bar-inner {
+  /* En alto contraste, mejor una barra sólida blanca o cian */
+  background: var(--text-accent) !important;
+  box-shadow: none !important;
+}
+
 
 * {
   box-sizing: border-box;

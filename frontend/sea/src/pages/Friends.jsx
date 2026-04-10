@@ -8,39 +8,39 @@ import { Users, UserPlus, Trophy, Search, Sword, Check, X, Trash2, Zap, UserCirc
 import Avatar from "../components/Avatar";
 import toast from "react-hot-toast"; // Asegúrate de tener instalado react-hot-toast
 
-// ─── Estilos Globales SEA ──────────────────────────────────────────────────
 const FRIENDS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
   .sea-friends { font-family: 'Nunito', sans-serif; }
   
   .sea-glass-card {
-    background: rgba(255, 255, 255, 0.45);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 20px 50px rgba(43, 127, 232, 0.1);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 20px 50px var(--glass-shadow);
   }
 
   .sea-tab-active {
-    background: linear-gradient(135deg, #2B7FE8, #5B9FFF);
-    box-shadow: 0 10px 20px rgba(43, 127, 232, 0.3);
-    color: white !important;
+    background: var(--text-accent);
+    color: var(--btn-text) !important;
+    box-shadow: 0 10px 20px var(--glass-shadow);
   }
 
   .sea-item-card {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: var(--card-bg);
+    border: 1.5px solid var(--glass-border);
     transition: all 0.2s ease;
   }
+  
   .sea-item-card:hover {
     transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.9);
-    border-color: #2B7FE8;
+    background: var(--glass-bg);
+    border-color: var(--text-accent);
   }
 
-  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-  .custom-scrollbar::-webkit-scrollbar-thumb { background: #AAC0D8; border-radius: 10px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { 
+    background: var(--text-muted); 
+    border-radius: 10px; 
+  }
 `;
 
 export default function Friends() {
@@ -165,7 +165,7 @@ export default function Friends() {
 
   return (
     <div className="sea-friends min-h-screen pb-12 relative overflow-hidden" 
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{FRIENDS_CSS}</style>
       
       {/* Elementos decorativos de fondo */}
@@ -184,10 +184,10 @@ export default function Friends() {
             <div className="w-30 h-30 mx-auto mb-4 flex items-center justify-center text-4xl font-black italic text-white rotate-[-3deg]">
               <Avatar src={user?.avatar} name={user?.displayName || user?.username} size="xl" className="rounded-[2rem] border-4 border-white shadow-xl" />
             </div>
-            <h2 className="text-2xl font-black tracking-tighter text-[#0F2547] uppercase italic">{user?.username}</h2>
-            <div className="mt-4 bg-white/60 py-2 rounded-2xl border border-white/80">
-                <p className="text-[9px] font-extrabold text-[#7A9CC5] uppercase tracking-[0.2em]">Rango Actual</p>
-                <p className="text-xl font-black italic text-[#2B7FE8]">NIVEL {user?.level || 1}</p>
+            <h2 className="text-2xl font-black tracking-tighter text-[--text-primary] uppercase italic">{user?.username}</h2>
+            <div className="mt-4 bg-[--card-bg] py-2 rounded-2xl border border-[--glass-border]">
+                <p className="text-[9px] font-extrabold text-[--text-accent] uppercase tracking-[0.2em]">Rango Actual</p>
+                <p className="text-xl font-black italic text-[--text-primary]">NIVEL {user?.level || 1}</p>
             </div>
           </div>
 
@@ -197,7 +197,7 @@ export default function Friends() {
                 className={`flex items-center justify-between px-6 py-5 rounded-[1.8rem] font-extrabold text-xs uppercase tracking-widest transition-all ${
                   tab === t.id 
                   ? "sea-tab-active scale-[1.05]" 
-                  : "bg-white/40 text-[#5B7CA3] border border-white/60 hover:bg-white/60"
+                  : "bg-[--card-bg] text-[--text-secondary] border border-[--glass-border] hover:text-[--text-accent]"
                 }`}
               >
                 <div className="flex items-center gap-4">{t.icon} {t.label}</div>
@@ -216,7 +216,7 @@ export default function Friends() {
           <header className="flex items-center justify-between mb-10">
              <div className="flex items-center gap-4">
                 <div className="w-2 h-8 bg-[#2B7FE8] rounded-full shadow-[0_0_15px_rgba(43,127,232,0.5)]"></div>
-                <h3 className="text-3xl font-black italic tracking-tighter text-[#0F2547] uppercase">
+                <h3 className="text-3xl font-black italic tracking-tighter text-[--text-primary] uppercase">
                   {tabs.find(t => t.id === tab)?.label}
                 </h3>
              </div>
@@ -253,10 +253,13 @@ export default function Friends() {
                 {tab === "search" && (
                   <div className="space-y-8">
                     <div className="relative group">
-                      <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-[#AAC0D8] group-focus-within:text-[#2B7FE8] transition-colors" size={22} />
-                      <input type="text" value={searchQuery} onChange={(e) => handleSearch(e.target.value)}
-                        placeholder="BUSCAR JUGADORES POR NOMBRE..."
-                        className="w-full bg-white/60 border-2 border-white/80 rounded-[2rem] pl-16 pr-8 py-5 outline-none focus:border-[#2B7FE8]/30 focus:bg-white transition-all font-bold text-sm text-[#0F2547] placeholder:text-[#AAC0D8] shadow-inner"
+                      <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-accent)] transition-colors" size={22} />
+                      <input 
+                        type="text" 
+                        value={searchQuery} 
+                        onChange={(e) => handleSearch(e.target.value)}
+                        placeholder="BUSCAR JUGADORES..."
+                        className="w-full bg-[var(--card-bg)] border-2 border-[var(--glass-border)] rounded-[2rem] pl-16 pr-8 py-5 outline-none focus:border-[var(--text-accent)] transition-all font-bold text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
                       />
                     </div>
                     <div className="space-y-3">
@@ -272,8 +275,8 @@ export default function Friends() {
 
         {/* COLUMNA 3: Sidebar Ranking */}
         <aside className="lg:col-span-3 space-y-6">
-          <div className="bg-white/80 border-2 border-white rounded-[2.5rem] p-8 shadow-xl">
-            <h3 className="text-[10px] font-black text-[#7A9CC5] uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+          <div className="bg-[var(--card-bg)] border-2 border-[var(--glass-border)] rounded-[2.5rem] p-8 shadow-xl">
+            <h3 className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
               <Star size={16} className="text-yellow-500 fill-yellow-500" /> Top Mundial
             </h3>
             <div className="space-y-6">
@@ -281,13 +284,13 @@ export default function Friends() {
                 <div key={entry.user._id} className="flex items-center gap-4 group">
                   <span className={`text-xs font-black italic ${i === 0 ? "text-[#2B7FE8]" : "text-[#AAC0D8]"}`}>0{i + 1}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-extrabold truncate text-[#0F2547] uppercase group-hover:text-[#2B7FE8] transition-colors cursor-pointer">{entry.user.displayName}</p>
+                    <p className="text-xs font-extrabold truncate text-[--text-primary] uppercase group-hover:text-[#2B7FE8] transition-colors cursor-pointer">{entry.user.displayName}</p>
                     <p className="text-[10px] text-[#5B9FFF] font-bold flex items-center gap-1 mt-0.5"><Zap size={10} fill="#5B9FFF"/> {entry.xpEarned} XP</p>
                   </div>
                 </div>
               ))}
             </div>
-            <button onClick={() => setTab("leaderboard")} className="w-full mt-10 py-4 bg-[#F0F7FF] hover:bg-[#2B7FE8] text-[#2B7FE8] hover:text-white rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-95">
+            <button className="w-full mt-10 py-4 bg-[var(--glass-bg)] hover:bg-[var(--text-accent)] text-[var(--text-accent)] hover:text-[var(--btn-text)] rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all">
               Ver Salón de la Fama
             </button>
           </div>
@@ -297,28 +300,25 @@ export default function Friends() {
 
       {/* MODAL DE DUELO SEA */}
       {duelModal && (
-        <div className="fixed inset-0 bg-[#0F2547]/40 z-[100] flex items-center justify-center p-6 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="sea-glass-card bg-white/90 p-10 w-full max-w-md rounded-[3rem] shadow-3xl">
-            <h3 className="text-2xl font-black italic tracking-tighter text-[#0F2547] uppercase mb-1">Duelo de Habilidades</h3>
-            <p className="text-[#7A9CC5] text-[10px] font-extrabold uppercase tracking-widest mb-8">VS {duelModal.friendName}</p>
-            
-            <div className="space-y-3 max-h-72 overflow-y-auto pr-3 custom-scrollbar">
-              {lessons.map(l => (
-                <button key={l._id} onClick={() => handleSendDuelInvite(l._id)}
-                  className="w-full text-left bg-white hover:bg-[#2B7FE8] border border-white hover:border-[#2B7FE8] p-5 rounded-2xl transition-all group relative overflow-hidden"
-                >
-                  <div className="relative z-10">
-                    <p className="text-[#0F2547] font-black text-sm group-hover:text-white transition-colors">{l.name}</p>
-                    <p className="text-[9px] text-[#7A9CC5] font-extrabold group-hover:text-blue-100 transition-colors uppercase tracking-tight mt-1">{l.subjectName}</p>
-                  </div>
-                  <ChevronRight size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#AAC0D8] group-hover:text-white group-hover:translate-x-1 transition-all" />
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setDuelModal(null)} className="w-full mt-8 py-4 text-[#7A9CC5] hover:text-rose-500 font-black text-[10px] uppercase tracking-widest transition-colors">Abortar Misión</button>
+      <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-6 backdrop-blur-md">
+        <div className="sea-glass-card p-10 w-full max-w-md rounded-[3rem]">
+          <h3 className="text-2xl font-black italic text-[var(--text-primary)] uppercase mb-1">Duelo de Habilidades</h3>
+          <p className="text-[var(--text-secondary)] text-[10px] font-extrabold uppercase tracking-widest mb-8">VS {duelModal.friendName}</p>
+          
+          <div className="space-y-3 max-h-72 overflow-y-auto pr-3 custom-scrollbar">
+            {lessons.map(l => (
+              <button key={l._id} onClick={() => handleSendDuelInvite(l._id)}
+                className="w-full text-left bg-[var(--card-bg)] hover:bg-[var(--text-accent)] border border-[var(--glass-border)] p-5 rounded-2xl transition-all group"
+              >
+                <p className="text-[var(--text-primary)] font-black text-sm group-hover:text-[var(--btn-text)]">{l.name}</p>
+                <p className="text-[9px] text-[var(--text-muted)] font-extrabold group-hover:text-[var(--btn-text)] opacity-70 uppercase mt-1">{l.subjectName}</p>
+              </button>
+            ))}
           </div>
+          <button onClick={() => setDuelModal(null)} className="w-full mt-8 py-4 text-[var(--text-muted)] hover:text-rose-500 font-black text-[10px] uppercase tracking-widest">Abortar Misión</button>
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 }
@@ -332,7 +332,7 @@ function FriendItem({ user, onProfile, onRemove, onDuel }) {
         <Avatar src={user.avatar} name={user.displayName || user.username} size="md" className="rounded-2xl border-2 border-white shadow-sm" />
       </div>
       <div className="flex-1 min-w-0" onClick={onProfile}>
-        <p className="text-base font-black text-[#0F2547] truncate uppercase tracking-tight italic">{user.displayName || user.username}</p>
+        <p className="text-base font-black text-[--text-primary] truncate uppercase tracking-tight italic">{user.displayName || user.username}</p>
         <div className="flex items-center gap-3 mt-1">
           <span className="text-[10px] font-black text-[#2B7FE8] bg-blue-50 px-2 py-0.5 rounded-md">LVL {user.level}</span>
           <span className="text-[10px] font-bold text-[#AAC0D8] uppercase tracking-tighter">{user.xp} XP acumulada</span>
@@ -356,7 +356,7 @@ function RequestItem({ request, onAccept, onReject }) {
     <div className="bg-white/60 border-2 border-white p-5 rounded-[2rem] flex items-center gap-5 animate-in slide-in-from-bottom-4 duration-300">
       <Avatar src={u.avatar} name={u.displayName || u.username} size="md" className="rounded-2xl border-2 border-white shadow-inner" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-[#0F2547] uppercase italic">{u.displayName || u.username}</p>
+        <p className="text-sm font-black text-[--text-primary] uppercase italic">{u.displayName || u.username}</p>
         <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-tight">Solicitud de Alianza</p>
       </div>
       <div className="flex gap-2">
@@ -370,19 +370,23 @@ function RequestItem({ request, onAccept, onReject }) {
 function LeaderboardItem({ entry, index, isMe }) {
   return (
     <div className={`flex items-center gap-5 p-6 rounded-[2.2rem] border-2 transition-all ${
-      isMe ? 'sea-tab-active scale-[1.03] z-10' : 'bg-white/50 border-white hover:bg-white/80'
+      isMe 
+      ? 'bg-[var(--text-accent)] border-transparent scale-[1.03] shadow-lg' 
+      : 'bg-[var(--card-bg)] border-[var(--glass-border)] hover:border-[var(--text-accent)]'
     }`}>
-      <span className={`font-black italic text-lg w-8 ${isMe ? 'text-white' : 'text-[#AAC0D8]'}`}>#{index+1}</span>
+      <span className={`font-black italic text-lg w-8 ${isMe ? 'text-[var(--btn-text)]' : 'text-[var(--text-muted)]'}`}>
+        #{index+1}
+      </span>
       <div className="flex-1 flex items-center gap-4">
-        <Avatar src={entry.user.avatar} name={entry.user.displayName || entry.user.username} size="sm"
-          className={`rounded-xl border ${isMe ? 'border-white/30' : 'border-blue-50'}`} />
-        <p className={`font-black text-sm uppercase tracking-tight italic ${isMe ? 'text-white' : 'text-[#0F2547]'}`}>
-          {entry.user.displayName || entry.user.username} {isMe && "(Tú)"}
+        <Avatar src={entry.user.avatar} name={entry.user.displayName} size="sm" className="rounded-xl" />
+        <p className={`font-black text-sm uppercase italic ${isMe ? 'text-[var(--btn-text)]' : 'text-[var(--text-primary)]'}`}>
+          {entry.user.displayName} {isMe && "(Tú)"}
         </p>
       </div>
       <div className="text-right">
-        <p className={`font-black text-sm ${isMe ? 'text-white' : 'text-[#2B7FE8]'}`}>{entry.xpEarned} XP</p>
-        <p className={`text-[9px] font-bold uppercase tracking-tighter ${isMe ? 'text-blue-100' : 'text-[#7A9CC5]'}`}>Esta semana</p>
+        <p className={`font-black text-sm ${isMe ? 'text-[var(--btn-text)]' : 'text-[var(--text-accent)]'}`}>
+          {entry.xpEarned} XP
+        </p>
       </div>
     </div>
   );
@@ -395,7 +399,7 @@ function SearchItem({ user, onSendRequest, onProfile }) {
         <Avatar src={user.avatar} name={user.displayName || user.username} size="sm" className="rounded-xl border border-white" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-[#0F2547] uppercase italic">{user.displayName || user.username}</p>
+        <p className="text-sm font-black text-[--text-primary] uppercase italic">{user.displayName || user.username}</p>
         <p className="text-[10px] text-[#7A9CC5] font-bold uppercase">Nivel {user.level || 1}</p>
       </div>
       {user.friendStatus ? (
@@ -411,7 +415,7 @@ function EmptyState({ icon, text }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 opacity-30 grayscale">
       <div className="text-[#2B7FE8] mb-6 animate-bounce">{icon}</div>
-      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#0F2547] text-center max-w-[200px] leading-relaxed">{text}</p>
+      <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[--text-primary] text-center max-w-[200px] leading-relaxed">{text}</p>
     </div>
   );
 }

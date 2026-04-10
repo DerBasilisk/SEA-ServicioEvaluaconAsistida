@@ -88,7 +88,7 @@ export default function SentenceBuilder({ question, onAnswer, onReport }) {
         <div className="flex flex-wrap items-center gap-x-3 gap-y-5 leading-[3rem]">
           {parts.map((part, i) => (
             <div key={i} className="flex items-center gap-3 flex-wrap">
-              <span className="text-[#0F2547] font-black italic text-xl md:text-2xl tracking-tight">
+              <span className="text-[--text-primary] font-black italic text-xl md:text-2xl tracking-tight">
                 {part}
               </span>
               {i < blanksCount && (
@@ -124,7 +124,7 @@ export default function SentenceBuilder({ question, onAnswer, onReport }) {
             <button
               key={i}
               onClick={() => handleSelectWord(word)}
-              className="word-chip px-6 py-3 rounded-2xl text-[#0F2547] font-black italic text-md active:scale-90"
+              className="word-chip px-6 py-3 rounded-2xl text-[--text-primary] font-black italic text-md active:scale-90"
             >
               {word}
             </button>

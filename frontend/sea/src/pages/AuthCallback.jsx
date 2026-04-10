@@ -48,7 +48,7 @@ export default function AuthCallback() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{CALLBACK_CSS}</style>
 
       {/* Decoración de fondo */}
@@ -70,7 +70,7 @@ export default function AuthCallback() {
         <div className="text-center space-y-3">
           <div className="flex items-center justify-center gap-2">
             <ShieldCheck size={18} className="text-[#2B7FE8]" />
-            <h2 className="text-[#0F2547] font-black italic uppercase tracking-tighter text-2xl">
+            <h2 className="text-[--text-primary] font-black italic uppercase tracking-tighter text-2xl">
               Sincronizando Nodo
             </h2>
           </div>

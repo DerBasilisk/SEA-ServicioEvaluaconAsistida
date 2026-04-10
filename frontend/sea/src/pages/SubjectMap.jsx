@@ -70,8 +70,8 @@ export default function SubjectMap() {
   }, [slug, navigate, fetchMe]);
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-      <div className="animate-pulse text-[#2B7FE8] font-black italic tracking-widest uppercase text-[10px]">
+    <div className="min-h-screen bg-[var(--bg-gradient)] flex items-center justify-center">
+      <div className="animate-pulse text-[var(--text-primary)] font-black italic tracking-widest uppercase text-[10px]">
         Generando Nexo de Aprendizaje...
       </div>
     </div>
@@ -79,7 +79,7 @@ export default function SubjectMap() {
 
   return (
     <div className="min-h-screen sea-map pb-40 relative overflow-hidden"
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{MAP_LIGHT_CSS}</style>
       <Navbar />
       
@@ -101,7 +101,7 @@ export default function SubjectMap() {
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-[#2B7FE8] font-black uppercase text-[9px] tracking-[0.4em]">Módulo de Operaciones</span>
               </div>
-              <h1 className="text-4xl font-black italic uppercase tracking-tighter text-[#0F2547] leading-none">{subject.name}</h1>
+              <h1 className="text-4xl font-black italic uppercase tracking-tighter text-[--text-primary] leading-none">{subject.name}</h1>
               <p className="text-[#7A9CC5] text-xs font-bold mt-1 uppercase tracking-wider">
                 {subject.totalLessons || 0} Objetivos Detectados
               </p>
@@ -110,7 +110,7 @@ export default function SubjectMap() {
           
           <button 
             onClick={() => navigate("/")} 
-            className="mt-6 md:mt-0 px-6 py-3 bg-[#0F2547] hover:bg-[#1A3A61] text-white rounded-2xl font-black uppercase italic tracking-widest text-[9px] shadow-lg transition-all flex items-center gap-2 group"
+            className="mt-6 md:mt-0 px-6 py-3 bg-[--text-primary] hover:bg-[#1A3A61] text-white rounded-2xl font-black uppercase italic tracking-widest text-[9px] shadow-lg transition-all flex items-center gap-2 group"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
             Volver al Centro
@@ -126,7 +126,7 @@ export default function SubjectMap() {
                 <div className="bg-[#2B7FE8] text-white px-4 py-1.5 rounded-xl text-[10px] font-black italic shadow-md">
                   FASE 0{uIdx + 1}
                 </div>
-                <h2 className="text-xl font-black italic uppercase tracking-widest text-[#0F2547]">{unit.name}</h2>
+                <h2 className="text-xl font-black italic uppercase tracking-widest text-[--text-primary]">{unit.name}</h2>
                 <div className="flex-grow h-[2px] bg-gradient-to-r from-[#2B7FE8]/30 to-transparent" />
               </div>
 
@@ -190,12 +190,12 @@ function GlassNode({ lesson, onClick }) {
       {/* Etiqueta de Texto */}
       <div className={`
         node-label mt-6 p-4 rounded-2xl transition-all duration-500 text-center w-full max-w-[160px] relative z-10
-        ${isLocked ? 'bg-slate-50/50 border-slate-200 opacity-60' : 'group-hover:bg-[#0F2547] group-hover:border-[#0F2547] group-hover:shadow-lg'}
+        ${isLocked ? 'bg-slate-50/50 border-slate-200 opacity-60' : 'group-hover:bg-[--text-primary] group-hover:border-[--text-primary] group-hover:shadow-lg'}
       `}>
         <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isLocked ? 'text-slate-400' : 'text-[#2B7FE8] group-hover:text-blue-300'}`}>
            {isLocked ? 'En Espera' : 'Objetivo'}
         </p>
-        <h3 className={`text-[11px] font-black tracking-tight uppercase italic leading-tight ${isLocked ? 'text-slate-400' : 'text-[#0F2547] group-hover:text-white'}`}>
+        <h3 className={`text-[11px] font-black tracking-tight uppercase italic leading-tight ${isLocked ? 'text-slate-400' : 'text-[--text-primary] group-hover:text-white'}`}>
           {lesson.name}
         </h3>
       </div>

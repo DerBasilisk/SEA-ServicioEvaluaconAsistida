@@ -102,7 +102,7 @@ export default function AvatarUpload({ currentAvatar, username, size = "lg" }) {
               {username?.[0]?.toUpperCase()}
             </div>
           )}
-          <div className="absolute inset-0 bg-[#0F2547]/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+          <div className="absolute inset-0 bg-[--text-primary]/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
             <Camera className="text-white" size={24} />
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function AvatarUpload({ currentAvatar, username, size = "lg" }) {
 
       {/* MODAL DE CONFIRMACIÓN */}
 {showConfirm && (
-  <div className="fixed inset-0 bg-[#0F2547]/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+  <div className="fixed inset-0 bg-[--text-primary]/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
     <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-white flex flex-col items-center animate-in zoom-in-95 duration-200"
          style={{ width: '400px', maxWidth: '95vw', minHeight: '300px' }}>
       
@@ -120,7 +120,7 @@ export default function AvatarUpload({ currentAvatar, username, size = "lg" }) {
         <AlertTriangle size={40} />
       </div>
       
-      <h3 className="text-[#0F2547] font-black italic uppercase text-2xl mb-2 text-center">
+      <h3 className="text-[--text-primary] font-black italic uppercase text-2xl mb-2 text-center">
         ¿Actualizar Foto?
       </h3>
       
@@ -142,11 +142,11 @@ export default function AvatarUpload({ currentAvatar, username, size = "lg" }) {
 
 {/* MODAL DE RECORTE */}
 {showModal && rawSrc && (
-  <div className="fixed inset-0 bg-[#0F2547]/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+  <div className="fixed inset-0 bg-[--text-primary]/60 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
     <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl border border-white flex flex-col animate-in zoom-in-95 duration-200"
          style={{ width: '550px', maxWidth: '95vw' }}>
       
-      <h3 className="text-[#0F2547] font-black italic uppercase text-center text-xl mb-6">
+      <h3 className="text-[--text-primary] font-black italic uppercase text-center text-xl mb-6">
         Ajustar Perfil
       </h3>
       

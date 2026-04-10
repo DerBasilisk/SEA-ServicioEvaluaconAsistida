@@ -84,7 +84,7 @@ export default function Register() {
 
       <div
         className="sea-register min-h-screen flex items-center justify-center p-6 overflow-hidden relative"
-        style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}
+        style={{ background: "var(--bg-gradient)" }}
       >
         {/* Orbes de fondo */}
         <div className="fixed inset-0 z-0 pointer-events-none">
@@ -103,7 +103,7 @@ export default function Register() {
              <img src="/sealogo.png" width="120" alt="SEA" className="brightness-0 invert" />
             </div>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[#0F2547]">
+            <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[--text-primary]">
               Crear Cuenta
             </h1>
             <p className="text-[10px] font-extrabold uppercase tracking-[.2em] mt-2 text-[#7A9CC5]">
@@ -134,7 +134,7 @@ export default function Register() {
                     onChange={handleChange}
                     required
                     placeholder="Tu nombre o alias"
-                    className="sea-input w-full rounded-2xl pl-12 pr-5 py-3 text-sm font-semibold text-[#0F2547] placeholder:text-[#AAC0D8]"
+                    className="sea-input w-full rounded-2xl pl-12 pr-5 py-3 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                   />
                 </div>
               </div>
@@ -153,7 +153,7 @@ export default function Register() {
                     onChange={handleChange}
                     required
                     placeholder="ejemplo@correo.com"
-                    className="sea-input w-full rounded-2xl pl-12 pr-5 py-3 text-sm font-semibold text-[#0F2547] placeholder:text-[#AAC0D8]"
+                    className="sea-input w-full rounded-2xl pl-12 pr-5 py-3 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                   />
                 </div>
               </div>
@@ -173,7 +173,7 @@ export default function Register() {
                       onChange={handleChange}
                       required
                       placeholder="••••••"
-                      className="sea-input w-full rounded-2xl pl-11 pr-4 py-3 text-sm font-semibold text-[#0F2547] placeholder:text-[#AAC0D8]"
+                      className="sea-input w-full rounded-2xl pl-11 pr-4 py-3 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                     />
                   </div>
                 </div>
@@ -190,7 +190,7 @@ export default function Register() {
                       onChange={handleChange}
                       required
                       placeholder="••••••"
-                      className="sea-input w-full rounded-2xl px-5 py-3 text-sm font-semibold text-[#0F2547] placeholder:text-[#AAC0D8]"
+                      className="sea-input w-full rounded-2xl px-5 py-3 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                     />
                     <button
                       type="button"

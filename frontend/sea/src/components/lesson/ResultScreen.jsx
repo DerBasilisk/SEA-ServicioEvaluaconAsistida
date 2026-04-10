@@ -53,7 +53,7 @@ export default function ResultScreen({ result, lesson, onContinue, onRetry }) {
           <div className="grid gap-3 pt-4">
             <button
               onClick={onRetry}
-              className="flex items-center justify-center gap-3 bg-white text-[#0F2547] font-black py-5 rounded-2xl transition-all active:scale-95 shadow-xl hover:bg-slate-100 uppercase italic tracking-widest text-sm"
+              className="flex items-center justify-center gap-3 bg-white text-[--text-primary] font-black py-5 rounded-2xl transition-all active:scale-95 shadow-xl hover:bg-slate-100 uppercase italic tracking-widest text-sm"
             >
               <RotateCcw size={20} /> Reintentar Protocolo
             </button>

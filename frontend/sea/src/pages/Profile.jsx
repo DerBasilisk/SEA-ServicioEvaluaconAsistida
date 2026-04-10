@@ -13,39 +13,39 @@ import api from "../api/axios";
 import AvatarUpload from "../components/AvatarUpload";
 import BannerUpload from "../components/BannerUpload";
 
-// ─── Estilos Globales SEA ──────────────────────────────────────────────────
 const PROFILE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
   .sea-profile { font-family: 'Nunito', sans-serif; }
   
   .sea-glass-card {
-    background: rgba(255, 255, 255, 0.45);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 20px 50px rgba(43, 127, 232, 0.1);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 20px 50px var(--glass-shadow);
   }
 
   .sea-stat-card {
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.8);
+    background: var(--card-bg);
+    border: 1.5px solid var(--glass-border);
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+
   .sea-stat-card:hover {
-    transform: translateY(-5px) scale(1.02);
-    background: white;
-    border-color: #2B7FE8;
+    transform: translateY(-5px);
+    background: var(--glass-bg);
+    border-color: var(--text-accent);
   }
 
   .sea-progress-track {
-    background: rgba(43, 127, 232, 0.1);
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    background: var(--glass-shadow);
+    border: 1px solid var(--glass-border);
   }
 
   .sea-btn-primary {
-    background: linear-gradient(135deg, #2B7FE8, #5B9FFF);
-    box-shadow: 0 8px 20px rgba(43, 127, 232, 0.3);
-    color: white;
+    background: var(--text-accent);
+    color: var(--btn-text);
+    box-shadow: 0 8px 20px var(--glass-shadow);
   }
 `;
 
@@ -114,7 +114,7 @@ export default function Profile() {
 
   return (
     <div className="sea-profile min-h-screen pb-12 relative overflow-hidden"
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{PROFILE_CSS}</style>
       
       {/* Elementos decorativos de fondo */}
@@ -143,7 +143,7 @@ export default function Profile() {
                 <AvatarUpload currentAvatar={user.avatar} username={user.displayName} size="lg" />
               </div>
               
-              <h1 className="text-3xl font-black italic tracking-tighter text-[#0F2547] uppercase leading-none">
+              <h1 className="text-3xl font-black italic tracking-tighter text-[--text-primary] uppercase leading-none">
                 {user.displayName || user.username}
               </h1>
               <div className="flex items-center justify-center gap-2 mt-2">
@@ -154,7 +154,7 @@ export default function Profile() {
               <div className="mt-8 space-y-3">
                 <button onClick={() => setEditOpen(!editOpen)}
                   className={`w-full flex items-center justify-between px-6 py-4 rounded-[1.8rem] font-black text-[10px] uppercase tracking-widest transition-all ${
-                    editOpen ? "bg-[#0F2547] text-white" : "bg-white/60 text-[#2B7FE8] hover:bg-white"
+                    editOpen ? "bg-[--sidebar-accent] text-[--text-accent] border-2 border-[--text-accent]" : "bg-[--sidebar-bg] text-[--text-primary] hover:bg-[--glass-bg] border-2 hover:text-[--text-accent] hover:border-[--text-accent]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -165,7 +165,7 @@ export default function Profile() {
                 </button>
                 
                 <button onClick={() => { logout(); navigate("/login"); }}
-                  className="w-full flex items-center gap-3 px-6 py-4 rounded-[1.8rem] text-[#7A9CC5] font-black text-[10px] uppercase tracking-widest hover:text-rose-500 hover:bg-rose-50/50 transition-all"
+                  className="w-full flex items-center gap-3 px-6 py-4 rounded-[1.8rem] border-[--text-secondary] text-[--text-secondary] font-black text-[10px] uppercase tracking-widest hover:text-[--negative] border-2 hover:border-[--negative] transition-all"
                 >
                   <LogOut size={16} /> Cerrar Ciclo
                 </button>
@@ -186,7 +186,7 @@ export default function Profile() {
               <div className="z-10">
                 <p className={`font-black ${league.color} text-2xl italic leading-none uppercase tracking-tighter`}>{league.name}</p>
                 <p className="text-[10px] font-extrabold text-[#7A9CC5] uppercase mt-2">
-                  Ranking Actual: <span className="text-[#0F2547]">#{leagueData?.myRank || "--"}</span>
+                  Ranking Actual: <span className="text-[--text-primary]">#{leagueData?.myRank || "--"}</span>
                 </p>
               </div>
             </div>
@@ -201,7 +201,7 @@ export default function Profile() {
               <div className="flex justify-between items-center mb-10">
                 <div className="flex items-center gap-4">
                   <div className="w-2 h-8 bg-[#2B7FE8] rounded-full shadow-[0_0_15px_rgba(43,127,232,0.5)]"></div>
-                  <h2 className="text-2xl font-black text-[#0F2547] uppercase italic tracking-tighter">Ajustes del Sistema</h2>
+                  <h2 className="text-2xl font-black text-[--text-primary] uppercase italic tracking-tighter">Ajustes del Sistema</h2>
                 </div>
                 {msg && (
                   <div className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest animate-bounce ${
@@ -214,12 +214,17 @@ export default function Profile() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black text-[#7A9CC5] uppercase tracking-widest ml-1">Nombre de Operativo</label>
+                  <label className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest ml-1">Nombre de Operativo</label>
                   <div className="relative">
-                    <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full bg-white/60 border-2 border-white rounded-2xl px-6 py-4 text-sm font-bold text-[#0F2547] focus:border-[#2B7FE8]/30 focus:bg-white outline-none transition-all shadow-inner"
+                    <input 
+                      type="text" 
+                      value={displayName} 
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="w-full bg-[var(--card-bg)] border-2 border-[var(--glass-border)] rounded-2xl px-6 py-4 text-sm font-bold text-[var(--text-primary)] focus:border-[var(--text-accent)] outline-none transition-all"
                     />
-                    <button onClick={() => handleUpdate('display')} disabled={loading.display || displayName === user.displayName}
+                    <button 
+                      onClick={() => handleUpdate('display')} 
+                      disabled={loading.display || displayName === user.displayName}
                       className="absolute right-2 top-2 bottom-2 px-6 rounded-xl sea-btn-primary text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
                     >
                       {loading.display ? <Loader2 size={16} className="animate-spin"/> : "Guardar"}
@@ -249,27 +254,21 @@ export default function Profile() {
             <>
               {/* Barra de Progreso Maestra */}
               <section className="sea-glass-card rounded-[3rem] p-10 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
-                  <Medal size={120} className="text-[#2B7FE8]" />
-                </div>
-                
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 relative z-10">
                   <div>
-                    <span className="text-[10px] font-black text-[#2B7FE8] uppercase tracking-[0.4em]">Experiencia de Combate</span>
-                    <h2 className="text-6xl font-black italic text-[#0F2547] leading-none mt-2 tracking-tighter uppercase">NIVEL {user.level}</h2>
+                    <span className="text-[10px] font-black text-[var(--text-accent)] uppercase tracking-[0.4em]">Experiencia de Combate</span>
+                    <h2 className="text-6xl font-black italic text-[var(--text-primary)] leading-none mt-2 tracking-tighter uppercase">NIVEL {user.level}</h2>
                   </div>
-                  <div className="text-right mt-4 md:mt-0">
-                    <p className="text-[10px] font-black text-[#7A9CC5] uppercase tracking-widest mb-1">Potencial hacia lvl {user.level + 1}</p>
-                    <p className="text-2xl font-black italic text-[#2B7FE8] tracking-tight">{user.xp} <span className="text-[#AAC0D8] text-sm not-italic font-bold">/ 1000 XP</span></p>
+                  <div className="text-right">
+                    <p className="text-2xl font-black italic text-[var(--text-accent)] tracking-tight">{user.xp} <span className="text-[var(--text-muted)] text-sm not-italic font-bold">/ 1000 XP</span></p>
                   </div>
                 </div>
                 
-                <div className="h-6 w-full sea-progress-track rounded-full p-1 border border-white/50 relative">
-                  <div className="h-full bg-gradient-to-r from-[#2B7FE8] via-[#5B9FFF] to-[#10B981] rounded-full transition-all duration-1000 ease-out relative shadow-[0_0_15px_rgba(43,127,232,0.4)]"
+                <div className="h-6 w-full sea-progress-track rounded-full p-1 relative">
+                  <div 
+                    className="h-full bg-gradient-to-r from-[var(--text-accent)] to-[#10B981] rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(43,127,232,0.4)]"
                     style={{ width: `${progress}%` }}
-                  >
-                    <div className="absolute top-0 bottom-0 right-0 w-2 bg-white/40 rounded-full animate-pulse"></div>
-                  </div>
+                  />
                 </div>
               </section>
 
@@ -285,7 +284,7 @@ export default function Profile() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <section className="sea-glass-card rounded-[2.5rem] p-8">
                   <div className="flex justify-between items-center mb-8">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-[#0F2547]">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-[--text-primary]">
                       <Users size={18} className="text-[#2B7FE8]" /> Aliados de Red
                     </h3>
                     <Link to="/friends" className="text-[9px] font-black text-[#2B7FE8] hover:bg-[#2B7FE8]/10 px-3 py-1 rounded-full transition-all uppercase">Expandir</Link>
@@ -298,7 +297,7 @@ export default function Profile() {
                           {(f.displayName || f.username)[0].toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-black text-xs uppercase italic tracking-tight text-[#0F2547]">{f.displayName || f.username}</p>
+                          <p className="font-black text-xs uppercase italic tracking-tight text-[--text-primary]">{f.displayName || f.username}</p>
                           <p className="text-[9px] text-[#7A9CC5] font-black uppercase tracking-widest mt-0.5">Nivel {f.level}</p>
                         </div>
                         <ChevronRight size={16} className="text-[#AAC0D8] group-hover:translate-x-1 transition-transform" />
@@ -308,7 +307,7 @@ export default function Profile() {
                 </section>
 
                 <section className="sea-glass-card rounded-[2.5rem] p-8">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-[#0F2547] mb-8">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] flex items-center gap-3 text-[--text-primary] mb-8">
                     <Star size={18} className="text-yellow-500" /> Condecoraciones
                   </h3>
                   <div className="flex flex-wrap gap-4">
@@ -337,7 +336,7 @@ function StatCard({ icon, label, value, color }) {
   return (
     <div className="sea-stat-card p-6 rounded-[2.5rem] flex flex-col items-center justify-center shadow-sm relative overflow-hidden group">
       <div className={`${color} mb-3 group-hover:scale-110 transition-transform duration-500`}>{icon}</div>
-      <span className="text-2xl font-black text-[#0F2547] italic tracking-tighter">{value}</span>
+      <span className="text-2xl font-black text-[--text-primary] italic tracking-tighter">{value}</span>
       <span className="text-[9px] font-black text-[#7A9CC5] uppercase tracking-[0.2em] mt-2 text-center leading-tight">{label}</span>
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#2B7FE8]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
     </div>

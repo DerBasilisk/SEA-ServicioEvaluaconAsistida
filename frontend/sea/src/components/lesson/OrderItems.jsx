@@ -3,7 +3,7 @@ import { GripVertical, ChevronUp, ChevronDown, ListOrdered } from "lucide-react"
 
 const ORDER_CSS = `
   .order-card {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 2px solid white;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -95,7 +95,7 @@ export default function OrderItems({ question, onAnswer, onReport, }) {
             </div>
 
             {/* Texto del item */}
-            <span className="flex-1 text-[#0F2547] font-black italic text-lg tracking-tight">
+            <span className="flex-1 text-[--text-primary] font-black italic text-lg tracking-tight">
               {item.text}
             </span>
 

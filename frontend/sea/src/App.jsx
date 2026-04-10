@@ -46,6 +46,11 @@ function App() {
     }
   }, [token]);
 
+  useEffect(() => {
+    const theme = localStorage.getItem("sea_theme") || "light";
+    document.documentElement.setAttribute("data-theme", theme);
+  }, []);
+
   return (
     <BrowserRouter>
       <Routes>

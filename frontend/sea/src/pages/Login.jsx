@@ -16,38 +16,37 @@ const LOGIN_CSS = `
     50%      { transform: rotate(-6deg) translateY(-6px); }
   }
   .sea-login-card {
-    background: rgba(255,255,255,0.55);
+    background: var(--glass-bg);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
-    border: 1.5px solid rgba(255,255,255,0.75);
-    box-shadow: 0 24px 64px rgba(43,127,232,.13), 0 4px 16px rgba(43,127,232,.07), inset 0 1px 0 rgba(255,255,255,.9);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 24px 64px var(--glass-shadow);
     animation: login-fadeUp .5s ease both .1s;
   }
   .sea-login-logo {
     animation: login-float 3s ease-in-out infinite;
-    box-shadow: 0 12px 32px rgba(43,127,232,.2), inset 0 1px 0 rgba(255,255,255,.6);
   }
   .sea-input {
-    background: rgba(255,255,255,0.6);
-    border: 1.5px solid rgba(255,255,255,0.8);
+    background: var(--card-bg);
+    border: 1.5px solid var(--glass-border);
+    color: var(--text-primary);
     transition: all .2s;
   }
   .sea-input:focus {
-    outline: none;
-    background: rgba(255,255,255,0.9);
-    border-color: rgba(43,127,232,.5);
-    box-shadow: 0 0 0 3px rgba(43,127,232,.1);
+    border-color: var(--text-accent);
+    background: white; /* Resalte en foco */
+    box-shadow: 0 0 0 4px var(--glass-shadow);
   }
   .sea-submit-btn {
-    background: linear-gradient(135deg, #2B7FE8, #5B9FFF);
-    box-shadow: 0 8px 24px rgba(43,127,232,.35);
-    transition: all .15s;
+    background: var(--text-accent);
+    color: var(--btn-text);
+    box-shadow: 0 8px 24px var(--glass-shadow);
   }
   .sea-submit-btn:hover:not(:disabled) { transform: translateY(-2px); opacity: 0.95; }
   .sea-submit-btn:active:not(:disabled) { transform: scale(.98); }
   .sea-social-btn {
-    background: rgba(255,255,255,0.7);
-    border: 1.5px solid rgba(255,255,255,0.8);
+    background: var(--glass-bg);
+    border: 1.5px solid var(--glass-border);
     transition: all .2s;
   }
   .sea-social-btn:hover { background: rgba(255,255,255,0.95); transform: translateY(-2px); }
@@ -80,12 +79,18 @@ export default function Login() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    const res = await login(form.email, form.password);
-    if (res?.ok) {
-      navigate(res.isAdmin ? "/admin" : "/");
+  e.preventDefault();
+  const res = await login(form.email, form.password);
+  
+  if (res?.ok) {
+    // Redirección basada en rol
+    if (res.user?.role === 'admin') {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/"); // O la ruta principal del simulador
     }
-  };
+  }
+};
 
   return (
     <>
@@ -93,7 +98,7 @@ export default function Login() {
 
       <div
         className="sea-login min-h-screen flex items-center justify-center p-6 overflow-hidden relative"
-        style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}
+        style={{ background: "var(--bg-gradient)" }}
       >
         {/* Orbes de fondo */}
         <div className="fixed inset-0 z-0 pointer-events-none">
@@ -107,12 +112,12 @@ export default function Login() {
           
           {/* Logo SEA */}
           <div className="text-center mb-8" style={{ animation: "login-fadeUp .45s ease both" }}>
-            <div className="sea-login-logo inline-flex items-center justify-center w-40 h-20 rounded-[2rem] mb-6 border-2 border-white/70 bg-white/60">
-            <div className="bg-[#2B7FE8] p-1.5 rounded-3xl shadow-lg shadow-blue-200 rotate-[-3deg] group-hover:rotate-0 transition-all">
+            <div className="sea-login-logo inline-flex items-center justify-center w-40 h-20 rounded-[2rem] mb-6">
+            <div className="bg-[#2B7FE8] p-1.5 rounded-3xl shadow-lg rotate-[-3deg] group-hover:rotate-0 transition-all">
              <img src="/sealogo.png" width="120" alt="SEA" className="brightness-0 invert" />
             </div>
             </div>
-            <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[#0F2547]">
+            <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[--text-primary]">
               Bienvenido
             </h1>
             <p className="text-[10px] font-extrabold uppercase tracking-[.2em] mt-3 text-[#7A9CC5]">
@@ -140,7 +145,7 @@ export default function Login() {
                   onChange={handleChange}
                   required
                   placeholder="usuario@sea.com"
-                  className="sea-input w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-[#0F2547] placeholder:text-[#AAC0D8]"
+                  className="sea-input w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                 />
               </div>
 
@@ -161,7 +166,7 @@ export default function Login() {
                     onChange={handleChange}
                     required
                     placeholder="••••••••"
-                    className="sea-input w-full rounded-2xl px-5 py-3.5 pr-12 text-sm font-semibold text-[#0F2547] placeholder:text-[#AAC0D8]"
+                    className="sea-input w-full rounded-2xl px-5 py-3.5 pr-12 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                   />
                   <button
                     type="button"
@@ -193,7 +198,7 @@ export default function Login() {
               {/* Botón Google con la URL de tu variable de entorno */}
               <a
                 href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/google`}
-                className="sea-social-btn w-full flex items-center justify-center gap-3 rounded-2xl py-3 text-xs font-extrabold uppercase tracking-widest text-[#3B5A8A]"
+                className="sea-social-btn w-full flex items-center justify-center gap-3 rounded-2xl py-3 text-xs font-extrabold uppercase tracking-widest text-[--google]"
               >
                 <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
                 Continuar con Google
@@ -201,7 +206,7 @@ export default function Login() {
 
               <a
                 href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/facebook`}
-                className="sea-social-btn w-full flex items-center justify-center gap-3 rounded-2xl py-3 text-xs font-extrabold uppercase tracking-widest text-[#1877F2]"
+                className="sea-social-btn w-full flex items-center justify-center gap-3 rounded-2xl py-3 text-xs font-extrabold uppercase tracking-widest text-[--facebook]"
               >
                 <Facebook size={16} fill="currentColor" />
                 Continuar con Facebook

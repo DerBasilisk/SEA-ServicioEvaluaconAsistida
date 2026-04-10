@@ -14,19 +14,19 @@ const SETTINGS_CSS = `
     background: rgba(255, 255, 255, 0.45);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 20px 50px rgba(43, 127, 232, 0.1);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 20px 50pxvar(--glass-shadow);
   }
 
   .sea-input {
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--sidebar-bg);
     border: 2px solid white;
     transition: all 0.3s ease;
   }
   .sea-input:focus {
     background: white;
     border-color: #2B7FE8;
-    box-shadow: 0 0 15px rgba(43, 127, 232, 0.1);
+    box-shadow: 0 0 15pxvar(--glass-shadow);
   }
 
   .danger-zone {
@@ -62,7 +62,7 @@ export default function Settings() {
 
   return (
     <div className="sea-settings min-h-screen pb-20 relative overflow-hidden"
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{SETTINGS_CSS}</style>
 
       {/* Decoración de fondo */}
@@ -77,7 +77,7 @@ export default function Settings() {
         
         <div className="flex items-center gap-4 mb-10">
           <div className="w-2 h-10 bg-[#2B7FE8] rounded-full shadow-[0_0_15px_rgba(43,127,232,0.5)]"></div>
-          <h1 className="text-4xl font-black text-[#0F2547] uppercase italic tracking-tighter">Panel de Control</h1>
+          <h1 className="text-4xl font-black text-[--text-primary] uppercase italic tracking-tighter">Panel de Control</h1>
         </div>
 
         {msg && (
@@ -92,7 +92,7 @@ export default function Settings() {
         <section className="sea-glass-card rounded-[2.5rem] p-8 mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Link2 size={20} className="text-[#2B7FE8]" />
-            <h2 className="text-[#0F2547] font-black italic uppercase text-xl">Identidades Vinculadas</h2>
+            <h2 className="text-[--text-primary] font-black italic uppercase text-xl">Identidades Vinculadas</h2>
           </div>
           <p className="text-[#7A9CC5] text-[10px] font-black uppercase tracking-[0.2em] mb-8 ml-8">
             Sincronización de protocolos de acceso externo
@@ -117,7 +117,7 @@ export default function Settings() {
           <div className="flex items-center justify-between opacity-60">
             <div className="flex items-center gap-3">
               <Shield size={20} className="text-[#2B7FE8]" />
-              <h2 className="text-[#0F2547] font-black italic uppercase text-xl">Seguridad de Nodo</h2>
+              <h2 className="text-[--text-primary] font-black italic uppercase text-xl">Seguridad de Nodo</h2>
             </div>
             <span className="bg-white/50 px-3 py-1 rounded-lg text-[9px] font-black text-[#7A9CC5] uppercase">Próximamente</span>
           </div>
@@ -144,7 +144,7 @@ export default function Settings() {
           ) : (
             <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border-2 border-rose-500/20 animate-in slide-in-from-top-4 duration-300">
               <p className="text-rose-600 text-xs font-black uppercase mb-4">
-                Confirma tu identidad escribiendo: <span className="text-[#0F2547] italic underline">@{user.username}</span>
+                Confirma tu identidad escribiendo: <span className="text-[--text-primary] italic underline">@{user.username}</span>
               </p>
               
               <input
@@ -152,7 +152,7 @@ export default function Settings() {
                 value={deleteInput}
                 onChange={(e) => setDeleteInput(e.target.value)}
                 placeholder={user.username}
-                className="w-full sea-input rounded-2xl px-6 py-4 text-[#0F2547] font-bold outline-none mb-4 transition-all"
+                className="w-full sea-input rounded-2xl px-6 py-4 text-[--text-primary] font-bold outline-none mb-4 transition-all"
               />
               
               <div className="flex gap-3">
@@ -186,7 +186,7 @@ function SocialItem({ name, active, icon }) {
           <img src={icon} alt={name} className="w-full h-full object-contain" />
         </div>
         <div>
-          <p className="text-[#0F2547] font-black italic uppercase text-sm tracking-tight">{name}</p>
+          <p className="text-[--text-primary] font-black italic uppercase text-sm tracking-tight">{name}</p>
           <p className="text-[9px] font-black text-[#7A9CC5] uppercase tracking-widest mt-0.5">
             {active ? "Conexión Establecida" : "Pendiente de Sincronía"}
           </p>

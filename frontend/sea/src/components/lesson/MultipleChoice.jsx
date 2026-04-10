@@ -4,7 +4,7 @@ import { CheckCircle2, Circle, AlertCircle } from "lucide-react";
 
 const MC_CSS = `
   .option-card {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 2px solid white;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -79,7 +79,7 @@ export default function MultipleChoice({ question, onAnswer }) {
               <span className={`text-lg font-black italic tracking-tight transition-colors ${
                 isTheCorrectOne ? "text-emerald-600" : 
                 isWrongSelected ? "text-red-600" : 
-                isSelected ? "text-[#2B7FE8]" : "text-[#0F2547]"
+                isSelected ? "text-[#2B7FE8]" : "text-[--text-primary]"
               }`}>
                 {option.text}
               </span>

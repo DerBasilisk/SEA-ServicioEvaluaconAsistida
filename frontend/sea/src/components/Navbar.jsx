@@ -1,36 +1,52 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { 
-  User, Settings, LogOut, Heart, 
-  Zap, Trophy, Users, Star 
-} from "lucide-react";
+import { User, Settings, LogOut, Heart, Zap, Trophy, Users, Eye, Sun, Moon, } from "lucide-react";
 import useAuthStore from "../store/authStore";
+import useThemeStore from "../store/themeStore";
 import api from "../api/axios";
 
 const NAV_CSS = `
+  * {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  }
+    
   .sea-nav {
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1.5px solid rgba(255, 255, 255, 0.8);
-    border-radius: 30px 30px 30px 30px;
+    border-bottom: 1.5px solid var(--glass-border);
+    border-radius: 0 0 30px 30px; /* Ajustado para que encaje mejor arriba */
+    box-shadow: 0 10px 30px var(--glass-shadow);
   }
+  
   .stat-capsule {
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid white;
-    box-shadow: 0 4px 15px rgba(43, 127, 232, 0.05);
+    background: var(--progress-track); /* Usamos el track como base sutil */
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 4px 15px var(--glass-shadow);
     transition: all 0.3s ease;
   }
+  
   .stat-capsule:hover {
-    background: white;
+    background: var(--card-bg);
     transform: translateY(-2px);
+    border-color: var(--text-accent);
   }
+
   .nav-dropdown {
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--card-bg);
     backdrop-filter: blur(25px);
-    border: 1.5px solid white;
-    box-shadow: 0 20px 40px rgba(15, 37, 71, 0.1);
+    border: 1.5px solid var(--card-border);
+    box-shadow: 0 20px 40px var(--glass-shadow);
   }
+
+  /* Animación para el cambio de tema */
+  .sea-nav, .stat-capsule, .nav-dropdown {
+    transition: background 0.4s ease, border 0.4s ease, color 0.4s ease;
+  }
+
+  img, .avatar-container {
+  transition: none;
+}
 `;
 
 export default function Navbar() {
@@ -43,6 +59,11 @@ export default function Navbar() {
   
   const dropdownRef = useRef(null);
   const heartsRef = useRef(null);
+  const { theme, cycleTheme } = useThemeStore();
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -77,7 +98,7 @@ export default function Navbar() {
 
   return (
     <div className="sticky top-0 z-[100] mb-12">
-    <nav className="sea-nav fixed w-[75%] left-[10%] mt-1 top-0 z-[100] px-6 py-3">
+    <nav className="sea-nav fixed w-[75%] left-[10%] top-0 z-[100] px-6 py-3">
       <style>{NAV_CSS}</style>
       <div className="max-w-[98%] mx-auto flex items-center justify-between">
         
@@ -86,7 +107,7 @@ export default function Navbar() {
           <div className="bg-[#2B7FE8] p-1.5 rounded-xl shadow-lg shadow-blue-200 rotate-[-3deg] group-hover:rotate-0 transition-all">
              <img src="/sealogo.png" width="40" alt="SEA" className="brightness-0 invert" />
           </div>
-          <span className="text-[#0F2547] font-black italic tracking-tighter text-xl uppercase">SEA</span>
+          <span className="text-[--text-primary] font-black italic tracking-tighter text-xl uppercase">SEA</span>
         </Link>
 
         {/* STATS & ACTIONS */}
@@ -102,19 +123,21 @@ export default function Navbar() {
             {/* Streak */}
             <div className="stat-capsule flex items-center gap-2 px-3 py-1.5 rounded-2xl">
               <img src="/streak.png" className="w-6 h-6 object-contain" alt="racha" />
-              <span className="font-black text-[#0F2547] text-xs">{user.streak?.current || 0}</span>
+              <span className="font-black text-[--text-primary] text-xs">{user.streak?.current || 0}</span>
             </div>
 
             {/* Gems */}
             <div className="stat-capsule flex items-center gap-2 px-3 py-1.5 rounded-2xl">
               <img src="/gems.png" className="w-6 h-6 object-contain" alt="gemas" />
-              <span className="font-black text-[#0F2547] text-xs">{gems}</span>
+              <span className="font-black text-[--text-primary] text-xs">{gems}</span>
             </div>
 
             {/* XP */}
-            <div className="hidden sm:flex stat-capsule items-center gap-2 px-3 py-1.5 rounded-2xl bg-violet-50/50">
-              <Zap size={16} className="text-violet-500 fill-violet-500" />
-              <span className="font-black text-violet-600 text-[10px] uppercase">{user.xp || 0} XP</span>
+            <div className="hidden sm:flex stat-capsule items-center gap-2 px-3 py-1.5 rounded-2xl">
+              <Zap size={16} className="text-violet-400 fill-violet-400" />
+              <span className="font-black text-[var(--text-primary)] text-[10px] uppercase">
+                {user.xp || 0} XP
+              </span>
             </div>
 
             {/* Hearts Popover */}
@@ -124,7 +147,7 @@ export default function Navbar() {
                 className={`stat-capsule flex items-center gap-2 px-3 py-1.5 rounded-2xl ${hearts === 0 ? "bg-red-50" : ""}`}
               >
                 <Heart size={18} className={`${hearts === 0 ? "text-red-400 fill-red-400" : "text-rose-500 fill-rose-500"} animate-pulse`} />
-                <span className={`font-black text-xs ${hearts === 0 ? "text-red-500" : "text-[#0F2547]"}`}>{hearts}</span>
+                <span className={`font-black text-xs ${hearts === 0 ? "text-red-500" : "text-[--text-primary]"}`}>{hearts}</span>
               </button>
 
               {heartsOpen && (
@@ -134,7 +157,7 @@ export default function Navbar() {
                       <Heart key={i} size={20} className={i < hearts ? "text-rose-500 fill-rose-500" : "text-slate-200"} />
                     ))}
                   </div>
-                  <h4 className="text-[#0F2547] font-black uppercase italic text-center text-sm mb-1">{hearts} / 5 Vidas</h4>
+                  <h4 className="text-[--text-primary] font-black uppercase italic text-center text-sm mb-1">{hearts} / 5 Vidas</h4>
                   <p className="text-[#7A9CC5] text-[10px] font-bold text-center uppercase tracking-widest mb-4 leading-relaxed">
                     {hearts < 5 ? "Las vidas se regeneran con el tiempo o con gemas." : "¡Energía al máximo, Agente!"}
                   </p>
@@ -151,6 +174,15 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+
+            <button
+            onClick={cycleTheme}
+            className="stat-capsule flex items-center justify-center w-10 h-10 rounded-2xl transition-all"
+          >
+            {theme === "light" && <Sun size={20} className="text-blue-500" />}
+            {theme === "dark" && <Moon size={20} className="text-indigo-400" />}
+            {theme === "high-contrast" && <Eye size={20} className="text-[#FFFF00]" />}
+          </button>
 
             {/* User Dropdown */}
             <div className="relative ml-2" ref={dropdownRef}>
@@ -169,9 +201,13 @@ export default function Navbar() {
 
               {dropdownOpen && (
                 <div className="nav-dropdown absolute right-0 mt-4 w-56 rounded-[2rem] overflow-hidden animate-in slide-in-from-top-2 duration-200">
-                  <div className="p-5 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
-                    <p className="text-[#0F2547] font-black text-xs uppercase truncate">{user.displayName || user.username}</p>
-                    <p className="text-[#7A9CC5] text-[9px] font-black uppercase tracking-widest">Nivel {user.level || 1} • Agente</p>
+                  <div className="p-5 bg-[var(--progress-track)] border-b border-[var(--card-border)]">
+                    <p className="text-[var(--text-primary)] font-black text-xs uppercase truncate">
+                      {user.displayName || user.username}
+                    </p>
+                    <p className="text-[var(--text-secondary)] text-[9px] font-black uppercase tracking-widest">
+                      Nivel {user.level || 1} • Agente
+                    </p>
                   </div>
                   
                   <div className="p-2">
@@ -179,7 +215,7 @@ export default function Navbar() {
                     <DropdownLink to="/settings" icon={<Settings size={16} />} text="Configuración" onClick={() => setDropdownOpen(false)} />
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-[#0F2547] font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-[--text-primary] font-black text-[10px] uppercase tracking-widest hover:bg-rose-50 hover:text-rose-500 rounded-2xl transition-all"
                     >
                       <LogOut size={16} /> Salir del Sistema
                     </button>
@@ -199,9 +235,11 @@ export default function Navbar() {
 // Subcomponentes para mantener el código limpio
 function NavLink({ to, icon, label, color }) {
   return (
-    <Link to={to} className={`flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white transition-all group`}>
+    <Link to={to} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[var(--glass-bg)] transition-all group">
       <span className={`${color} group-hover:scale-110 transition-transform`}>{icon}</span>
-      <span className="text-[#0F2547] font-black text-[9px] uppercase tracking-widest hidden lg:block">{label}</span>
+      <span className="text-[var(--text-primary)] font-black text-[9px] uppercase tracking-widest hidden lg:block">
+        {label}
+      </span>
     </Link>
   );
 }
@@ -211,7 +249,7 @@ function DropdownLink({ to, icon, text, onClick }) {
     <Link
       to={to}
       onClick={onClick}
-      className="flex items-center gap-3 px-4 py-3 text-[#0F2547] font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 hover:text-[#2B7FE8] rounded-2xl transition-all"
+      className="flex items-center gap-3 px-4 py-3 text-[--text-primary] font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 hover:text-[#2B7FE8] rounded-2xl transition-all"
     >
       {icon} {text}
     </Link>

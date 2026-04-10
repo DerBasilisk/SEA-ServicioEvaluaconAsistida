@@ -8,6 +8,7 @@ const useAuthStore = create((set, get) => ({
   loading: true, // 👈 CRUCIAL: Empezar en true
   error: null,
 
+
   fetchMe: async () => {
     const token = localStorage.getItem("sea_token");
     
@@ -140,6 +141,7 @@ const useAuthStore = create((set, get) => ({
   isAuthenticated: () => {
     return !!get().user;
   },
+
 }));
 
 export default useAuthStore;

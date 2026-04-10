@@ -18,37 +18,42 @@ import FreeText from "../components/lesson/FreeText";
 
 const LESSON_CSS = `
   .lesson-container { 
-    background: linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%);
+    background: var(--bg-gradient);
     font-family: 'Nunito', sans-serif;
+    color: var(--text-primary);
   }
   .sea-glass-panel {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--glass-bg);
     backdrop-filter: blur(15px);
-    border: 1.5px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 15px 35px rgba(43, 127, 232, 0.05);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 15px 35px var(--glass-shadow);
   }
   .progress-track {
-    background: rgba(255, 255, 255, 0.5);
-    border: 1.5px solid white;
+    background: var(--progress-track);
+    border: 1.5px solid var(--glass-border);
     height: 14px;
     border-radius: 99px;
     overflow: hidden;
   }
   .progress-fill {
-    background: linear-gradient(90deg, #2B7FE8, #5B9FFF);
-    box-shadow: 0 0 15px rgba(43, 127, 232, 0.4);
+    background: var(--text-accent); /* Ahora la barra de progreso usa el acento del tema */
     transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .theory-card {
-    background: white;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-    position: relative;
-  }
-  .theory-card::after {
-    content: ''; position: absolute; inset: -3px; z-index: -1;
-    background: linear-gradient(135deg, #2B7FE8, #B8CBFF);
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
     border-radius: 2rem;
+    position: relative;
+    box-shadow: 0 20px 40px var(--glass-shadow);
+  }
+
+  /* Ajuste para Alto Contraste en lecciones */
+  [data-theme="high-contrast"] .theory-card {
+    border: 4px solid #FFFFFF !important;
+    background: #000000 !important;
+  }
+  [data-theme="high-contrast"] .progress-fill {
+    background: #FFFFFF !important;
   }
 `;
 
@@ -235,7 +240,7 @@ export default function Lesson() {
           <main className="flex-1 flex flex-col items-center justify-between max-w-2xl w-full px-6 py-8 gap-8">
             <div className="text-7xl mb-8 animate-bounce-slow">{slide?.icon || "📖"}</div>
             <div className="theory-card rounded-[2.5rem] p-10 w-full mb-10 text-center shadow-2xl">
-              <h2 className="text-[#0F2547] font-black italic uppercase text-3xl mb-6">{slide?.title}</h2>
+              <h2 className="text-[--text-primary] font-black italic uppercase text-3xl mb-6">{slide?.title}</h2>
               <p className="text-slate-600 text-xl leading-relaxed font-semibold">{slide?.content}</p>
             </div>
             <button onClick={() => isLast ? setPhase("playing") : setTheoryIndex(i => i + 1)} className="w-full bg-[#2B7FE8] text-white font-black py-5 rounded-2xl">
@@ -262,7 +267,7 @@ export default function Lesson() {
         </div>
         <div className="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-2xl border border-white">
           <Heart size={20} className="text-rose-500 fill-rose-500 animate-pulse" />
-          <span className="font-black text-[#0F2547] text-sm">{hearts}</span>
+          <span className="font-black text-[--text-primary] text-sm">{hearts}</span>
         </div>
       </header>
 
@@ -274,14 +279,14 @@ export default function Lesson() {
             <div className="sea-glass-panel rounded-[2rem] p-6 h-fit sticky top-24">
               <div className="flex items-center gap-3 mb-4">
                 <div className="bg-[#2B7FE8] p-2 rounded-lg"><Lightbulb size={18} className="text-white" /></div>
-                <h3 className="text-[#0F2547] font-black uppercase italic text-sm tracking-tight">Manual de Nodo</h3>
+                <h3 className="text-[--text-primary] font-black uppercase italic text-sm tracking-tight">Manual de Nodo</h3>
               </div>
-              <p className="text-slate-700 text-sm leading-relaxed font-medium mb-6">{question.conceptExplanation}</p>
+              <p className="text-[--text-secondary] text-sm leading-relaxed font-medium mb-6">{question.conceptExplanation}</p>
               <div className="border-t border-white/40 pt-6">
                 {!showHint ? (
-                  <button onClick={handleUseHint} disabled={hintUsed || phase !== "playing"} className="w-full flex items-center justify-between bg-amber-50 border-2 border-amber-200 text-amber-600 font-black py-3 px-4 rounded-xl text-[10px] uppercase">
+                  <button onClick={handleUseHint} disabled={hintUsed || phase !== "playing"} className="w-full flex items-center justify-between bg-[var(--clue-bg)] border-2 border-[var(--clue-border)] text-[var(--clue-text)] font-black py-3 px-4 rounded-xl text-[10px] uppercase">
                     <span>{hintUsed ? "Pista Consumida" : "Solicitar Pista"}</span>
-                    {!hintUsed && <span className="text-amber-400">-50% XP</span>}
+                    {!hintUsed && <span className="text-[var(--clue-border)]">-50% XP</span>}
                   </button>
                 ) : (
                   <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 animate-in zoom-in-95">
@@ -297,7 +302,7 @@ export default function Lesson() {
         <div className="flex-1 flex flex-col justify-between gap-8">
           <div className="text-center lg:text-left">
             <p className="text-[#2B7FE8] text-[10px] font-black uppercase tracking-[0.3em] mb-3">Objetivo {currentIndex + 1} de {questions.length}</p>
-            <h2 className="text-[#0F2547] text-2xl lg:text-3xl font-black italic tracking-tighter leading-tight">{question?.prompt}</h2>
+            <h2 className="text-[--text-primary] text-2xl lg:text-3xl font-black italic tracking-tighter leading-tight">{question?.prompt}</h2>
           </div>
 
           <div className="flex-1 min-h-[400px]">
@@ -321,9 +326,11 @@ export default function Lesson() {
               <FeedbackPanel 
                 feedback={feedback} 
                 hearts={hearts}
+                question={question} 
                 onContinue={handleContinue} 
                 onRefilled={() => setHearts(5)}
                 onComplete={handleComplete}
+                onReport={reportCurrentQuestion}  
               />
             )}
           </div>
@@ -331,13 +338,14 @@ export default function Lesson() {
 
         {/* MODAL DE REPORTE TÁCTICO */}
         {reportModal && (
-          <div className="fixed inset-0 bg-[#0F172A]/80 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-[#1E293B] border-2 border-indigo-500/30 w-full max-w-md rounded-[2.5rem] p-8">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="bg-amber-500/10 p-3 rounded-2xl"><AlertTriangle className="text-amber-500" size={24} /></div>
-                <div>
-                  <h3 className="text-xl font-black italic text-white uppercase">Reportar Anomalía</h3>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase">Control de Calidad de Datos</p>
+         <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-[var(--card-bg)] border-2 border-[var(--card-border)] w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="bg-amber-500/10 p-3 rounded-2xl">
+                <AlertTriangle className="text-amber-500" size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black italic text-[var(--text-primary)] uppercase">Reportar Anomalía</h3><p className="text-slate-400 text-[10px] font-bold uppercase">Control de Calidad de Datos</p>
                 </div>
               </div>
 
@@ -367,20 +375,30 @@ export default function Lesson() {
 
 function FeedbackPanel({ feedback, hearts, question, onContinue, onRefilled, onComplete, onReport }) {
   const { isCorrect, explanation, correctAnswer } = feedback;
+
+  const panelStyle = {
+    backgroundColor: isCorrect ? 'var(--panel-feedback-bg)' : 'var(--panel-feedback-bg)',
+    borderColor: isCorrect ? 'var(--correct)' : 'var(--incorrect)',
+    color: 'var(--text-primary)'
+  };
+
+  const iconBg = isCorrect ? 'var(--correct)' : 'var(--incorrect)';
   
   if (hearts === 0 && !isCorrect) {
     return <NoHeartsPanel onRefilled={onRefilled} onContinue={onComplete} />;
   }
 
   return (
-    <div className={`w-full rounded-[2.5rem] p-8 border-4 animate-in slide-in-from-bottom-6 duration-500 shadow-2xl ${
-      isCorrect 
-        ? "bg-emerald-50 border-emerald-200 text-emerald-900" 
-        : "bg-rose-50 border-rose-200 text-rose-900"
-    }`}>
+    <div 
+      style={panelStyle}
+      className="w-full rounded-[2.5rem] p-8 border-4 animate-in slide-in-from-bottom-6 duration-500 shadow-2xl"
+    >
       <div className="flex items-center gap-4 mb-6">
-        <div className={`p-3 rounded-2xl shadow-lg ${isCorrect ? "bg-emerald-500 shadow-emerald-200" : "bg-rose-500 shadow-rose-200"}`}>
-          {isCorrect ? <Sparkles className="text-white" /> : <AlertCircle className="text-white" />}
+        <div 
+          style={{ backgroundColor: iconBg }} 
+          className="p-3 rounded-2xl shadow-lg"
+        >
+          {isCorrect ? <Sparkles className="text-black" /> : <AlertCircle className="text-white" />}
         </div>
         <h3 className="text-2xl font-black italic uppercase tracking-tighter">
           {isCorrect ? "¡Sincronía Perfecta!" : "Error de Conexión"}
@@ -388,57 +406,50 @@ function FeedbackPanel({ feedback, hearts, question, onContinue, onRefilled, onC
       </div>
 
       {!isCorrect && correctAnswer && (
-        <div className="bg-white/60 p-5 rounded-2xl mb-6 border border-rose-200/50">
-          <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-2">Protocolo Correcto:</p>
-          <div className="text-lg font-black text-rose-700 italic">
-             {/* Renderizado de respuesta simplificado */}
+        <div className="bg-[var(--progress-track)] p-5 rounded-2xl mb-6 border border-[var(--glass-border)]">
+          <p className="text-[10px] font-black uppercase tracking-widest text-[var(--incorrect)] mb-2">
+            Protocolo Correcto:
+          </p>
+          <div className="text-lg font-black italic" style={{ color: 'var(--text-primary)' }}>
              {String(correctAnswer)}
           </div>
         </div>
       )}
 
       {explanation && (
-        <p className="text-slate-600 font-semibold mb-8 leading-relaxed italic border-l-4 border-slate-200 pl-4">
+        <p className="text-[var(--text-secondary)] font-semibold mb-8 leading-relaxed italic border-l-4 border-[var(--text-accent)] pl-4">
           {explanation}
         </p>
       )}
 
-      <div className="grid grid-cols-15 gap-4">
+      <div className="grid grid-cols-12 gap-4">
         <button 
-        onClick={onContinue}
-        className={`w-full col-start-1 col-end-11 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
-          isCorrect 
-            ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200 border-2 border-emerald-300" 
-            : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200 border-2 border-rose-300"
-        }`}
-      >
-        Continuar Misión
-      </button>
+          onClick={onContinue}
+          style={{ backgroundColor: iconBg, color: isCorrect ? '#000' : '#fff' }}
+          className="col-span-9 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 border-2 border-white/20"
+        >
+          Continuar Misión
+        </button>
 
-      <button
-        onClick={() => onReport(question._id)}
-        className={`w-full col-start-11 col-end-16 py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] italic transition-all shadow-xl active:scale-95 ${
-          isCorrect 
-            ? "bg-rose-500 hover:bg-rose-600 text-white shadow-emerald-200 border-2 border-rose-300" 
-            : "bg-gray-800 hover:bg-gray-900 text-rose-500 shadow-rose-200 border-2 border-rose-300"
-        }`}
-      >
-        <ShieldAlert size={30} className="ml-1.5 inline-block mr-2 font-bold" alt="Reportar Pregunta"/>
-      </button>
+        <button
+          onClick={() => onReport(question._id)}
+          className="col-span-3 flex items-center justify-center bg-[var(--card-bg)] text-[var(--incorrect)] py-5 rounded-2xl font-black transition-all border-2 border-[var(--card-border)] hover:bg-[var(--incorrect)] hover:text-white"
+        >
+          <ShieldAlert size={24} />
+        </button>
       </div>
-      
     </div>
   );
 }
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen lesson-container flex items-center justify-center">
+    <div className="bg-[var(--bg-gradient)] min-h-screen lesson-container flex items-center justify-center">
       <div className="text-center">
-        <div className="w-24 h-24 bg-white rounded-[2rem] flex items-center justify-center shadow-2xl animate-bounce-slow mb-6">
+        <div className="w-24 h-24 bg-[var(--bg-gradient)] rounded-[2rem] flex items-center justify-center animate-bounce-slow mb-6">
            <Sparkles size={40} className="text-[#2B7FE8]" />
         </div>
-        <p className="text-[#0F2547] font-black italic uppercase tracking-widest text-sm">Preparando Entorno...</p>
+        <p className="text-[var(--text-primary)] font-black italic uppercase tracking-widest text-sm">Preparando Entorno...</p>
       </div>
     </div>
   );
@@ -449,9 +460,9 @@ function ErrorScreen({ message, onBack }) {
     <div className="min-h-screen lesson-container flex items-center justify-center p-6">
       <div className="sea-glass-panel rounded-[3rem] p-12 text-center max-w-md">
         <div className="text-6xl mb-6">🛰️</div>
-        <h2 className="text-[#0F2547] font-black italic uppercase text-2xl mb-4 text-balance">Se ha perdido el enlace</h2>
+        <h2 className="text-[--text-primary] font-black italic uppercase text-2xl mb-4 text-balance">Se ha perdido el enlace</h2>
         <p className="text-slate-500 font-bold mb-8 italic">{message}</p>
-        <button onClick={onBack} className="w-full bg-[#0F2547] text-white font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest">
+        <button onClick={onBack} className="w-full bg-[--text-primary] text-white font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest">
           Regresar a Base
         </button>
       </div>

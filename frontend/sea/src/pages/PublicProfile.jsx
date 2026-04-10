@@ -14,43 +14,45 @@ const PUBLIC_PROFILE_CSS = `
   .sea-public { font-family: 'Nunito', sans-serif; }
   
   .sea-glass {
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 20px 50px rgba(43, 127, 232, 0.1);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 20px 50px var(--glass-shadow);
   }
 
   .banner-container {
-    height: 160px;
+    height: 180px;
     width: 100%;
     position: relative;
     overflow: hidden;
+    background: var(--card-bg);
   }
 
   .banner-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    opacity: 0.8;
   }
 
+  /* Efecto de desvanecimiento inferior para el banner */
   .banner-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.2) 100%);
+    background: linear-gradient(to bottom, transparent 0%, var(--glass-bg) 100%);
   }
 `;
 
 const LEAGUE_CONFIG = {
-  bronze:   { name: "Bronce",    icon: "🥉", color: "text-[#cd7f32]", bg: "bg-orange-50" },
-  silver:   { name: "Plata",     icon: "🥈", color: "text-[#c0c0c0]", bg: "bg-slate-100" },
-  gold:     { name: "Oro",       icon: "🥇", color: "text-[#ffd700]", bg: "bg-yellow-50" },
-  sapphire: { name: "Zafiro",    icon: "💙", color: "text-[#0f52ba]", bg: "bg-blue-50" },
-  emerald:  { name: "Esmeralda", icon: "💚", color: "text-[#50c878]", bg: "bg-emerald-50" },
-  diamond:  { name: "Diamante",  icon: "💎", color: "text-[#b9f2ff]", bg: "bg-cyan-50" },
-  master:   { name: "Maestro",   icon: "🔮", color: "text-[#9b59b6]", bg: "bg-purple-50" },
-  champion: { name: "Campeón",   icon: "👑", color: "text-[#f1c40f]", bg: "bg-rose-50" },
-  heroic: { name: "Heroico", icon: "⚔️", color: "text-red-500", bg: "bg-red-50" },
+  bronze:   { name: "Bronce",    icon: "🥉", color: "text-[#cd7f32]", bg: "bg-orange-500/10" },
+  silver:   { name: "Plata",     icon: "🥈", color: "text-[#c0c0c0]", bg: "bg-slate-500/10" },
+  gold:     { name: "Oro",       icon: "🥇", color: "text-[#ffd700]", bg: "bg-yellow-500/10" },
+  sapphire: { name: "Zafiro",    icon: "💙", color: "text-[#2B7FE8]", bg: "bg-blue-500/10" },
+  emerald:  { name: "Esmeralda", icon: "💚", color: "text-[#10B981]", bg: "bg-emerald-500/10" },
+  diamond:  { name: "Diamante",  icon: "💎", color: "text-[#06B6D4]", bg: "bg-cyan-500/10" },
+  master:   { name: "Maestro",   icon: "🔮", color: "text-[#8B5CF6]", bg: "bg-purple-500/10" },
+  champion: { name: "Campeón",   icon: "👑", color: "text-[#F59E0B]", bg: "bg-rose-500/10" },
+  heroic:   { name: "Heroico",   icon: "⚔️", color: "text-[#EF4444]", bg: "bg-red-500/10" },
 };
 
 export default function PublicProfile() {
@@ -93,8 +95,8 @@ export default function PublicProfile() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-      <div className="animate-pulse text-[#2B7FE8] font-black italic tracking-widest uppercase">Accediendo al Expediente...</div>
+    <div className="min-h-screen bg-[var(--bg-gradient)] flex items-center justify-center">
+      <div className="animate-pulse text-[var(--text-primary)] font-black italic tracking-widest uppercase">Accediendo al Expediente...</div>
     </div>
   );
 
@@ -106,7 +108,7 @@ export default function PublicProfile() {
   
   return (
     <div className="min-h-screen sea-public pb-20 relative overflow-hidden" 
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{PUBLIC_PROFILE_CSS}</style>
       <Navbar />
       
@@ -138,14 +140,14 @@ export default function PublicProfile() {
 
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-2">
-                <h1 className="text-4xl font-black italic text-[#0F2547] uppercase tracking-tighter leading-none">{displayName}</h1>
+                <h1 className="text-4xl font-black italic text-[--text-primary] uppercase tracking-tighter leading-none">{displayName}</h1>
                 <ShieldCheck size={20} className="text-[#2B7FE8]" />
               </div>
               <p className="text-[#2B7FE8] font-extrabold text-xs uppercase tracking-[0.3em] mt-2 mb-6">@{profile.username}</p>
             </div>
             
             <div className="flex items-center justify-center gap-3 flex-wrap mb-8">
-              <div className="px-5 py-2 bg-white/80 border border-white rounded-full text-[10px] font-black text-[#0F2547] uppercase tracking-widest shadow-sm">
+              <div className="px-5 py-2 bg-[var(--card-bg)] border border-white rounded-full text-[10px] font-black text-[--text-primary] uppercase tracking-widest shadow-sm">
                 NIVEL {profile.level}
               </div>
               {league && (
@@ -159,16 +161,16 @@ export default function PublicProfile() {
             <div className="max-w-xs mx-auto">
               {profile.friendStatus === "accepted" ? (
                 <button onClick={handleRemove} disabled={actionLoading}
-                  className="w-full py-4 rounded-2xl bg-rose-50 text-rose-500 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-100 transition-all flex items-center justify-center gap-2">
+                  className="w-full py-4 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2">
                   <UserMinus size={14} /> Eliminar Contacto
                 </button>
               ) : profile.friendStatus === "pending" ? (
-                <div className="w-full py-4 rounded-2xl bg-amber-50 text-amber-600 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2">
-                  <Clock size={14} className="animate-spin-slow" /> {profile.isRequester ? "Enlace Pendiente" : "Solicitud Recibida"}
+                <div className="w-full py-4 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                  <Clock size={14} className="animate-spin" /> {profile.isRequester ? "Enlace Pendiente" : "Solicitud Recibida"}
                 </div>
               ) : (
                 <button onClick={handleSendRequest} disabled={actionLoading}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#2B7FE8] to-[#5B9FFF] text-white font-black text-[10px] uppercase tracking-[0.2em] hover:scale-[1.05] shadow-lg transition-all flex items-center justify-center gap-2">
+                  className="w-full py-4 rounded-2xl bg-[var(--text-accent)] text-[var(--btn-text)] font-black text-[10px] uppercase tracking-[0.2em] hover:scale-[1.05] shadow-lg transition-all flex items-center justify-center gap-2">
                   <UserPlus size={14} /> Establecer Enlace
                 </button>
               )}
@@ -183,10 +185,10 @@ export default function PublicProfile() {
             { icon: <Flame size={20} className="text-orange-500" />, label: "Racha Activa", value: `${profile.streak?.current || 0}D` },
             { icon: <Diamond size={20} className="text-cyan-500" />, label: "Créditos", value: profile.gems },
           ].map((s, idx) => (
-            <div key={idx} className="bg-white/80 border-2 border-white rounded-[2rem] p-5 text-center shadow-sm hover:translate-y-[-4px] transition-all">
+            <div key={idx} className="bg-[var(--card-bg)] border-2 border-[var(--glass-border)] rounded-[2rem] p-5 text-center shadow-sm hover:translate-y-[-4px] transition-all">
               <div className="flex justify-center mb-2">{s.icon}</div>
-              <div className="text-xl font-black italic text-[#0F2547] tracking-tighter leading-none">{s.value}</div>
-              <div className="text-[8px] font-black text-[#7A9CC5] uppercase tracking-widest mt-2">{s.label}</div>
+              <div className="text-xl font-black italic text-[var(--text-primary)] tracking-tighter leading-none">{s.value}</div>
+              <div className="text-[8px] font-black text-[var(--text-secondary)] uppercase tracking-widest mt-2">{s.label}</div>
             </div>
           ))}
         </div>
@@ -194,7 +196,7 @@ export default function PublicProfile() {
         {/* LOGROS / CONDECORACIONES */}
         {profile.achievements?.length > 0 && (
           <div className="sea-glass rounded-[2.5rem] p-8">
-            <h2 className="text-[#0F2547] font-black italic uppercase text-[11px] tracking-[0.3em] mb-8 flex items-center gap-3">
+            <h2 className="text-[--text-primary] font-black italic uppercase text-[11px] tracking-[0.3em] mb-8 flex items-center gap-3">
               <Star size={18} className="text-amber-500" /> Medallas del Operativo
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -202,7 +204,7 @@ export default function PublicProfile() {
                 <div key={i} className="bg-white/40 border border-white/60 rounded-2xl p-4 flex items-center gap-3 group hover:bg-white transition-all">
                   <span className="text-3xl group-hover:rotate-12 transition-transform">{a.icon}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[#0F2547] font-black text-[10px] uppercase italic leading-tight">{a.name}</p>
+                    <p className="text-[--text-primary] font-black text-[10px] uppercase italic leading-tight">{a.name}</p>
                     <p className="text-[#7A9CC5] text-[9px] font-bold truncate tracking-tight uppercase mt-0.5">{a.rarity || 'Común'}</p>
                   </div>
                 </div>

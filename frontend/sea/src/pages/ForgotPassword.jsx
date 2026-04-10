@@ -12,19 +12,19 @@ const FORGOT_CSS = `
     background: rgba(255, 255, 255, 0.45);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(255, 255, 255, 0.7);
-    box-shadow: 0 20px 50px rgba(43, 127, 232, 0.1);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 20px 50pxvar(--glass-shadow);
   }
 
   .sea-input {
-    background: rgba(255, 255, 255, 0.6);
+    background: var(--sidebar-bg);
     border: 2px solid transparent;
     transition: all 0.3s ease;
   }
   .sea-input:focus {
     background: white;
     border-color: #2B7FE8;
-    box-shadow: 0 0 0 4px rgba(43, 127, 232, 0.1);
+    box-shadow: 0 0 0 4pxvar(--glass-shadow);
   }
 
   .sea-btn-primary {
@@ -61,7 +61,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="sea-font min-h-screen flex items-center justify-center p-6 relative overflow-hidden"
-         style={{ background: "linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%)" }}>
+         style={{ background: "var(--bg-gradient)" }}>
       <style>{FORGOT_CSS}</style>
 
       {/* Orbes decorativos */}
@@ -77,7 +77,7 @@ export default function ForgotPassword() {
               <div className="w-20 h-20 bg-emerald-100 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-sm border-2 border-white">
                 <CheckCircle2 size={40} className="text-emerald-500" />
               </div>
-              <h2 className="text-2xl font-black italic tracking-tighter text-[#0F2547] uppercase mb-4">
+              <h2 className="text-2xl font-black italic tracking-tighter text-[--text-primary] uppercase mb-4">
                 ¡Misión enviada!
               </h2>
               <p className="text-[#5B7CA3] font-bold text-sm leading-relaxed mb-8">
@@ -95,7 +95,7 @@ export default function ForgotPassword() {
                 <div className="w-16 h-16 bg-gradient-to-br from-[#2B7FE8] to-[#5B9FFF] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl rotate-[-3deg] border-2 border-white/50">
                   <KeyRound size={32} className="text-white" />
                 </div>
-                <h1 className="text-3xl font-black italic tracking-tighter text-[#0F2547] uppercase">
+                <h1 className="text-3xl font-black italic tracking-tighter text-[--text-primary] uppercase">
                   Recuperar Acceso
                 </h1>
                 <p className="text-[#7A9CC5] text-[10px] font-extrabold uppercase tracking-[0.2em] mt-2">
@@ -114,7 +114,7 @@ export default function ForgotPassword() {
                     onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                     placeholder="TU EMAIL REGISTRADO"
                     autoFocus
-                    className="sea-input w-full rounded-[1.5rem] pl-14 pr-6 py-5 outline-none font-bold text-sm text-[#0F2547] placeholder:text-[#AAC0D8] placeholder:font-black placeholder:text-[10px] placeholder:tracking-widest shadow-inner"
+                    className="sea-input w-full rounded-[1.5rem] pl-14 pr-6 py-5 outline-none font-bold text-sm text-[--text-primary] placeholder:text-[#AAC0D8] placeholder:font-black placeholder:text-[10px] placeholder:tracking-widest shadow-inner"
                   />
                 </div>
 

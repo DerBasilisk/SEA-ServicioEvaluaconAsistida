@@ -3,7 +3,7 @@ import { Check, X, ShieldCheck, ShieldAlert } from "lucide-react";
 
 const TF_CSS = `
   .tf-card {
-    background: rgba(255, 255, 255, 0.4);
+    background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 2px solid white;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -80,7 +80,7 @@ export default function TrueFalse({ question, onAnswer, onReport, }) {
               </div>
               
               <span className={`font-black italic uppercase tracking-tighter text-lg transition-colors ${
-                isSelected ? opt.activeText : "text-[#0F2547]"
+                isSelected ? opt.activeText : "text-[--text-primary]"
               }`}>
                 {opt.label}
               </span>
