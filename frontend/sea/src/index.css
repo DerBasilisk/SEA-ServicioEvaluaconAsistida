@@ -38,6 +38,8 @@
   --negative: #EF4444;
   --google: #ad0909;
   --facebook: #1877F2;
+  --landing-hero-text: #03045E;
+  --nav-bg: rgba(255, 255, 255, 0.4);
 }
 
 [data-theme="dark"] {
@@ -73,6 +75,8 @@
   --clue-text: #0066ff;
   --afirmative: #2b9ce8;
   --negative: #c72e2e;
+  --landing-hero-text: #F8FAFC;
+  --nav-bg: rgba(15, 23, 42, 0.6);
 }
 
 [data-theme="high-contrast"] {
@@ -108,6 +112,8 @@
   --clue-text: #ffd900;
   --afirmative: #00FFFF;
   --negative: #ff0000;
+  --landing-hero-text: #FFFFFF;
+  --nav-bg: #000000;
 }
 
 [data-theme="high-contrast"] * {

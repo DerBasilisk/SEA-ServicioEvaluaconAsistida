@@ -26,6 +26,7 @@ import PublicProfile from "./pages/PublicProfile";
 import Duel from "./pages/Duel";
 import League from "./pages/League";
 import Settings from "./pages/Settings";
+import Frontal from "./pages/Frontal";
 
 // Pages del Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -55,6 +56,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Rutas Públicas */}
+        
+        <Route path="/home" element={<Frontal />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />

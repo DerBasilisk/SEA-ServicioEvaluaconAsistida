@@ -32,11 +32,6 @@ const LOGIN_CSS = `
     color: var(--text-primary);
     transition: all .2s;
   }
-  .sea-input:focus {
-    border-color: var(--text-accent);
-    background: white; /* Resalte en foco */
-    box-shadow: 0 0 0 4px var(--glass-shadow);
-  }
   .sea-submit-btn {
     background: var(--text-accent);
     color: var(--btn-text);
@@ -60,6 +55,10 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
 
+  const [submitting, setSubmitting] = useState(false);
+
+
+
   // ─── Lógica de OAuth (Token en URL) ───────────────────────────────────────
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -68,7 +67,8 @@ export default function Login() {
     if (token) {
       localStorage.setItem("sea_token", token);
       fetchMe().then(() => {
-        navigate("/admin"); 
+        const { user } = useAuthStore.getState();
+        navigate(user?.role === "admin" ? "/admin" : "/");
       });
     }
   }, [location, navigate, fetchMe]);
@@ -78,19 +78,20 @@ export default function Login() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  const res = await login(form.email, form.password);
-  
-  if (res?.ok) {
-    // Redirección basada en rol
-    if (res.user?.role === 'admin') {
-      navigate("/admin/dashboard");
-    } else {
-      navigate("/"); // O la ruta principal del simulador
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await login(form.email, form.password);
+      if (res?.ok) {
+        const { user } = useAuthStore.getState();
+        navigate(user?.role === "admin" ? "/admin" : "/");
+      }
+    } finally {
+      setSubmitting(false);
     }
-  }
-};
+  };
 
   return (
     <>
@@ -145,7 +146,7 @@ export default function Login() {
                   onChange={handleChange}
                   required
                   placeholder="usuario@sea.com"
-                  className="sea-input w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
+                  className="sea-input focus:bg-[var(--glass-bg)] w-full rounded-2xl px-5 py-3.5 text-sm font-semibold text-[--text-primary] placeholder:text-[#AAC0D8]"
                 />
               </div>
 
@@ -180,10 +181,10 @@ export default function Login() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="sea-submit-btn w-full text-white font-extrabold py-4 rounded-2xl uppercase italic tracking-widest text-sm mt-2 disabled:opacity-50"
               >
-                {loading ? "Verificando..." : "Acceder →"}
+                {submitting ? "Verificando..." : "Acceder →"}
               </button>
             </form>
 
@@ -202,14 +203,6 @@ export default function Login() {
               >
                 <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
                 Continuar con Google
-              </a>
-
-              <a
-                href={`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/auth/facebook`}
-                className="sea-social-btn w-full flex items-center justify-center gap-3 rounded-2xl py-3 text-xs font-extrabold uppercase tracking-widest text-[--facebook]"
-              >
-                <Facebook size={16} fill="currentColor" />
-                Continuar con Facebook
               </a>
             </div>
 
