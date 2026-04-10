@@ -14,6 +14,7 @@
   --card-border: #E2E8F0;
   --text-primary: #0F2547;
   --text-secondary: #7A9CC5;
+  --text-thirdary: #ffffff;
   --text-muted: #AAC0D8;
   --text-accent: #2B7FE8;
   --deco-blob: rgba(255, 255, 255, 0.3);
@@ -29,17 +30,21 @@
   --btn-primary: #2B7FE8;
   --btn-text: white;
   --correct: #10B981;
+  --correct-bg: #10b9811a;
   --incorrect: #EF4444;
+  --incorrect-bg: #ef44442f;
   --panel-feedback-bg: #F0FDF4;
   --clue-bg: #FFFBEB;
   --clue-border: #FDE68A;
   --clue-text: #D97706;
   --afirmative: #2B7FE8;
   --negative: #EF4444;
+  --danger-bg: rgba(255, 208, 208, 0.4);
   --google: #ad0909;
   --facebook: #1877F2;
   --landing-hero-text: #03045E;
   --nav-bg: rgba(255, 255, 255, 0.4);
+  --generic-btn: #2B7FE8;
 }
 
 [data-theme="dark"] {
@@ -53,6 +58,7 @@
   --card-border: rgba(51, 65, 85, 0.5);
   --text-primary: #f8fafc;    /* Casi blanco */
   --text-secondary: #cbd5e1;  /* Gris azulado claro */
+  --text-thirdary: #ffffff;
   --text-muted: #64748b;      /* Para detalles menos importantes */
   --text-accent: #60a5fa;     /* Un azul más eléctrico y visible */
   --deco-blob: rgba(59, 130, 246, 0.03);
@@ -75,8 +81,10 @@
   --clue-text: #0066ff;
   --afirmative: #2b9ce8;
   --negative: #c72e2e;
+  --danger-bg: rgba(59, 17, 17, 0.4);
   --landing-hero-text: #F8FAFC;
   --nav-bg: rgba(15, 23, 42, 0.6);
+  --generic-btn: #3b82f6;
 }
 
 [data-theme="high-contrast"] {
@@ -90,6 +98,7 @@
   --card-border: #FFFFFF;
   --text-primary: #FFFFFF;
   --text-secondary: #FFFFFF; 
+  --text-thirdary: #ffffff;
   --text-muted: #FFFF00; /* El amarillo sobre negro es el contraste más alto posible */
   --text-accent: #00FFFF; /* Cian brillante */
   --deco-blob: transparent;
@@ -111,9 +120,29 @@
   --clue-border: #eefc2a;
   --clue-text: #ffd900;
   --afirmative: #00FFFF;
-  --negative: #ff0000;
+  --negative: #ff0055;
+  --danger-bg: rgba(255, 0, 0, 0.075);
   --landing-hero-text: #FFFFFF;
   --nav-bg: #000000;
+  --generic-btn: #000000;
+}
+
+[data-colorblind="true"] {
+  --correct: #0077BB;
+  --correct-bg: #0076bb17;
+  --incorrect: #EE7733;
+  --incorrect-bg: #EE77332F;
+  --negative:  #ff7a2e;
+  --panel-feedback-bg: rgba(0, 119, 187, 0.08);
+  --danger-bg: rgba(255, 94, 0, 0.212);
+  --clue-border: #EE7733;
+  --clue-text:   #CC5500;
+}
+
+[data-theme="high-contrast"][data-colorblind="true"] {
+  --correct:   #00BBFF;
+  --incorrect: #FF8800;
+  --negative:  #FF8800;
 }
 
 [data-theme="high-contrast"] * {

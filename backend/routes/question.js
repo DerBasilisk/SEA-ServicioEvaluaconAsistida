@@ -9,11 +9,13 @@ const {
   reviewQuestion,
   generateWithAI,
   reportQuestion,
+  evaluateOpen,
 } = require("../controllers/question");
 
 router.get("/", verificarToken, isAdmin, getQuestions);
 router.post("/", verificarToken, isAdmin, createQuestion);
 router.post("/generate", verificarToken, isAdmin, generateWithAI);
+router.post("/evaluate-open", verificarToken, evaluateOpen);
 router.put("/:id", verificarToken, isAdmin, updateQuestion);
 router.put("/:id/review", verificarToken, isAdmin, reviewQuestion);
 router.delete("/:id", verificarToken, isAdmin, deleteQuestion);

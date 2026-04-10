@@ -104,7 +104,7 @@ export default function Navbar() {
         
         {/* LOGO */}
         <Link to="/" className="flex items-center gap-2 group transition-transform active:scale-95">
-          <div className="bg-[#2B7FE8] p-1.5 rounded-xl shadow-lg shadow-blue-200 rotate-[-3deg] group-hover:rotate-0 transition-all">
+          <div className="bg-[#2B7FE8] p-1.5 rounded-xl shadow-lg rotate-[-3deg] group-hover:rotate-0 transition-all">
              <img src="/sealogo.png" width="40" alt="SEA" className="brightness-0 invert" />
           </div>
           <span className="text-[--text-primary] font-black italic tracking-tighter text-xl uppercase">SEA</span>

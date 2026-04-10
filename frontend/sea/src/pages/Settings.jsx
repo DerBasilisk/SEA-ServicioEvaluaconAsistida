@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Link2, Trash2, AlertTriangle, ChevronRight, CheckCircle2 } from "lucide-react";
+import { Shield, Link2, Trash2, AlertTriangle, Eye, CheckCircle2 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import useAuthStore from "../store/authStore";
+import useThemeStore from "../store/themeStore";
 import api from "../api/axios";
 
 // ─── Estilos Globales SEA ──────────────────────────────────────────────────
@@ -11,7 +12,7 @@ const SETTINGS_CSS = `
   .sea-settings { font-family: 'Nunito', sans-serif; }
   
   .sea-glass-card {
-    background: rgba(255, 255, 255, 0.45);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1.5px solid var(--glass-border);
@@ -24,14 +25,14 @@ const SETTINGS_CSS = `
     transition: all 0.3s ease;
   }
   .sea-input:focus {
-    background: white;
     border-color: #2B7FE8;
     box-shadow: 0 0 15pxvar(--glass-shadow);
   }
 
   .danger-zone {
-    background: rgba(254, 226, 226, 0.4);
-    border: 1.5px solid rgba(248, 113, 113, 0.4);
+    background: var(--danger-bg);
+    border: 1.5px solid var(--negative);
+    color: var(--negative)
   }
 `;
 
@@ -42,6 +43,7 @@ export default function Settings() {
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [msg, setMsg] = useState(null);
+  const { colorblind, toggleColorblind } = useThemeStore();
 
   const handleDeleteAccount = async () => {
     if (deleteInput !== user?.username) return;
@@ -104,11 +106,56 @@ export default function Settings() {
               active={!!user.googleId} 
               icon="https://www.google.com/favicon.ico" 
             />
-            <SocialItem 
-              name="Discord" 
-              active={!!user.discordId} 
-              icon="https://assets-global.website-files.com/6257adef93867e37d8a9a452/636e0a6cae3b5398a21361b2_icon_clyde_blurple_RGB.png" 
-            />
+          </div>
+        </section>
+
+        <section className="sea-glass-card rounded-[2.5rem] p-8 mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <Eye size={20} className="text-[#2B7FE8]" />
+            <h2 className="text-[--text-primary] font-black italic uppercase text-xl">Accesibilidad Visual</h2>
+          </div>
+          <p className="text-[#7A9CC5] text-[10px] font-black uppercase tracking-[0.2em] mb-8 ml-8">
+            Ajustes de percepción cromática
+          </p>
+
+          <div className="flex items-center justify-between p-5 bg-[--glass-bg] border border-[--glass-border] rounded-[1.8rem]">
+            <div className="flex items-center gap-4">
+              {/* Paleta de muestra: verde→azul, rojo→naranja */}
+              <div className="flex gap-1.5">
+                <div
+                  className="w-5 h-5 rounded-full border border-slate-200"
+                  style={{ background: colorblind ? "#0077BB" : "#10B981" }}
+                />
+                <div
+                  className="w-5 h-5 rounded-full border border-slate-200"
+                  style={{ background: colorblind ? "#EE7733" : "#EF4444" }}
+                />
+              </div>
+              <div>
+                <p className="text-[--text-primary] font-black italic uppercase text-sm tracking-tight">
+                  Modo Daltónico
+                </p>
+                <p className="text-[9px] font-black text-[#7A9CC5] uppercase tracking-widest mt-0.5">
+                  Paleta Okabe-Ito · Compatible con deuteranopía y protanopía
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle switch */}
+            <button
+              onClick={toggleColorblind}
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none ${
+                colorblind ? "bg-[#2B7FE8]" : "bg-slate-200"
+              }`}
+              aria-pressed={colorblind}
+              aria-label="Activar modo daltónico"
+            >
+              <span
+                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${
+                  colorblind ? "translate-x-7" : "translate-x-0"
+                }`}
+              />
+            </button>
           </div>
         </section>
 
@@ -126,25 +173,25 @@ export default function Settings() {
         {/* Zona de Peligro */}
         <section className="danger-zone rounded-[2.5rem] p-8 relative overflow-hidden">
           <div className="flex items-center gap-3 mb-6">
-            <AlertTriangle size={24} className="text-rose-500" />
-            <h2 className="text-rose-600 font-black italic uppercase text-xl tracking-tighter">Protocolo de Eliminación</h2>
+            <AlertTriangle size={24} className="text-[--negative]" />
+            <h2 className="text-[--negative] font-black italic uppercase text-xl tracking-tighter">Protocolo de Eliminación</h2>
           </div>
           
-          <p className="text-rose-700/60 text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed max-w-md">
+          <p className="text-[--negative]/60 text-[10px] font-bold uppercase tracking-widest mb-8 leading-relaxed max-w-md">
             Esta acción desmantelará tu perfil permanentemente. Todos los créditos, XP y condecoraciones serán purgados del sistema.
           </p>
 
           {!showDeleteConfirm ? (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-3 bg-white/60 hover:bg-rose-500 hover:text-white border border-rose-200 text-rose-500 font-black text-[10px] uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-sm active:scale-95"
+              className="flex items-center gap-3 bg-[--danger-bg] hover:bg-[--negative] hover:text-[--btn-text] border border-[--negative] text-[--negative] font-black text-[10px] uppercase tracking-widest px-8 py-4 rounded-2xl transition-all shadow-sm active:scale-95"
             >
               <Trash2 size={16} /> Iniciar Secuencia de Borrado
             </button>
           ) : (
-            <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border-2 border-rose-500/20 animate-in slide-in-from-top-4 duration-300">
+            <div className="bg-[var(--glass-bg)] backdrop-blur-md rounded-3xl p-6 border-2 border-rose-500/20 animate-in slide-in-from-top-4 duration-300">
               <p className="text-rose-600 text-xs font-black uppercase mb-4">
-                Confirma tu identidad escribiendo: <span className="text-[--text-primary] italic underline">@{user.username}</span>
+                Confirma tu identidad escribiendo: <span className="text-[--text-primary] lowercase text-lg italic underline">{user.username}</span>
               </p>
               
               <input
@@ -180,7 +227,7 @@ export default function Settings() {
 
 function SocialItem({ name, active, icon }) {
   return (
-    <div className="flex items-center justify-between p-5 bg-white/40 border border-white/60 rounded-[1.8rem] hover:bg-white/80 transition-all group">
+    <div className="flex items-center justify-between p-5 bg-[--glass-bg] border border-[--glass-border] rounded-[1.8rem] hover:bg-[--card-bg] transition-all group">
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 bg-white rounded-2xl p-2.5 shadow-sm border border-slate-100 group-hover:rotate-6 transition-transform">
           <img src={icon} alt={name} className="w-full h-full object-contain" />

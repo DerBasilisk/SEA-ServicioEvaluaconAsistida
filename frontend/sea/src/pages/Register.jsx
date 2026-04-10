@@ -34,7 +34,8 @@ const REGISTER_CSS = `
 
 export default function Register() {
   const navigate = useNavigate();
-  const { register, loading, error, clearError, user, isAuthenticated } = useAuthStore();
+  const { register, error, clearError, user, isAuthenticated } = useAuthStore(); // ← quitá loading
+  const [submitting, setSubmitting] = useState(false); // ← agregá esto
   
   const [form, setForm] = useState({ username: "", email: "", password: "", confirm: "" });
   const [localError, setLocalError] = useState("");
@@ -59,9 +60,13 @@ export default function Register() {
       setLocalError("Las contraseñas no coinciden");
       return;
     }
-    const res = await register(form.username, form.email, form.password);
-    // Tras registro exitoso, el store ya tiene el usuario, el useEffect de arriba redirigirá.
-    if (res?.ok) navigate("/dashboard"); 
+    setSubmitting(true);
+    try {
+      const res = await register(form.username, form.email, form.password);
+      if (res?.ok) navigate("/");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const displayError = localError || error;
@@ -190,10 +195,10 @@ export default function Register() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={submitting}
                 className="sea-submit-btn w-full font-black py-4 rounded-2xl uppercase italic tracking-[0.2em] text-sm mt-4 disabled:opacity-50"
               >
-                {loading ? "Sincronizando..." : "Crear mi cuenta →"}
+                {submitting ? "Sincronizando..." : "Crear mi cuenta →"}
               </button>
             </form>
 

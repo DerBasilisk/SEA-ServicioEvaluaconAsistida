@@ -50,7 +50,7 @@ const LOGIN_CSS = `
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, loading, error, clearError, fetchMe } = useAuthStore();
+  const { login, error, clearError, fetchMe } = useAuthStore();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);

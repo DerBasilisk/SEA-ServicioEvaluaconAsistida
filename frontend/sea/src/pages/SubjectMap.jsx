@@ -38,16 +38,16 @@ const MAP_LIGHT_CSS = `
   .sea-map { font-family: 'Nunito', sans-serif; }
 
   .sea-glass-card {
-    background: rgba(255, 255, 255, 0.5);
+    background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 15px 35px rgba(43, 127, 232, 0.08);
+    border: 1.5px solid var(--glass-border);
+    box-shadow: 0 15px 35px var(--glass-shadow);
   }
 
   .node-label {
-    background: white;
-    border: 1px solid #E2E8F0;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     transition: all 0.3s ease;
   }
 `;
@@ -94,7 +94,7 @@ export default function SubjectMap() {
         {/* Header Estilo Escritorio SEA */}
         <header className="sea-glass-card rounded-[2.5rem] p-8 mb-20 flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-white rounded-3xl shadow-sm flex items-center justify-center text-5xl border border-white">
+            <div className="w-20 h-20 bg-[var(--glass-bg)] rounded-3xl shadow-sm flex items-center justify-center text-5xl border border-[var(--glass-border)]">
               {subject.icon}
             </div>
             <div>
@@ -110,7 +110,7 @@ export default function SubjectMap() {
           
           <button 
             onClick={() => navigate("/")} 
-            className="mt-6 md:mt-0 px-6 py-3 bg-[--text-primary] hover:bg-[#1A3A61] text-white rounded-2xl font-black uppercase italic tracking-widest text-[9px] shadow-lg transition-all flex items-center gap-2 group"
+            className="mt-6 md:mt-0 px-6 py-3 bg-[--generic-btn] border-2 border-[--text-thirdary] hover:bg-[--glass-bg] hover:text-[--text-accent] text-[--text-thirdary] rounded-2xl font-black uppercase italic tracking-widest text-[9px] shadow-lg transition-all flex items-center gap-2 group"
           >
             <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" /> 
             Volver al Centro
@@ -190,12 +190,12 @@ function GlassNode({ lesson, onClick }) {
       {/* Etiqueta de Texto */}
       <div className={`
         node-label mt-6 p-4 rounded-2xl transition-all duration-500 text-center w-full max-w-[160px] relative z-10
-        ${isLocked ? 'bg-slate-50/50 border-slate-200 opacity-60' : 'group-hover:bg-[--text-primary] group-hover:border-[--text-primary] group-hover:shadow-lg'}
+        ${isLocked ? 'bg-slate-50/50 border-slate-200 opacity-60' : 'group-hover:bg-[--glass-bg] group-hover:border-[--text-primary] group-hover:shadow-lg'}
       `}>
         <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isLocked ? 'text-slate-400' : 'text-[#2B7FE8] group-hover:text-blue-300'}`}>
            {isLocked ? 'En Espera' : 'Objetivo'}
         </p>
-        <h3 className={`text-[11px] font-black tracking-tight uppercase italic leading-tight ${isLocked ? 'text-slate-400' : 'text-[--text-primary] group-hover:text-white'}`}>
+        <h3 className={`text-[11px] font-black tracking-tight uppercase italic leading-tight ${isLocked ? 'text-slate-400' : 'text-[--text-primary] group-hover:text-[--text-primary]'}`}>
           {lesson.name}
         </h3>
       </div>

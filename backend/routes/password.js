@@ -29,7 +29,7 @@ router.post("/forgot", async (req, res) => {
 
     res.json({ ok: true, message: "Si el email existe, recibirás un link en breve" });
   } catch (err) {
-    console.error("Error en forgot password:", err.message);
+    console.error("Error en forgot password:", err);
     res.status(500).json({ ok: false, message: "Error al enviar el email" });
   }
 });

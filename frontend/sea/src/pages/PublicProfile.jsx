@@ -161,7 +161,7 @@ export default function PublicProfile() {
             <div className="max-w-xs mx-auto">
               {profile.friendStatus === "accepted" ? (
                 <button onClick={handleRemove} disabled={actionLoading}
-                  className="w-full py-4 rounded-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20 font-black text-[10px] uppercase tracking-[0.2em] hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2">
+                  className="w-full py-4 rounded-2xl bg-rose-[--incorrect-bg] text-[--negative] border border-[--negative] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[--negative] hover:text-white transition-all flex items-center justify-center gap-2">
                   <UserMinus size={14} /> Eliminar Contacto
                 </button>
               ) : profile.friendStatus === "pending" ? (

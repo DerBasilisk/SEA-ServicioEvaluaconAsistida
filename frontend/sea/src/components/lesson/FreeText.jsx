@@ -1,5 +1,27 @@
 import { useState } from "react";
-import { Send, Loader2, Flag } from "lucide-react";
+import { Send, Loader2, Flag, CheckCircle2, AlertCircle, Award, RefreshCcw } from "lucide-react";
+
+const FREE_TEXT_CSS = `
+  .sea-input-area {
+    background: var(--card-bg);
+    border: 2px solid var(--glass-border);
+    color: var(--text-primary);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sea-input-area:focus {
+    border-color: var(--text-accent);
+    background: var(--glass-bg);
+    box-shadow: 0 8px 32px var(--glass-shadow);
+    outline: none;
+  }
+  .feedback-card {
+    animation: slideUp 0.5s ease-out;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+`;
 
 export default function FreeText({ 
   question, 
@@ -13,13 +35,10 @@ export default function FreeText({
 
   const handleSubmit = async () => {
     if (!userAnswer.trim() || submitting) return;
-
     setSubmitting(true);
 
     try {
       const result = await onAnswer(userAnswer.trim());
-
-      // result debería venir del backend con la evaluación
       setFeedback({
         score: result.score,
         approved: result.isCorrect || result.approved,
@@ -27,12 +46,10 @@ export default function FreeText({
         strengths: result.strengths,
         improvements: result.improvements,
       });
-
     } catch (err) {
-      console.error(err);
       setFeedback({
         approved: false,
-        feedback: "Hubo un error al evaluar tu respuesta. Inténtalo de nuevo.",
+        feedback: "Error en el motor de evaluación. Inténtalo de nuevo.",
       });
     } finally {
       setSubmitting(false);
@@ -42,89 +59,127 @@ export default function FreeText({
 
   return (
     <div className="space-y-6">
-      {/* Enunciado */}
-      <div className="bg-gray-900 border border-gray-700 rounded-3xl p-8">
-        <p className="text-lg text-white leading-relaxed">{question.prompt}</p>
+      <style>{FREE_TEXT_CSS}</style>
+
+      {/* Enunciado con estilo de Tarjeta SEA */}
+      <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[2.5rem] p-8 backdrop-blur-md">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="px-3 py-1 bg-[var(--text-accent)] text-[var(--btn-text)] text-[10px] font-black uppercase tracking-widest rounded-full">
+            Pregunta Abierta
+          </span>
+        </div>
+        <p className="text-lg text-[var(--text-primary)] font-bold leading-relaxed italic">
+          "{question.prompt}"
+        </p>
         
         {question.evaluationCriteria && (
-          <div className="mt-6 p-4 bg-gray-800/50 border border-gray-700 rounded-2xl">
-            <p className="text-xs uppercase tracking-widest text-gray-500 mb-1">Criterios de evaluación</p>
-            <p className="text-sm text-gray-300 italic">{question.evaluationCriteria}</p>
+          <div className="mt-6 p-4 bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-2 font-black">
+              Criterios de evaluación
+            </p>
+            <p className="text-sm text-[var(--text-secondary)] italic opacity-80">
+              {question.evaluationCriteria}
+            </p>
           </div>
         )}
       </div>
 
       {/* Área de escritura */}
       <div className="space-y-3">
-        <label className="text-gray-400 text-sm font-medium block">
-          Tu respuesta:
-        </label>
-        
         <textarea
           value={userAnswer}
           onChange={(e) => setUserAnswer(e.target.value)}
-          disabled={disabled || submitting}
-          placeholder="Escribe tu respuesta aquí... Sé lo más claro y completo posible."
-          className="w-full h-48 bg-gray-900 border border-gray-700 rounded-3xl px-6 py-5 text-white resize-y min-h-[180px] focus:border-violet-500 focus:ring-1 focus:ring-violet-500 outline-none transition-all disabled:opacity-50"
+          disabled={disabled || submitting || !!feedback}
+          placeholder="Desarrolla tu respuesta aquí..."
+          className="sea-input-area w-full h-48 rounded-[2rem] px-6 py-5 text-base font-medium resize-none disabled:opacity-50"
         />
       </div>
 
-      {/* Botones de acción */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleSubmit}
-          disabled={!userAnswer.trim() || submitting || disabled}
-          className="flex-1 bg-violet-600 hover:bg-violet-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-semibold flex items-center justify-center gap-3 transition-all active:scale-[0.98]"
-        >
-          {submitting ? (
-            <>
-              <Loader2 size={20} className="animate-spin" />
-              Evaluando con IA...
-            </>
-          ) : (
-            <>
-              <Send size={20} />
-              Enviar Respuesta
-            </>
-          )}
-        </button>
+      {/* Botones */}
+      {!feedback && (
+        <div className="flex gap-3">
+          <button
+            onClick={handleSubmit}
+            disabled={!userAnswer.trim() || submitting || disabled}
+            className="flex-1 bg-[var(--text-accent)] hover:opacity-90 text-[var(--btn-text)] py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-xl shadow-blue-500/10"
+          >
+            {submitting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Sincronizando con IA...
+              </>
+            ) : (
+              <>
+                <Send size={18} />
+                Enviar a Evaluación
+              </>
+            )}
+          </button>
 
-        <button
-          onClick={reportQuestion}
-          className="px-6 py-4 bg-gray-800 hover:bg-red-500/10 text-red-400 rounded-2xl transition-all flex items-center gap-2"
-          title="Reportar pregunta"
-        >
-          <Flag size={20} />
-        </button>
-      </div>
+          <button
+            onClick={onReport}
+            className="px-6 py-4 bg-[var(--card-bg)] hover:bg-rose-500/10 text-rose-500 border border-[var(--glass-border)] rounded-2xl transition-all"
+            title="Reportar problema"
+          >
+            <Flag size={20} />
+          </button>
+        </div>
+      )}
 
-      {/* Feedback después de responder */}
+      {/* Feedback Card con IA */}
       {feedback && (
-        <div className={`p-6 rounded-3xl border ${feedback.approved ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-amber-500/30 bg-amber-500/10'}`}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className={`text-2xl font-bold ${feedback.approved ? 'text-emerald-400' : 'text-amber-400'}`}>
-              {feedback.score} / {question.maxScore || 10}
+        <div className={`feedback-card p-8 rounded-[2.5rem] border ${
+          feedback.approved ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-amber-500/30 bg-amber-500/5'
+        }`}>
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                {feedback.approved ? <CheckCircle2 className="text-emerald-500" size={20} /> : <AlertCircle className="text-amber-500" size={20} />}
+                <span className={`text-xs font-black uppercase tracking-widest ${feedback.approved ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  Resultado del Análisis
+                </span>
+              </div>
+              <h3 className="text-[var(--text-primary)] font-black text-2xl">
+                {feedback.approved ? "¡Misión Cumplida!" : "Revisión Necesaria"}
+              </h3>
             </div>
-            <div className="text-sm text-gray-400">
-              {feedback.approved ? "¡Excelente!" : "Puedes mejorar"}
+            <div className="text-right">
+              <div className={`text-4xl font-black italic ${feedback.approved ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {feedback.score}<span className="text-sm opacity-50 text-[var(--text-primary)]">/{question.maxScore || 10}</span>
+              </div>
             </div>
           </div>
 
-          <p className="text-white leading-relaxed mb-4">{feedback.feedback}</p>
+          <p className="text-[var(--text-primary)] leading-relaxed mb-6 font-medium italic bg-white/5 p-4 rounded-xl border border-white/5">
+            "{feedback.feedback}"
+          </p>
 
-          {feedback.strengths && (
-            <div className="mt-4">
-              <p className="text-emerald-400 text-sm font-medium">Fortalezas:</p>
-              <p className="text-gray-300 text-sm">{feedback.strengths}</p>
-            </div>
-          )}
+          <div className="grid md:grid-cols-2 gap-4">
+            {feedback.strengths && (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                <p className="text-emerald-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Award size={12} /> Fortalezas
+                </p>
+                <p className="text-[var(--text-secondary)] text-sm leading-snug">{feedback.strengths}</p>
+              </div>
+            )}
 
-          {feedback.improvements && (
-            <div className="mt-3">
-              <p className="text-amber-400 text-sm font-medium">Sugerencias de mejora:</p>
-              <p className="text-gray-300 text-sm">{feedback.improvements}</p>
-            </div>
-          )}
+            {feedback.improvements && (
+              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <p className="text-amber-500 text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <RefreshCcw size={12} className="animate-spin-slow" /> Optimización
+                </p>
+                <p className="text-[var(--text-secondary)] text-sm leading-snug">{feedback.improvements}</p>
+              </div>
+            )}
+          </div>
+          
+          <button 
+            onClick={() => { setFeedback(null); setUserAnswer(""); }}
+            className="w-full mt-8 py-3 text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-secondary)] hover:text-[var(--text-accent)] transition-colors"
+          >
+            ¿Reintentar este desafío?
+          </button>
         </div>
       )}
     </div>

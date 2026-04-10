@@ -57,6 +57,32 @@ const LESSON_CSS = `
   }
 `;
 
+function formatCorrectAnswer(correctAnswer, questionType) {
+  if (!correctAnswer) return null;
+
+  // multiple_choice → { text: "...", isCorrect: true }
+  if (questionType === "multiple_choice") {
+    return correctAnswer.text ?? String(correctAnswer);
+  }
+
+  // match_pairs → [{ left: "...", right: "..." }]
+  if (questionType === "match_pairs" && Array.isArray(correctAnswer)) {
+    return correctAnswer.map(p => `${p.left} → ${p.right}`).join("\n");
+  }
+
+  // fill_blank / order_items → array de strings
+  if (Array.isArray(correctAnswer)) {
+    return correctAnswer.join(", ");
+  }
+
+  // true_false → boolean
+  if (typeof correctAnswer === "boolean") {
+    return correctAnswer ? "Verdadero" : "Falso";
+  }
+
+  return String(correctAnswer);
+}
+
 const QUESTION_COMPONENTS = {
   multiple_choice: MultipleChoice,
   true_false: TrueFalse,
@@ -133,23 +159,18 @@ export default function Lesson() {
         answer,
         hintUsed,
       });
+
       const remaining = data.data.heartsRemaining;
       if (!data.data.isCorrect && remaining !== null) setHearts(remaining);
-      if (question.type === "free_text") {
-        setFeedback({
-          isCorrect: data.data.isCorrect,
-          score: data.data.score,
-          feedback: data.data.feedback,
-          strengths: data.data.strengths,
-          improvements: data.data.improvements,
-          fullEvaluation: data.data.fullEvaluation,
-        });
-      } else {
-        setFeedback(data.data);
-      }
       
-      setPhase("feedback");
-      return data.data;   // importante para FreeText
+      setFeedback(data.data);
+
+      // free_text maneja su propio feedback → no cambiar phase
+      if (question.type !== "free_text") {
+        setPhase("feedback");
+      }
+
+      return data.data;
     } catch (err) {
       console.error(err);
       return { isCorrect: false };
@@ -307,20 +328,30 @@ export default function Lesson() {
 
           <div className="flex-1 min-h-[400px]">
             {phase === "playing" && question && (
-              <>
-                {QuestionComponent ? (
-                  <QuestionComponent 
-                    question={question} 
-                    onAnswer={handleAnswer}
-                    onReport={reportCurrentQuestion}     // ← Para el botón de reporte
-                  />
-                ) : (
-                  <div className="p-10 text-center text-red-400">
-                    Tipo de pregunta no soportado: {question.type}
-                  </div>
-                )}
-              </>
-            )}
+            <>
+              {QuestionComponent ? (
+                <QuestionComponent
+                  question={question}
+                  onAnswer={handleAnswer}
+                  onReport={reportCurrentQuestion}
+                />
+              ) : (
+                <div className="p-10 text-center text-red-400">
+                  Tipo no soportado: {question.type}
+                </div>
+              )}
+
+              {/* Botón continuar para free_text, que no usa FeedbackPanel */}
+              {question.type === "free_text" && feedback && (
+                <button
+                  onClick={handleContinue}
+                  className="w-full mt-6 bg-[#2B7FE8] text-white font-black py-5 rounded-2xl uppercase text-xs tracking-widest"
+                >
+                  Continuar Misión
+                </button>
+              )}
+            </>
+          )}
 
             {phase === "feedback" && feedback && (
               <FeedbackPanel 
@@ -377,7 +408,7 @@ function FeedbackPanel({ feedback, hearts, question, onContinue, onRefilled, onC
   const { isCorrect, explanation, correctAnswer } = feedback;
 
   const panelStyle = {
-    backgroundColor: isCorrect ? 'var(--panel-feedback-bg)' : 'var(--panel-feedback-bg)',
+    backgroundColor: isCorrect ? 'var(--correct-bg)' : 'var(--incorrect-bg)',
     borderColor: isCorrect ? 'var(--correct)' : 'var(--incorrect)',
     color: 'var(--text-primary)'
   };
@@ -411,7 +442,7 @@ function FeedbackPanel({ feedback, hearts, question, onContinue, onRefilled, onC
             Protocolo Correcto:
           </p>
           <div className="text-lg font-black italic" style={{ color: 'var(--text-primary)' }}>
-             {String(correctAnswer)}
+             {formatCorrectAnswer(correctAnswer, question.type)}
           </div>
         </div>
       )}

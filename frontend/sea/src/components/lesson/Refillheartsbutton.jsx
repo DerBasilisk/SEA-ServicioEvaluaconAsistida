@@ -85,7 +85,7 @@ export default function RefillHeartsButton({ onRefilled }) {
       {/* Mensajes de Estado */}
       <div className="h-4 flex items-center justify-center">
         {!canAfford && !error && (
-          <div className="flex items-center gap-1.5 text-rose-400/80 animate-in fade-in">
+          <div className="flex items-center gap-1.5 text-[var(--incorrect)] animate-in fade-in">
             <AlertCircle size={12} />
             <p className="text-[10px] font-black uppercase tracking-widest">
               Gemas insuficientes ({currentGems}/{COST})

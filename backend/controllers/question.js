@@ -1,5 +1,20 @@
 const { Question, Lesson } = require("../models");
-const { generateQuestions } = require("../services/ai.service");
+const { generateQuestions, evaluateOpenResponse  } = require("../services/ai.service");
+
+const evaluateOpen = async (req, res) => {
+  try {
+    const { prompt, userAnswer, evaluationCriteria, maxScore } = req.body;
+
+    if (!prompt || !userAnswer) {
+      return res.status(400).json({ ok: false, message: "Faltan campos requeridos" });
+    }
+
+    const result = await evaluateOpenResponse({ prompt, userAnswer, evaluationCriteria, maxScore });
+    res.json({ ok: true, data: result });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
 
 // GET /api/questions?lesson=:lessonId  (admin)
 const getQuestions = async (req, res) => {
@@ -176,4 +191,5 @@ module.exports = {
   deleteQuestion,
   reviewQuestion,
   generateWithAI,
+  evaluateOpen,
 };
