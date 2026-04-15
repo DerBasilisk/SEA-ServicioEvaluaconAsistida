@@ -54,7 +54,7 @@ async function generateQuestions({
   topicHint,
   difficulty = "easy",
   count = 4,
-  allowedTypes = ["multiple_choice", "true_false", "fill_blank", "match_pairs"]
+  allowedTypes = ["multiple_choice", "true_false", "fill_blank", "match_pairs", "sentence_builder", "free_text", "typing"]
 }) {
 
   const prompt = `Eres un profesor experto creando preguntas para simulador de exámenes.
@@ -85,6 +85,11 @@ Reglas por tipo:
 - true_false → correctBoolean
 - fill_blank → correctAnswers: array
 - match_pairs → pairs con right ÚNICOS
+- sentence_builder → items en orden correcto
+- free_text → no hay respuestas correctas, se evalúa con IA después
+- typing: "prompt" debe ser la instrucción (ej: "Transcribe el siguiente fragmento"), "typingText" debe ser el texto corto a escribir (máx ~150 caracteres), No necesita "options" ni "correctAnswer"
+
+¡IMPORTANTE! Si el tema es muy específico y no da para 4 preguntas distintas, inventa un contexto o ejemplo relacionado para crear variedad. Por ejemplo, si la lección es sobre "La fotosíntesis en plantas acuáticas", puedes crear preguntas sobre "¿Qué pigmento es responsable de la fotosíntesis?" o "¿Cómo afecta la luz a la fotosíntesis en el agua?" para diversificar.
 
 ¡Nunca generes match_pairs con valores repetidos en la columna derecha!
 

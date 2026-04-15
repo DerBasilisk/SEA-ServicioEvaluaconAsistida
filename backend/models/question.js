@@ -43,6 +43,7 @@ const questionSchema = new mongoose.Schema(
         "match_pairs",      // Relacionar columna A con columna B
         "sentence_builder", // Crear oraciones
         "free_text",
+        "typing",
       ],
     },
 
@@ -81,6 +82,10 @@ const questionSchema = new mongoose.Schema(
     },
 
     // ── Respuestas según tipo ─────────────────────────────────
+    typingText: {
+      type: String,
+      default: "",
+    },
 
     // Opcional en questionSchema
     unit: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit' },
@@ -228,6 +233,14 @@ questionSchema.pre("validate", function () {
         throw new Error("match_pairs necesita al menos 2 pares");
       }
       break;
+    case "typing": {
+      const target = question.typingText || "";
+      const { typed = "", accuracy = 0 } = answer; 
+      
+      const ACCURACY_THRESHOLD = 90;
+      isCorrect = typed.trim() === target.trim() || accuracy >= ACCURACY_THRESHOLD;
+      break;
+    }
   }
   
 });

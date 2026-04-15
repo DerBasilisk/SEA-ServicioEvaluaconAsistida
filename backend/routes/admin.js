@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const { verificarToken } = require("../middlewares/auth.middleware");
-const { isAdmin } = require("../middlewares/admin.middleware");
+const { isAdmin, isSuperAdmin } = require("../middlewares/admin.middleware");
 const ctrl = require("../controllers/admin");
 
 router.use(verificarToken, isAdmin);
@@ -15,6 +15,7 @@ router.get("/stats", ctrl.getStats);
 router.get("/users", ctrl.getUsers);
 router.get("/users/:id/progress", ctrl.getUserProgress);
 router.put("/users/:id", ctrl.updateUser);
+router.put("/users/:id/role", isSuperAdmin, ctrl.updateUserRole);
 router.put("/users/:id/ban", ctrl.banUser);
 router.delete("/users/:id", ctrl.deleteUser);
 

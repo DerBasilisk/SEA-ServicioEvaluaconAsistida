@@ -1,6 +1,7 @@
 // src/pages/admin/UsersManagement.jsx
 import { useState, useEffect } from "react";
 import { Search, Edit, Ban, Trash2, Shield, UserCheck } from "lucide-react";
+import useAuthStore from "../../store/authStore";
 import api from "../../api/axios";
 import Avatar from "../../components/Avatar";
 
@@ -12,6 +13,7 @@ export default function UsersManagement() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const isSuperAdmin = useAuthStore(s => s.isSuperAdmin);
 
   const fetchUsers = async () => {
     try {
@@ -73,16 +75,23 @@ export default function UsersManagement() {
   const updateUser = async (e) => {
     e.preventDefault();
     try {
+      // Any admin can update profile fields
       await api.put(`/admin/users/${selectedUser._id}`, {
         displayName: selectedUser.displayName,
         email: selectedUser.email,
-        role: selectedUser.role,
-        isActive: selectedUser.isActive
+        isActive: selectedUser.isActive,
       });
+
+      if (isSuperAdmin()) {
+        await api.put(`/admin/users/${selectedUser._id}/role`, {
+          role: selectedUser.role,
+        });
+      }
+
       setShowEditModal(false);
       fetchUsers();
     } catch (err) {
-      alert("Error al actualizar usuario");
+      alert("Error al actualizar usuario: " + (err.response?.data?.message || "Error desconocido"));
     }
   };
 
@@ -143,11 +152,13 @@ export default function UsersManagement() {
               <td className="p-6 text-gray-300">{user.email}</td>
               <td className="p-6">
                 <span className={`px-4 py-1 text-xs font-medium rounded-2xl ${
-                  user.role === "admin" 
-                    ? "bg-violet-500/10 text-violet-400" 
+                  user.role === "superadmin"
+                    ? "bg-amber-500/10 text-amber-400"
+                    : user.role === "admin"
+                    ? "bg-violet-500/10 text-violet-400"
                     : "bg-gray-700 text-gray-300"
                 }`}>
-                  {user.role === "admin" ? "Administrador" : "Estudiante"}
+                  {user.role === "superadmin" ? "Superadmin" : user.role === "admin" ? "Administrador" : "Estudiante"}
                 </span>
               </td>
               <td className="p-6">
@@ -251,14 +262,22 @@ export default function UsersManagement() {
 
               <div>
                 <label className="text-gray-400 text-sm block mb-1">Rol</label>
-                <select
-                  value={selectedUser.role}
-                  onChange={(e) => setSelectedUser({...selectedUser, role: e.target.value})}
-                  className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white"
-                >
-                  <option value="student">Estudiante</option>
-                  <option value="admin">Administrador</option>
-                </select>
+                {isSuperAdmin() ? (
+                  <select
+                    value={selectedUser.role}
+                    onChange={(e) => setSelectedUser({ ...selectedUser, role: e.target.value })}
+                    className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white"
+                  >
+                    <option value="student">Estudiante</option>
+                    <option value="admin">Administrador</option>
+                    <option value="superadmin">Superadmin</option>
+                  </select>
+                ) : (
+                  <div className="w-full bg-gray-800/50 border border-gray-700 rounded-2xl px-4 py-3 text-gray-500 cursor-not-allowed">
+                    {selectedUser.role === "superadmin" ? "Superadmin" : selectedUser.role === "admin" ? "Administrador" : "Estudiante"}
+                    <span className="float-right text-xs text-gray-600">Solo superadmin puede cambiar esto</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">

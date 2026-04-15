@@ -44,12 +44,41 @@ const getUserProgress = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
-    const { role, isActive, displayName, email } = req.body;
+    const { isActive, displayName, email } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { ...(role && { role }), ...(isActive !== undefined && { isActive }), ...(displayName && { displayName }), ...(email && { email }) },
+      {
+        ...(isActive !== undefined && { isActive }),
+        ...(displayName && { displayName }),
+        ...(email && { email }),
+      },
       { new: true }
     ).select("-password");
+    if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+    res.json({ ok: true, data: user });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!["student", "admin", "superadmin"].includes(role)) {
+      return res.status(400).json({ ok: false, message: "Rol inválido" });
+    }
+
+    // Prevent a superadmin from accidentally demoting themselves
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({ ok: false, message: "No puedes cambiar tu propio rol" });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { role },
+      { new: true }
+    ).select("-password");
+
     if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
     res.json({ ok: true, data: user });
   } catch (err) {
@@ -560,8 +589,17 @@ const exportQuestions = async (req, res) => {
 };
 
 module.exports = {
-  getUsers, getUserProgress, updateUser, banUser, deleteUser,
-  getSubjects, createSubject, updateSubject, deleteSubject,
+  getUsers, 
+  getUserProgress, 
+  updateUser, 
+  updateUserRole,
+  banUser, 
+  deleteUser,
+
+  getSubjects, 
+  createSubject, 
+  updateSubject, 
+  deleteSubject, 
   
   // Unidades
   getAllUnits,      // ← Importante

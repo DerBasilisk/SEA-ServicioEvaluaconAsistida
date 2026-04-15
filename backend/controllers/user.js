@@ -44,7 +44,8 @@ const login = async (req, res) => {
     // Buscamos al usuario y poblamos sus logros de una vez
     const user = await User.findOne({ email })
       .select("+password")
-      .populate("achievements"); // <--- Importante aquí también
+      .populate("achievements")
+      .populate("favoriteSubjects");
 
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ ok: false, message: "Email o contraseña incorrectos" });
@@ -73,7 +74,7 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     // Nota: Asegúrate de que el middleware de auth use 'usuario' o 'user' consistentemente
-    const user = await User.findById(req.usuario._id).populate("achievements");
+    const user = await User.findById(req.usuario._id).populate("achievements").populate("favoriteSubjects");;
     const streak = await Streak.findOne({ user: req.usuario._id });
 
     // Recuperar corazones automáticamente
@@ -158,5 +159,45 @@ const changeDisplayName = async (req, res) => {
   }
 };
 
+const toggleFavoriteSubject = async (req, res) => {
+try {
+    const { subjectId } = req.body;
+    const userId = req.usuario._id;
 
-module.exports = { register, login, getMe, checkUsername, changeUsername, changeDisplayName };
+    // 1. Buscamos al usuario para ver si ya tiene la materia
+    const user = await User.findById(userId);
+    
+    // Verificamos si el ID ya existe en el array (convertimos a String para comparar)
+    const isFavorite = user.favoriteSubjects.some(id => id.toString() === subjectId);
+
+    let update;
+    if (isFavorite) {
+      // Si ya es favorita, la quitamos ($pull)
+      update = { $pull: { favoriteSubjects: subjectId } };
+    } else {
+      // Si no es favorita, la agregamos ($addToSet evita duplicados)
+      update = { $addToSet: { favoriteSubjects: subjectId } };
+    }
+
+    // 2. Actualizamos usando findByIdAndUpdate para evitar problemas de validación de otros campos
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      update,
+      { new: true, runValidators: false } // runValidators: false evita que salte el error del username
+    )
+    .populate("achievements")
+    .populate("favoriteSubjects");
+
+    res.json({ 
+      ok: true, 
+      data: updatedUser 
+    });
+
+  } catch (err) {
+    console.error("Error en toggleFavoriteSubject:", err);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+
+module.exports = { register, login, getMe, checkUsername, changeUsername, changeDisplayName, toggleFavoriteSubject, };

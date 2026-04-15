@@ -15,6 +15,7 @@ import SentenceBuilder from "../components/lesson/Sentencebuilder";
 import ResultScreen from "../components/lesson/ResultScreen";
 import NoHeartsPanel from "../components/lesson/Noheartspanel";
 import FreeText from "../components/lesson/FreeText";
+import Typing from "../components/lesson/Typing";
 
 const LESSON_CSS = `
   .lesson-container { 
@@ -91,6 +92,7 @@ const QUESTION_COMPONENTS = {
   match_pairs: MatchPairs,
   sentence_builder: SentenceBuilder,
   free_text: FreeText,
+  typing: Typing,
 };
 
 export default function Lesson() {

@@ -70,7 +70,7 @@ export default function SubjectMap() {
   }, [slug, navigate, fetchMe]);
 
   if (loading) return (
-    <div className="min-h-screen bg-[var(--bg-gradient)] flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--card-bg)] flex items-center justify-center">
       <div className="animate-pulse text-[var(--text-primary)] font-black italic tracking-widest uppercase text-[10px]">
         Generando Nexo de Aprendizaje...
       </div>

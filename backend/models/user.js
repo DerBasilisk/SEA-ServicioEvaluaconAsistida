@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["student", "admin"],
+      enum: ["student", "admin","superadmin"],
       default: "student",
     },
     league: {
@@ -95,6 +95,14 @@ const userSchema = new mongoose.Schema(
       },
     ],
 
+    // Temas favoritos o en uso
+    favoriteSubjects: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Subject",
+    },
+  ],
+
     // ── Preferencias ─────────────────────────────────────────
     dailyGoal: {
       type: Number,
@@ -104,12 +112,6 @@ const userSchema = new mongoose.Schema(
     notifications: {
       email: { type: Boolean, default: true },
       push: { type: Boolean, default: true },
-    },
-
-    role: {
-      type: String,
-      enum: ["student", "admin"],
-      default: "student",
     },
     isActive: {
       type: Boolean,

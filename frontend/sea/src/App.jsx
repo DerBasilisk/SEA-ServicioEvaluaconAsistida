@@ -27,6 +27,7 @@ import Duel from "./pages/Duel";
 import League from "./pages/League";
 import Settings from "./pages/Settings";
 import Frontal from "./pages/Frontal";
+import SubjectCatalog from "./pages/SubjectCatalog";
 
 // Pages del Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -66,6 +67,7 @@ function App() {
 
         {/* Rutas Protegidas para usuarios normales */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/subject-catalog" element={<ProtectedRoute><SubjectCatalog /></ProtectedRoute>} />
         <Route path="/subject/:slug" element={<ProtectedRoute><SubjectMap /></ProtectedRoute>} />
         <Route path="/lesson/:id" element={<ProtectedRoute><Lesson /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

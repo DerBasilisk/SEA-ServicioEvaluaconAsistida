@@ -5,114 +5,24 @@ import api from "../api/axios";
 const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem("sea_token") || null,
-  loading: true, // 👈 CRUCIAL: Empezar en true
+  loading: true, 
   error: null,
 
+  // 👇 1. ESTA ES LA FUNCIÓN QUE TE FALTABA
+  setUser: (userData) => set({ user: userData }),
 
+  // ==================== CARGAR USUARIO ====================
+  // (Dejé la versión más completa de tu fetchMe y borré la duplicada)
   fetchMe: async () => {
     const token = localStorage.getItem("sea_token");
-    
-    // Si ni siquiera hay token, no perdemos tiempo
     if (!token) {
       set({ user: null, loading: false });
       return;
     }
 
-    try {
-      // No seteamos loading aquí porque ya empezó en true
-      const { data } = await api.get("/users/me");
-      set({ user: data.data || data, loading: false });
-    } catch (err) {
-      localStorage.removeItem("sea_token");
-      set({ user: null, token: null, loading: false });
-    }
-  },
-
-  // ==================== LOGIN NORMAL ====================
-  login: async (email, password) => {
-    set({ loading: true, error: null });
-    try {
-      const res = await api.post("/users/login", { email, password });
-      console.log("Estructura que llega del server:", res.data);
-      const token = res.data.token; // El token está en la raíz de res.data
-      const user = res.data.data;
-
-      console.log("Token encontrado:", token);
-      console.log("Usuario encontrado:", user);
-
-      if (!token) {
-        throw new Error("No se recibió un token del servidor");
-      }
-
-      localStorage.setItem("sea_token", token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      set({ user, token, loading: false });
-      return { ok: true, isAdmin: user?.role === "admin" };
-
-    } catch (err) {
-      set({ 
-      loading: false, // 👈 Importante: Apagamos el loading para que el botón se reactive
-      error: err.response?.data?.message || "Error al iniciar sesión",
-      user: null 
-      });
-      throw err;
-    }
-  },
-
-  // ==================== REGISTRO ====================
-  register: async (username, email, password) => {
-    set({ loading: true, error: null });
-    try {
-      // Ajusta la ruta "/users/register" según tu API real
-      const { data } = await api.post("/users/register", { 
-        username, 
-        email, 
-        password 
-      });
-
-      const { token, user } = data.data || data;
-
-      // Guardamos sesión inmediatamente tras el registro
-      localStorage.setItem("sea_token", token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      set({ user, token, loading: false });
-
-      return { ok: true };
-    } catch (err) {
-      const msg = err.response?.data?.message || "Error al crear la cuenta";
-      set({ error: msg, loading: false });
-      return { ok: false, message: msg };
-    }
-  },
-
-  // ==================== LOGIN CON TOKEN (OAuth, etc) ====================
-  loginWithToken: async (token) => {
-    if (!token) return;
-
-    localStorage.setItem("sea_token", token);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    set({ token });
-
-    try {
-      const { data } = await api.get("/users/me");
-      set({ user: data.data || data });
-      return { ok: true, isAdmin: (data.data || data).role === "admin" };
-    } catch (err) {
-      console.error("Error cargando usuario con token", err);
-      set({ user: null });
-      return { ok: false };
-    }
-  },
-
-  // ==================== CARGAR USUARIO (al refrescar página) ====================
-  fetchMe: async () => {
-    const token = localStorage.getItem("sea_token");
-    if (!token) return;
-
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    set({ loading: true });
+    // No seteamos loading en true aquí si ya arranca en true por defecto,
+    // pero si lo llamas manualmente después, es buena idea.
 
     try {
       const { data } = await api.get("/users/me");
@@ -125,6 +35,69 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
+  // ==================== LOGIN NORMAL ====================
+  login: async (email, password) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await api.post("/users/login", { email, password });
+      const token = res.data.token; 
+      const user = res.data.data;
+
+      if (!token) throw new Error("No se recibió un token del servidor");
+
+      localStorage.setItem("sea_token", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      set({ user, token, loading: false });
+      return { ok: true, isAdmin: ["admin", "superadmin"].includes(user?.role) };
+    } catch (err) {
+      set({ 
+        loading: false, 
+        error: err.response?.data?.message || "Error al iniciar sesión",
+        user: null 
+      });
+      throw err;
+    }
+  },
+
+  // ==================== REGISTRO ====================
+  register: async (username, email, password) => {
+    set({ loading: true, error: null });
+    try {
+      const { data } = await api.post("/users/register", { username, email, password });
+      const { token, user } = data.data || data;
+
+      localStorage.setItem("sea_token", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      set({ user, token, loading: false });
+      return { ok: true };
+    } catch (err) {
+      const msg = err.response?.data?.message || "Error al crear la cuenta";
+      set({ error: msg, loading: false });
+      return { ok: false, message: msg };
+    }
+  },
+
+  // ==================== LOGIN CON TOKEN ====================
+  loginWithToken: async (token) => {
+    if (!token) return;
+
+    localStorage.setItem("sea_token", token);
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    set({ token });
+
+    try {
+      const { data } = await api.get("/users/me");
+      set({ user: data.data || data });
+      return { ok: true, isAdmin: ["admin", "superadmin"].includes((data.data || data).role) };
+    } catch (err) {
+      console.error("Error cargando usuario con token", err);
+      set({ user: null });
+      return { ok: false };
+    }
+  },
+
   logout: () => {
     localStorage.removeItem("sea_token");
     delete api.defaults.headers.common["Authorization"];
@@ -134,14 +107,9 @@ const useAuthStore = create((set, get) => ({
   clearError: () => set({ error: null }),
 
   // ==================== HELPERS ====================
-  isAdmin: () => {
-    return get().user?.role === "admin";
-  },
-
-  isAuthenticated: () => {
-    return !!get().user;
-  },
-
+  isAdmin: () => ["admin", "superadmin"].includes(get().user?.role),
+  isSuperAdmin: () => get().user?.role === "superadmin",
+  isAuthenticated: () => !!get().user,
 }));
 
 export default useAuthStore;

@@ -1,6 +1,6 @@
 // frontend/sea/src/components/admin/QuestionModal.jsx
 import { useState, useEffect } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Keyboard } from "lucide-react";
 
 export default function QuestionModal({
   isOpen,
@@ -25,15 +25,17 @@ export default function QuestionModal({
     tags: "",
     isReviewed: false,
     isActive: true,
+    // ── tipos existentes ──
     options: [{ text: "", isCorrect: false, explanation: "" }],
     correctBoolean: true,
     correctAnswers: [""],
     items: [""],
     pairs: [{ left: "", right: "" }],
     wordBank: [""],
+    // ── typing ──────────
+    typingText: "",
   });
 
-  // Cargar datos al editar o precargar lección seleccionada
   useEffect(() => {
     if (question) {
       setForm({
@@ -54,6 +56,7 @@ export default function QuestionModal({
         items: question.items?.length ? question.items : [""],
         pairs: question.pairs?.length ? question.pairs : [{ left: "", right: "" }],
         wordBank: question.wordBank?.length ? question.wordBank : [""],
+        typingText: question.typingText || "",
       });
     } else {
       setForm({
@@ -74,6 +77,7 @@ export default function QuestionModal({
         items: [""],
         pairs: [{ left: "", right: "" }],
         wordBank: [""],
+        typingText: "",
       });
     }
   }, [question, selectedLessonId]);
@@ -83,7 +87,6 @@ export default function QuestionModal({
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // Manejo de arrays simples
   const handleArrayChange = (field, index, value) => {
     setForm(prev => {
       const newArr = [...prev[field]];
@@ -103,7 +106,6 @@ export default function QuestionModal({
     }));
   };
 
-  // Manejo específico para options (multiple_choice)
   const handleOptionChange = (index, key, value) => {
     setForm(prev => {
       const newOptions = [...prev.options];
@@ -135,26 +137,36 @@ export default function QuestionModal({
       return;
     }
 
+    // Validación específica para typing
+    if (form.type === "typing" && !form.typingText.trim()) {
+      alert("El texto a escribir es obligatorio para preguntas de mecanografía");
+      return;
+    }
+
     const payload = {
       ...form,
       tags: form.tags.split(",").map(t => t.trim()).filter(Boolean),
       xpValue: Number(form.xpValue),
     };
 
-    // Limpiar campos según tipo
     const type = form.type;
-    if (type !== "multiple_choice") delete payload.options;
-    if (type !== "true_false") delete payload.correctBoolean;
+    if (type !== "multiple_choice")  delete payload.options;
+    if (type !== "true_false")       delete payload.correctBoolean;
     if (type !== "fill_blank" && type !== "sentence_builder") delete payload.correctAnswers;
-    if (type !== "order_items") delete payload.items;
-    if (type !== "match_pairs") delete payload.pairs;
+    if (type !== "order_items")      delete payload.items;
+    if (type !== "match_pairs")      delete payload.pairs;
     if (type !== "sentence_builder") delete payload.wordBank;
-    if (type !== "free_text") { delete payload.evaluationCriteria; delete payload.maxScore; delete payload.isCodeExercise; }
+    if (type !== "free_text")        { delete payload.evaluationCriteria; delete payload.maxScore; delete payload.isCodeExercise; }
+    if (type !== "typing")           delete payload.typingText; // ← limpiar si no aplica
 
     onSave(payload);
   };
 
   if (!isOpen) return null;
+
+  // Conteo de caracteres para typing
+  const typingCharCount = form.typingText.length;
+  const TYPING_MAX = 300;
 
   return (
     <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
@@ -169,7 +181,6 @@ export default function QuestionModal({
 
         <form onSubmit={handleSubmit} className="p-8 overflow-y-auto max-h-[calc(95vh-80px)] space-y-8">
 
-          {/* Selector Jerárquico - Solo al crear */}
           {!question && (
             <div className="bg-gray-800 rounded-3xl p-6">
               <label className="text-gray-400 text-sm font-medium block mb-3">Lección <span className="text-red-400">*</span></label>
@@ -200,6 +211,7 @@ export default function QuestionModal({
                 <option value="match_pairs">Relacionar Columnas</option>
                 <option value="sentence_builder">Construir Oración</option>
                 <option value="free_text">Texto Libre (evaluado por IA)</option>
+                <option value="typing">Mecanografía ⌨️</option>
               </select>
             </div>
 
@@ -215,20 +227,30 @@ export default function QuestionModal({
 
           {/* Enunciado */}
           <div>
-            <label className="text-gray-400 text-sm font-medium ml-1">Enunciado de la Pregunta</label>
+            <label className="text-gray-400 text-sm font-medium ml-1">
+              {form.type === "typing"
+                ? "Instrucción para el alumno"
+                : "Enunciado de la Pregunta"}
+            </label>
             <textarea
               name="prompt"
               value={form.prompt}
               onChange={handleChange}
               required
-              rows={4}
+              rows={3}
               className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white resize-none"
-              placeholder="Ej: ¿Cuál es el resultado de 14 + 25?"
+              placeholder={
+                form.type === "typing"
+                  ? "Ej: Transcribe el siguiente fragmento con precisión"
+                  : "Ej: ¿Cuál es el resultado de 14 + 25?"
+              }
             />
           </div>
 
           {/* Campos dinámicos según tipo */}
           <div className="bg-gray-950/50 border border-gray-800 rounded-3xl p-6">
+
+            {/* ── MULTIPLE CHOICE ── */}
             {form.type === "multiple_choice" && (
               <div className="space-y-4">
                 <h3 className="font-semibold text-white mb-4">Opciones</h3>
@@ -257,6 +279,7 @@ export default function QuestionModal({
               </div>
             )}
 
+            {/* ── TRUE / FALSE ── */}
             {form.type === "true_false" && (
               <div className="space-y-4">
                 <label className="text-white font-medium block">Respuesta Correcta</label>
@@ -276,6 +299,7 @@ export default function QuestionModal({
               </div>
             )}
 
+            {/* ── FILL BLANK ── */}
             {form.type === "fill_blank" && (
               <div className="space-y-3">
                 <label className="text-white font-medium block">
@@ -286,7 +310,7 @@ export default function QuestionModal({
                   <div key={i} className="flex gap-3">
                     <input type="text" value={ans}
                       onChange={(e) => handleArrayChange("correctAnswers", i, e.target.value)}
-                      placeholder={`Variante ${i + 1} (ej: "39", "treinta y nueve")`}
+                      placeholder={`Variante ${i + 1}`}
                       className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white" />
                     <button type="button" onClick={() => removeArrayItem("correctAnswers", i)}
                       className="text-red-400 hover:text-red-500 p-3"><Trash2 size={18} /></button>
@@ -299,6 +323,7 @@ export default function QuestionModal({
               </div>
             )}
 
+            {/* ── ORDER ITEMS ── */}
             {form.type === "order_items" && (
               <div className="space-y-3">
                 <label className="text-white font-medium block">
@@ -323,6 +348,7 @@ export default function QuestionModal({
               </div>
             )}
 
+            {/* ── MATCH PAIRS ── */}
             {form.type === "match_pairs" && (
               <div className="space-y-3">
                 <label className="text-white font-medium block">Pares a relacionar</label>
@@ -358,9 +384,9 @@ export default function QuestionModal({
               </div>
             )}
 
+            {/* ── SENTENCE BUILDER ── */}
             {form.type === "sentence_builder" && (
               <div className="space-y-6">
-                {/* Respuesta correcta */}
                 <div className="space-y-3">
                   <label className="text-white font-medium block">
                     Orden correcto de palabras
@@ -383,7 +409,6 @@ export default function QuestionModal({
                   </button>
                 </div>
 
-                {/* Word Bank */}
                 <div className="space-y-3 border-t border-gray-800 pt-6">
                   <label className="text-white font-medium block">
                     Banco de palabras
@@ -407,6 +432,7 @@ export default function QuestionModal({
               </div>
             )}
 
+            {/* ── FREE TEXT ── */}
             {form.type === "free_text" && (
               <div className="space-y-6">
                 <div>
@@ -420,7 +446,7 @@ export default function QuestionModal({
                     onChange={handleChange}
                     rows={4}
                     className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white resize-none"
-                    placeholder="Ej: Evalúa si el alumno menciona los conceptos clave: fotosíntesis, clorofila, luz solar. Considera correcta cualquier respuesta que mencione al menos 2 de 3 conceptos..."
+                    placeholder="Ej: Evalúa si el alumno menciona los conceptos clave..."
                   />
                 </div>
 
@@ -446,9 +472,77 @@ export default function QuestionModal({
                 </div>
               </div>
             )}
+
+            {/* ── TYPING ── */}
+            {form.type === "typing" && (
+              <div className="space-y-5">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="bg-blue-500/10 p-2.5 rounded-xl">
+                    <Keyboard size={18} className="text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Texto a transcribir</h3>
+                    <p className="text-gray-400 text-xs">El alumno deberá escribir este texto exactamente</p>
+                  </div>
+                </div>
+
+                {/* Textarea */}
+                <div className="relative">
+                  <textarea
+                    name="typingText"
+                    value={form.typingText}
+                    onChange={handleChange}
+                    rows={5}
+                    maxLength={TYPING_MAX}
+                    required={form.type === "typing"}
+                    className="w-full bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-2xl px-5 py-4 text-white resize-none font-mono text-sm leading-relaxed outline-none transition-colors"
+                    placeholder="Ej: La fotosíntesis es el proceso por el cual las plantas convierten la luz solar en energía química."
+                  />
+                  {/* Char counter */}
+                  <span className={`absolute bottom-3 right-4 text-xs font-bold tabular-nums ${
+                    typingCharCount > TYPING_MAX * 0.9 ? "text-amber-400" : "text-gray-600"
+                  }`}>
+                    {typingCharCount}/{TYPING_MAX}
+                  </span>
+                </div>
+
+                {/* Umbral de precisión */}
+                <div>
+                  <label className="text-gray-400 text-sm font-medium ml-1 block mb-1">
+                    Umbral de precisión para aprobar
+                    <span className="text-blue-400 font-bold ml-2">{form.accuracyThreshold ?? 90}%</span>
+                  </label>
+                  <input
+                    type="range"
+                    name="accuracyThreshold"
+                    min={70}
+                    max={100}
+                    step={5}
+                    value={form.accuracyThreshold ?? 90}
+                    onChange={handleChange}
+                    className="w-full accent-blue-500"
+                  />
+                  <div className="flex justify-between text-gray-600 text-xs mt-1">
+                    <span>70% (flexible)</span>
+                    <span>100% (perfecto)</span>
+                  </div>
+                </div>
+
+                {/* Preview */}
+                {form.typingText && (
+                  <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4">
+                    <p className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mb-2">Vista previa del alumno</p>
+                    <p className="text-white font-mono text-sm leading-relaxed opacity-60 tracking-wide">
+                      {form.typingText}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Información adicional */}
+          {/* Info adicional */}
           <div className="grid grid-cols-1 gap-6">
             <div>
               <label className="text-gray-400 text-sm font-medium ml-1">Pista (Hint)</label>
@@ -482,8 +576,8 @@ export default function QuestionModal({
               name="tags"
               value={form.tags}
               onChange={handleChange}
-              className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-white"
-              placeholder="matemáticas, suma, primaria"
+              className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-4 text-white"
+              placeholder="mecanografía, velocidad, transcripción"
             />
           </div>
 
