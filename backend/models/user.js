@@ -189,6 +189,20 @@ userSchema.methods.checkHeartRefill = function () {
   return false;
 };
 
+userSchema.virtual("currentStreak").get(function () {
+  if (!this.streak.lastActivityDate) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const lastDay = new Date(this.streak.lastActivityDate);
+  lastDay.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.floor((today - lastDay) / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 1) return this.streak.current; // hoy o ayer, sigue viva
+  return 0; // racha rota
+});
+
 userSchema.methods.updateStreak = function () {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -197,16 +211,16 @@ userSchema.methods.updateStreak = function () {
     : null;
 
   if (lastActivity) {
-    const lastDay = new Date(lastActivity.getFullYear(), lastActivity.getMonth(), lastActivity.getDate());
+    const lastDay = new Date(
+      lastActivity.getFullYear(), lastActivity.getMonth(), lastActivity.getDate()
+    );
     const diffDays = Math.floor((today - lastDay) / (1000 * 60 * 60 * 24));
 
-    if (diffDays === 0) return; // ya hizo actividad hoy
+    if (diffDays === 0) return;
     if (diffDays === 1) {
-      // día consecutivo
       this.streak.current += 1;
     } else {
-      // rompió la racha
-      this.streak.current = 1;
+      this.streak.current = 1; // ya existía este caso ✓
     }
   } else {
     this.streak.current = 1;

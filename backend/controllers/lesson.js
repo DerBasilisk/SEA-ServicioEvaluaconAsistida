@@ -336,6 +336,52 @@ const answerQuestion = async (req, res) => {
         });
       }
 
+      case "typing": {
+        const userTyped = String(answer).trim();
+        const target = String(question.typingText ?? question.correctAnswer ?? "").trim();
+        
+        // Comparación exacta
+        isCorrect = userTyped === target;
+        correctAnswer = target;
+
+        // Guardar stats si vienen
+        const { typingStats } = req.body;
+        await UserProgress.findOneAndUpdate(
+          { user: req.usuario._id, lesson: req.params.id },
+          {
+            $push: {
+              "currentSession.attempts": {
+                question: questionId,
+                isCorrect,
+                answeredAt: new Date(),
+                ...(typingStats && { typingStats }),
+              },
+            },
+          }
+        );
+
+        // Perder corazón si falló
+        let heartsRemaining = null;
+        if (!isCorrect) {
+          const user = await User.findById(req.usuario._id);
+          heartsRemaining = user.loseHeart();
+          await user.save();
+        }
+
+        return res.json({
+          ok: true,
+          data: {
+            isCorrect,
+            correctAnswer,
+            explanation: question.explanation,
+            heartsRemaining,
+            xpEarned: isCorrect
+              ? (hintUsed ? Math.floor(question.xpValue * 0.5) : question.xpValue)
+              : 0,
+          },
+        });
+      }
+
       default:
         return res.status(400).json({ ok: false, message: "Tipo de pregunta no soportado" });
     }
@@ -417,11 +463,9 @@ const completeLesson = async (req, res) => {
 
     const user = await User.findById(req.usuario._id);
     const { leveledUp, newLevel } = user.addXP(xpEarned);
+    user.updateStreak();           // primero
+    user.addXP(xpEarned);
     user.gems += isPerfect ? (lesson.gemsReward || 0) + 5 : (lesson.gemsReward || 0);
-    user.hearts.current = Math.min(5, user.hearts.current);
-    await user.save();
-
-    user.updateStreak();
     await user.save();
 
     // Sincronizar con el modelo Streak separado
@@ -458,7 +502,7 @@ const completeLesson = async (req, res) => {
       data: {
         score, isPerfect, xpEarned, leveledUp,
         newLevel: leveledUp ? newLevel : null,
-        newStreak: user.streak.current,
+        newStreak: user.currentStreak,
         newAchievements,
         hearts: user.hearts.current,
         totalXP: user.xp,

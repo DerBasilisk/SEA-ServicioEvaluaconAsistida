@@ -5,6 +5,14 @@ const Streak = require("../models/streak");
 const generateToken = (id) =>
   jwt.sign({ _id: id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
+const getActiveStreak = (streak) => {
+  if (!streak?.lastActivityDate) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const last  = new Date(streak.lastActivityDate); last.setHours(0,0,0,0);
+  const diff  = Math.floor((today - last) / 86400000);
+  return diff <= 1 ? streak.current : 0;
+};
+
 // POST /api/users/register
 const register = async (req, res) => {
   try {
@@ -41,6 +49,9 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    const changed = user.checkHeartRefill();
+    if (changed) await user.save();
+
     // Buscamos al usuario y poblamos sus logros de una vez
     const user = await User.findOne({ email })
       .select("+password")
@@ -61,7 +72,11 @@ const login = async (req, res) => {
       data: {
         ...user.toJSON(), // Enviamos todo el objeto (ya poblado)
         password: undefined, // Por seguridad
-        streak: { current: streak?.current || 0, longest: streak?.longest || 0 }
+        streak: {
+          current: getActiveStreak(streak),
+          longest: streak?.longest || 0,
+          lastActivityDate: streak?.lastActivityDate || null,
+        }
       },
       token,
     });
@@ -74,20 +89,23 @@ const login = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     // Nota: Asegúrate de que el middleware de auth use 'usuario' o 'user' consistentemente
-    const user = await User.findById(req.usuario._id).populate("achievements").populate("favoriteSubjects");;
-    const streak = await Streak.findOne({ user: req.usuario._id });
+    const user = await User.findById(req.usuario._id).populate("achievements").populate("favoriteSubjects");
+    if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
 
-    // Recuperar corazones automáticamente
     const changed = user.checkHeartRefill();
     if (changed) await user.save();
 
-    if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+    const streak = await Streak.findOne({ user: req.usuario._id });
 
     res.json({
       ok: true,
       data: {
         ...user.toJSON(),
-        streak: { current: streak?.current || 0, longest: streak?.longest || 0 },
+        streak: {
+          current: getActiveStreak(streak),
+          longest: streak?.longest || 0,
+          lastActivityDate: streak?.lastActivityDate || null,
+        }
       },
     });
   } catch (err) {

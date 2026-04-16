@@ -156,18 +156,29 @@ export default function Lesson() {
   const handleAnswer = useCallback(async (answer) => {
     const question = questions[currentIndex];
     try {
+      // Typing component returns a stats object — extract just the string
+      const normalizedAnswer =
+        question.type === "typing" && answer?.typed !== undefined
+          ? answer.typed
+          : answer;
+
+      const typingMeta =
+        question.type === "typing" && answer?.typed !== undefined
+          ? { wpm: answer.wpm, accuracy: answer.accuracy, timeMs: answer.timeMs }
+          : undefined;
+
       const { data } = await api.post(`/lessons/${id}/answer`, {
         questionId: question._id,
-        answer,
+        answer: normalizedAnswer,
         hintUsed,
+        ...(typingMeta && { typingStats: typingMeta }),
       });
 
       const remaining = data.data.heartsRemaining;
       if (!data.data.isCorrect && remaining !== null) setHearts(remaining);
-      
+
       setFeedback(data.data);
 
-      // free_text maneja su propio feedback → no cambiar phase
       if (question.type !== "free_text") {
         setPhase("feedback");
       }
