@@ -49,10 +49,7 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const changed = user.checkHeartRefill();
-    if (changed) await user.save();
-
-    // Buscamos al usuario y poblamos sus logros de una vez
+    // ✅ Fetch user first
     const user = await User.findOne({ email })
       .select("+password")
       .populate("achievements")
@@ -62,16 +59,18 @@ const login = async (req, res) => {
       return res.status(401).json({ ok: false, message: "Email o contraseña incorrectos" });
     }
 
-    // Buscamos la racha para enviarla en el login
-    const streak = await Streak.findOne({ user: user._id });
+    // ✅ Now safe to call methods on user
+    const changed = user.checkHeartRefill();
+    if (changed) await user.save();
 
+    const streak = await Streak.findOne({ user: user._id });
     const token = generateToken(user._id);
 
     res.json({
       ok: true,
       data: {
-        ...user.toJSON(), // Enviamos todo el objeto (ya poblado)
-        password: undefined, // Por seguridad
+        ...user.toJSON(),
+        password: undefined,
         streak: {
           current: getActiveStreak(streak),
           longest: streak?.longest || 0,

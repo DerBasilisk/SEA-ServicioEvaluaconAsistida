@@ -6,6 +6,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GEMINI_MODEL = "gemini-2.0-flash";
 
 const cleanJsonResponse = (text) => 
   text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
@@ -35,14 +36,18 @@ async function callGroq(prompt) {
 
 async function callAI(prompt) {
   try {
-    return await callGroq(prompt);
+    // ✅ Gemini como principal
+    const result = await gemini.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+    });
+    return result.text;
   } catch (error) {
-    console.warn("⚠️ Groq falló → fallback a Gemini");
-    const model = gemini.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+    console.warn("⚠️ Gemini falló → fallback a Groq:", error.message);
+    return await callGroq(prompt); // Groq como backup
   }
 }
+
 
 /* =============================================
    1. GENERAR PREGUNTAS (Principal)
