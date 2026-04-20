@@ -44,6 +44,7 @@ const questionSchema = new mongoose.Schema(
         "sentence_builder", // Crear oraciones
         "free_text",
         "typing",
+        "code_python",
       ],
     },
 
@@ -86,6 +87,19 @@ const questionSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+
+    evaluationCriteria: { type: String, default: "" },
+
+    maxScore: { type: Number, default: 10 },
+
+    isCodeExercise: { type: Boolean, default: false },
+
+    testCases: [{
+      description: String,
+      testType: { type: String, enum: ["stdout", "return"], default: "stdout" },
+      expectedOutput: String,
+      callCode: { type: String, default: "" },
+    }],
 
     // Opcional en questionSchema
     unit: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit' },
@@ -234,11 +248,18 @@ questionSchema.pre("validate", function () {
       }
       break;
     case "typing": {
-      const target = question.typingText || "";
-      const { typed = "", accuracy = 0 } = answer; 
-      
-      const ACCURACY_THRESHOLD = 90;
-      isCorrect = typed.trim() === target.trim() || accuracy >= ACCURACY_THRESHOLD;
+      if (!this.typingText || !this.typingText.trim()) {
+        throw new Error("typing necesita un typingText");
+      }
+      break;
+    }
+    case "code_python": {
+      if (!this.testCases || this.testCases.length === 0) {
+        throw new Error("code_python necesita al menos un caso de prueba");
+      }
+      if (this.testCases.some(tc => !tc.expectedOutput || !tc.expectedOutput.trim())) {
+        throw new Error("Todos los casos de prueba necesitan expectedOutput");
+      }
       break;
     }
   }

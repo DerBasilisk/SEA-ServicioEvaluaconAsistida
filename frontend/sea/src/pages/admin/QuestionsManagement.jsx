@@ -226,6 +226,7 @@ export default function QuestionsManagement() {
       fetchQuestions();        // Refrescar la lista
     } catch (err) {
       console.error(err);
+      console.error("Backend error:", err.response?.data);
       alert(err.response?.data?.message || "Error al guardar la pregunta");
     }
   };

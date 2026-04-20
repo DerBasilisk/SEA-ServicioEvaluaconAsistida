@@ -2,18 +2,18 @@ import { Trophy, Zap, Flame, RotateCcw, ArrowRight, Star, Award } from "lucide-r
 
 const RESULT_CSS = `
   .result-container {
-    background: linear-gradient(145deg, #0F2547 0%, #1A3A6D 100%);
+    background: var(--alt-gradient);
   }
   .stat-card {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-bg-small);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   .stat-card:hover {
     transform: translateY(-5px);
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--glass-bg);
+    border: 3px solid var(--glass-border);
   }
   .success-glow {
     box-shadow: 0 0 50px rgba(43, 127, 232, 0.2);
@@ -71,9 +71,9 @@ export default function ResultScreen({ result, lesson, onContinue, onRetry }) {
 
   // ── LÓGICA DE ÉXITO ──
   const getHeaderInfo = () => {
-    if (score === 100) return { emoji: "👑", msg: "PERFECCIÓN ABSOLUTA", color: "text-yellow-400", sub: "Sincronía del 100% con el Nodo" };
-    if (score >= 80) return { emoji: "🏆", msg: "MISIÓN CUMPLIDA", color: "text-emerald-400", sub: "Excelente rendimiento táctico" };
-    return { emoji: "⚡", msg: "ENTRENAMIENTO COMPLETADO", color: "text-blue-400", sub: "Datos recolectados con éxito" };
+    if (score === 100) return { emoji: "👑", msg: "PERFECCIÓN ABSOLUTA", color: "text-[--text-alternative-a]", sub: "Sincronía del 100% con el Nodo" };
+    if (score >= 80) return { emoji: "🏆", msg: "MISIÓN CUMPLIDA", color: "text-[--text-alternative-b]", sub: "Excelente rendimiento táctico" };
+    return { emoji: "⚡", msg: "ENTRENAMIENTO COMPLETADO", color: "text-[--text-alternative]", sub: "Datos recolectados con éxito" };
   };
 
   const header = getHeaderInfo();
@@ -145,7 +145,7 @@ export default function ResultScreen({ result, lesson, onContinue, onRetry }) {
         <div className="flex flex-col gap-4 pt-6">
           <button
             onClick={onContinue}
-            className="group w-full bg-[#2B7FE8] hover:bg-[#1A6FD8] text-white font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-3 uppercase italic tracking-widest text-sm"
+            className="group w-full bg-[--text-accent] hover:bg-[--text-accent-hover] text-[--text-quaternary] font-black py-5 rounded-2xl transition-all shadow-xl shadow-blue-500/20 active:scale-95 flex items-center justify-center gap-3 uppercase italic tracking-widest text-sm"
           >
             Siguiente Misión <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
           </button>

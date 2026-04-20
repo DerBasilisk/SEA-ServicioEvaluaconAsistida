@@ -290,17 +290,13 @@ const answerQuestion = async (req, res) => {
 
       // ==================== NUEVO: free_text ====================
       case "free_text": {
-        if (!question.evaluationCriteria) {
-          return res.status(400).json({ 
-            ok: false, 
-            message: "Esta pregunta no tiene criterios de evaluación definidos" 
-          });
-        }
+        const criteria = question.evaluationCriteria || 
+          "Evalúa si la respuesta es relevante, coherente y demuestra comprensión del tema.";
 
         const evaluation = await evaluateOpenResponse({
           prompt: question.prompt,
           userAnswer: String(answer).trim(),
-          evaluationCriteria: question.evaluationCriteria,
+          evaluationCriteria: criteria,
           maxScore: question.maxScore || 10,
           isCodeExercise: question.isCodeExercise || false
         });
@@ -373,6 +369,56 @@ const answerQuestion = async (req, res) => {
           data: {
             isCorrect,
             correctAnswer,
+            explanation: question.explanation,
+            heartsRemaining,
+            xpEarned: isCorrect
+              ? (hintUsed ? Math.floor(question.xpValue * 0.5) : question.xpValue)
+              : 0,
+          },
+        });
+      }
+
+      case "code_python": {
+        const { passed, passedCount, totalCount, code } = answer;
+
+        if (passed === undefined) {
+          return res.status(400).json({ ok: false, message: "El campo 'passed' es requerido" });
+        }
+
+        isCorrect = passed === true;
+
+        // Guardar intento con detalle del código
+        await UserProgress.findOneAndUpdate(
+          { user: req.usuario._id, lesson: req.params.id },
+          {
+            $push: {
+              "currentSession.attempts": {
+                question: questionId,
+                isCorrect,
+                answeredAt: new Date(),
+                codeSubmission: {
+                  code: code || "",
+                  passedCount: passedCount || 0,
+                  totalCount: totalCount || 0,
+                },
+              },
+            },
+          }
+        );
+
+        let heartsRemaining = null;
+        if (!isCorrect) {
+          const user = await User.findById(req.usuario._id);
+          heartsRemaining = user.loseHeart();
+          await user.save();
+        }
+
+        return res.json({
+          ok: true,
+          data: {
+            isCorrect,
+            passedCount: passedCount || 0,
+            totalCount: totalCount || 0,
             explanation: question.explanation,
             heartsRemaining,
             xpEarned: isCorrect

@@ -9,19 +9,19 @@ const TF_CSS = `
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
   .tf-card.selected-true {
-    background: white;
+    background: var(--true-bg);
     border-color: #10B981;
     box-shadow: 0 15px 30px rgba(16, 185, 129, 0.2);
     transform: translateY(-8px) scale(1.05);
   }
   .tf-card.selected-false {
-    background: white;
+    background: var(--false-bg);
     border-color: #EF4444;
     box-shadow: 0 15px 30px rgba(239, 68, 68, 0.2);
     transform: translateY(-8px) scale(1.05);
   }
   .tf-card:hover:not(.selected) {
-    background: rgba(255, 255, 255, 0.7);
+    background: var(--glass-bg-small);
     transform: translateY(-4px);
   }
   .sea-btn-confirm {
