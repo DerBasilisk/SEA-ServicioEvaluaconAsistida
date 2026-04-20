@@ -56,8 +56,9 @@ const startLesson = async (req, res) => {
   try {
     const lesson = await Lesson.findById(req.params.id).populate({
       path: "unit",
-      populate: { path: "subject" },
+      populate: { path: "subject" },   // ← Populate completo (necesario para aiPromptContext)
     });
+
     if (!lesson || !lesson.isActive) {
       return res.status(404).json({ ok: false, message: "Lección no encontrada" });
     }
@@ -83,11 +84,13 @@ const startLesson = async (req, res) => {
         subjectName: lesson.unit.subject.name,
         unitName: lesson.unit.name,
         lessonName: lesson.name,
-        topicHint: lesson.aiTopicHint,
+        topicHint: lesson.aiTopicHint || lesson.name,
         difficulty: adaptiveConfig.difficulty,
-        subjectContext: lesson.unit.subject.aiPromptContext,
+        subjectContext: lesson.unit.subject.aiPromptContext || "",   // ← parche aplicado
         count: adaptiveConfig.questionCount,
+        allowedTypes: ["multiple_choice", "true_false", "fill_blank", "match_pairs", "sentence_builder", "order_items"] // ← mejorado
       });
+
       const saved = await Question.insertMany(
         aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
       );
@@ -96,7 +99,6 @@ const startLesson = async (req, res) => {
       let allQuestions = await Question.find({ lesson: lesson._id, isActive: true, isReviewed: true }).select("-__v");
 
       if (allQuestions.length < adaptiveConfig.questionCount) {
-        // Generar las preguntas que faltan
         const needed = adaptiveConfig.questionCount - allQuestions.length;
         try {
           const aiQuestions = await generateQuestions({
@@ -105,20 +107,21 @@ const startLesson = async (req, res) => {
             lessonName: lesson.name,
             topicHint: lesson.aiTopicHint || lesson.name,
             difficulty: adaptiveConfig.difficulty,
-            subjectContext: lesson.unit.subject.aiPromptContext,
+            subjectContext: lesson.unit.subject.aiPromptContext || "",   // ← parche aplicado
             count: needed,
+            allowedTypes: ["multiple_choice", "true_false", "fill_blank", "match_pairs", "sentence_builder", "order_items"]
           });
+
           const saved = await Question.insertMany(
             aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
           );
           allQuestions = [...allQuestions, ...saved];
         } catch (err) {
           console.error("Error generando preguntas adicionales:", err.message);
-          // Si falla la IA, continuar con las que hay
         }
       }
 
-    questions = selectQuestions(allQuestions, adaptiveConfig.questionCount, adaptiveConfig.easyRatio, adaptiveConfig.hardRatio);
+      questions = selectQuestions(allQuestions, adaptiveConfig.questionCount, adaptiveConfig.easyRatio, adaptiveConfig.hardRatio);
     }
 
     if (questions.length === 0) {
@@ -129,6 +132,7 @@ const startLesson = async (req, res) => {
     if (user.hearts.current === 0) {
       return res.status(403).json({ ok: false, message: "No tenés corazones para iniciar una lección" });
     }
+
     await UserProgress.findOneAndUpdate(
       { user: req.usuario._id, lesson: lesson._id },
       {
@@ -167,18 +171,18 @@ const startLesson = async (req, res) => {
     });
 
     let theorySlides = [];
-      try {
-        theorySlides = await generateTheorySlides({
-          subjectName: lesson.unit.subject.name,
-          unitName: lesson.unit.name,
-          lessonName: lesson.name,
-          topicHint: lesson.aiTopicHint || lesson.name,
-          difficulty: adaptiveConfig.difficulty,
-          subjectContext: lesson.unit.subject.aiPromptContext,
-        });
-      } catch (err) {
-        console.error("[Theory] Error generando slides:", err.message);
-      }
+    try {
+      theorySlides = await generateTheorySlides({
+        subjectName: lesson.unit.subject.name,
+        unitName: lesson.unit.name,
+        lessonName: lesson.name,
+        topicHint: lesson.aiTopicHint || lesson.name,
+        difficulty: adaptiveConfig.difficulty,
+        subjectContext: lesson.unit.subject.aiPromptContext || "",   // ← parche aplicado
+      });
+    } catch (err) {
+      console.error("[Theory] Error generando slides:", err.message);
+    }
 
     recordShownQuestions(
       req.usuario._id,
@@ -232,25 +236,21 @@ const answerQuestion = async (req, res) => {
       }
 
       case "multiple_choice": {
+        isCorrect = question.checkMultipleChoice(answer);   // ← usa método del modelo
         const correctOption = question.options.find((o) => o.isCorrect);
-        isCorrect = correctOption?._id.toString() === answer;
         correctAnswer = correctOption ? { id: correctOption._id, text: correctOption.text } : null;
         break;
       }
 
       case "true_false": {
-        isCorrect = question.correctBoolean === (answer === true || answer === "true");
+        isCorrect = question.checkTrueFalse(answer);        // ← usa método del modelo
         correctAnswer = question.correctBoolean;
         break;
       }
 
       case "fill_blank": {
         const userAns = String(answer).trim();
-        const accepted = question.caseSensitive
-          ? question.correctAnswers
-          : question.correctAnswers.map((a) => a.toLowerCase());
-        const compare = question.caseSensitive ? userAns : userAns.toLowerCase();
-        isCorrect = accepted.includes(compare);
+        isCorrect = question.checkFillBlank(userAns);       // ← NUEVO: método parcheado (normaliza tildes)
 
         if (!isCorrect) {
           try {
@@ -288,7 +288,6 @@ const answerQuestion = async (req, res) => {
         break;
       }
 
-      // ==================== NUEVO: free_text ====================
       case "free_text": {
         const criteria = question.evaluationCriteria || 
           "Evalúa si la respuesta es relevante, coherente y demuestra comprensión del tema.";
@@ -302,9 +301,8 @@ const answerQuestion = async (req, res) => {
         });
 
         isCorrect = evaluation.approved;
-        evaluationData = evaluation;   // Guardamos toda la evaluación rica
+        evaluationData = evaluation;
 
-        // Guardar en el progreso del usuario
         await UserProgress.findOneAndUpdate(
           { user: req.usuario._id, lesson: req.params.id },
           {
@@ -432,7 +430,7 @@ const answerQuestion = async (req, res) => {
         return res.status(400).json({ ok: false, message: "Tipo de pregunta no soportado" });
     }
 
-    // Código común para todos los tipos excepto free_text
+    // Código común para todos los tipos excepto free_text, typing y code_python
     await UserProgress.findOneAndUpdate(
       { user: req.usuario._id, lesson: req.params.id },
       {

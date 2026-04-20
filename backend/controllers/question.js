@@ -1,6 +1,7 @@
 const { Question, Lesson } = require("../models");
-const { generateQuestions, evaluateOpenResponse  } = require("../services/ai.service");
+const { generateQuestions, evaluateOpenResponse } = require("../services/ai.service");
 
+// POST /api/questions/evaluate-open
 const evaluateOpen = async (req, res) => {
   try {
     const { prompt, userAnswer, evaluationCriteria, maxScore } = req.body;
@@ -71,7 +72,6 @@ const deleteQuestion = async (req, res) => {
 };
 
 // PUT /api/questions/:id/review  (admin)
-// Aprobar o rechazar una pregunta generada por IA
 const reviewQuestion = async (req, res) => {
   try {
     const { approved, editedData } = req.body;
@@ -136,7 +136,7 @@ const generateWithAI = async (req, res) => {
   try {
     const { lessonId, count = 5, difficulty = "easy", allowedTypes } = req.body;
 
-    // Obtener la lección completa con su unidad y materia
+    // Obtener la lección con unidad y materia (necesario para el contexto completo)
     const lesson = await Lesson.findById(lessonId)
       .populate({
         path: "unit",
@@ -156,9 +156,16 @@ const generateWithAI = async (req, res) => {
       lessonName: lesson.name,
       topicHint: lesson.aiTopicHint || lesson.name,
       difficulty,
-      subjectContext: subject.aiPromptContext || "",
+      subjectContext: subject.aiPromptContext || "",           // ← parche aplicado
       count: Number(count),
-      allowedTypes: allowedTypes || ["multiple_choice", "true_false", "fill_blank"]
+      allowedTypes: allowedTypes || [                          // ← parche aplicado (más tipos permitidos)
+        "multiple_choice",
+        "true_false",
+        "fill_blank",
+        "match_pairs",
+        "sentence_builder",
+        "order_items"
+      ]
     });
 
     // Guardar las preguntas generadas
@@ -167,7 +174,7 @@ const generateWithAI = async (req, res) => {
         ...q,
         lesson: lessonId,
         isReviewed: false,
-        isActive: false   // quedan inactivas hasta que el admin las revise
+        isActive: false
       }))
     );
 

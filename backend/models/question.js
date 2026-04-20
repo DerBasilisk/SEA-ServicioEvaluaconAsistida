@@ -7,7 +7,7 @@ const optionSchema = new mongoose.Schema(
   {
     text: { type: String, required: true },
     isCorrect: { type: Boolean, required: true, default: false },
-    explanation: { type: String, default: "" }, // por qué es correcta/incorrecta
+    explanation: { type: String, default: "" },
   },
   { _id: true }
 );
@@ -36,21 +36,19 @@ const questionSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: [
-        "multiple_choice",  // 4 opciones, 1 correcta
-        "true_false",       // Verdadero / Falso
-        "fill_blank",       // Completar el espacio en blanco
-        "order_items",      // Ordenar elementos en secuencia correcta
-        "match_pairs",      // Relacionar columna A con columna B
-        "sentence_builder", // Crear oraciones
+        "multiple_choice",
+        "true_false",
+        "fill_blank",
+        "order_items",
+        "match_pairs",
+        "sentence_builder",
         "free_text",
         "typing",
         "code_python",
       ],
     },
 
-    // Dentro de questionSchema
-
-    evaluationCriteria: {          // Instrucciones que la IA usará para evaluar
+    evaluationCriteria: {
       type: String,
       default: null,
     },
@@ -60,7 +58,6 @@ const questionSchema = new mongoose.Schema(
       default: 10,
     },
 
-    // Opcional: si es código Python
     isCodeExercise: {
       type: Boolean,
       default: false,
@@ -71,28 +68,20 @@ const questionSchema = new mongoose.Schema(
       type: String,
       required: [true, "El enunciado es obligatorio"],
       trim: true,
-      // Para fill_blank usar ___ como marcador: "La capital de Francia es ___"
     },
     imageUrl: {
       type: String,
-      default: null, // imagen opcional en el enunciado
+      default: null,
     },
     hint: {
       type: String,
-      default: null, // pista que el usuario puede pedir (cuesta gemas)
+      default: null,
     },
 
-    // ── Respuestas según tipo ─────────────────────────────────
     typingText: {
       type: String,
       default: "",
     },
-
-    evaluationCriteria: { type: String, default: "" },
-
-    maxScore: { type: Number, default: 10 },
-
-    isCodeExercise: { type: Boolean, default: false },
 
     testCases: [{
       description: String,
@@ -101,7 +90,6 @@ const questionSchema = new mongoose.Schema(
       callCode: { type: String, default: "" },
     }],
 
-    // Opcional en questionSchema
     unit: { type: mongoose.Schema.Types.ObjectId, ref: 'Unit' },
     subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
 
@@ -116,7 +104,7 @@ const questionSchema = new mongoose.Schema(
 
     // fill_blank
     correctAnswers: {
-      type: [String], // acepta variantes: ["Buenos Aires", "buenos aires"]
+      type: [String],
       default: [],
     },
     caseSensitive: {
@@ -126,27 +114,22 @@ const questionSchema = new mongoose.Schema(
 
     // order_items
     items: {
-      type: [String], // los ítems en orden CORRECTO (se muestran mezclados)
+      type: [String],
       default: [],
     },
 
     // match_pairs
     pairs: [matchPairSchema],
 
-    hint: {
-      type: String,
-      default: null, // pista sin spoiler
-    },
-    
     conceptExplanation: {
       type: String,
-      default: null, // explicación del concepto para el panel izquierdo
+      default: null,
     },
 
     // ── Explicación post-respuesta ────────────────────────────
     explanation: {
       type: String,
-      default: "", // se muestra después de responder (bien o mal)
+      default: "",
     },
 
     // ── Metadata ──────────────────────────────────────────────
@@ -157,10 +140,10 @@ const questionSchema = new mongoose.Schema(
     },
     xpValue: {
       type: Number,
-      default: 2, // XP que da responder correctamente esta pregunta
+      default: 2,
     },
     tags: {
-      type: [String], // ej: ["suma", "fracciones"] — útil para repaso espaciado
+      type: [String],
       default: [],
     },
 
@@ -171,14 +154,13 @@ const questionSchema = new mongoose.Schema(
     },
     aiModel: {
       type: String,
-      default: null, // versión del modelo que la generó
+      default: null,
     },
     aiGeneratedAt: {
       type: Date,
       default: null,
     },
     isReviewed: {
-      // preguntas IA deben ser revisadas por admin antes de activarse
       type: Boolean,
       default: false,
     },
@@ -187,7 +169,6 @@ const questionSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    // Dentro del questionSchema, agrega este campo:
 
     reports: [{
       user: {
@@ -216,59 +197,112 @@ const questionSchema = new mongoose.Schema(
   }
 );
 
-// ── Validación: campos requeridos según tipo ───────────────────
-questionSchema.pre("validate", function () {
-  switch (this.type) {
-    case "multiple_choice":
-      if (!this.options || this.options.length < 2) {
-        throw new Error("multiple_choice necesita al menos 2 opciones");
-      }
-      if (!this.options.some((o) => o.isCorrect)) {
-        throw new Error("Debe haber al menos una opción correcta");
-      }
-      break;
-    case "true_false":
-      if (this.correctBoolean === null) {
-        throw new Error("true_false necesita correctBoolean");
-      }
-      break;
-    case "fill_blank":
-      if (!this.correctAnswers || this.correctAnswers.length === 0) {
-        throw new Error("fill_blank necesita al menos una respuesta correcta");
-      }
-      break;
-    case "order_items":
-      if (!this.items || this.items.length < 2) {
-        throw new Error("order_items necesita al menos 2 ítems");
-      }
-      break;
-    case "match_pairs":
-      if (!this.pairs || this.pairs.length < 2) {
-        throw new Error("match_pairs necesita al menos 2 pares");
-      }
-      break;
-    case "typing": {
-      if (!this.typingText || !this.typingText.trim()) {
-        throw new Error("typing necesita un typingText");
-      }
-      break;
+// ─────────────────────────────────────────────────────────────────────────────
+// PARCHE APLICADO: Normalización, pre-save y métodos de validación mejorados
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Helper de normalización (sin tildes y minúsculas)
+const normalizeAnswer = (str = '') =>
+  str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+// Pre-save: enriquecer correctAnswers con variantes (con y sin tilde)
+questionSchema.pre('save', function () {
+  if (this.type === 'fill_blank' && Array.isArray(this.correctAnswers)) {
+    const extended = new Set();
+    for (const ans of this.correctAnswers) {
+      const trimmed = ans.trim();
+      extended.add(trimmed);
+      extended.add(trimmed.toLowerCase());
+      const norm = normalizeAnswer(trimmed);
+      extended.add(norm);
+      extended.add(norm.charAt(0).toUpperCase() + norm.slice(1));
     }
-    case "code_python": {
-      if (!this.testCases || this.testCases.length === 0) {
-        throw new Error("code_python necesita al menos un caso de prueba");
-      }
-      if (this.testCases.some(tc => !tc.expectedOutput || !tc.expectedOutput.trim())) {
-        throw new Error("Todos los casos de prueba necesitan expectedOutput");
-      }
-      break;
-    }
+    this.correctAnswers = [...extended].filter(Boolean);
   }
-  
 });
 
-// Índice para búsqueda eficiente al armar sesiones de repaso
+// Métodos de instancia (útiles en controllers)
+questionSchema.methods.checkFillBlank = function (userAnswer) {
+  if (this.type !== 'fill_blank') return false;
+  const userNorm = normalizeAnswer(userAnswer);
+  return this.correctAnswers.some(ans => normalizeAnswer(ans) === userNorm);
+};
+
+questionSchema.methods.checkTrueFalse = function (userAnswer) {
+  if (this.type !== 'true_false') return false;
+  const userBool = typeof userAnswer === 'boolean'
+    ? userAnswer
+    : String(userAnswer).toLowerCase() === 'true';
+  return userBool === this.correctBoolean;
+};
+
+questionSchema.methods.checkMultipleChoice = function (selectedOptionId) {
+  if (this.type !== 'multiple_choice') return false;
+  const option = this.options.id(selectedOptionId);
+  return option ? option.isCorrect : false;
+};
+
+// ── Validación mejorada (reemplaza el pre("validate") anterior) ──
+questionSchema.pre('validate', function () {
+  switch (this.type) {
+    case 'multiple_choice':
+      if (!this.options || this.options.length < 2)
+        throw new Error('multiple_choice necesita al menos 2 opciones');
+      if (!this.options.some(o => o.isCorrect))
+        throw new Error('Debe haber al menos una opción correcta');
+      {
+        const texts = this.options.map(o => normalizeAnswer(o.text));
+        if (new Set(texts).size !== texts.length)
+          throw new Error('multiple_choice tiene opciones con texto duplicado');
+      }
+      break;
+
+    case 'true_false':
+      if (this.correctBoolean === null || this.correctBoolean === undefined)
+        throw new Error('true_false necesita correctBoolean');
+      break;
+
+    case 'fill_blank':
+      if (!this.correctAnswers || this.correctAnswers.length === 0)
+        throw new Error('fill_blank necesita al menos una respuesta correcta');
+      break;
+
+    case 'order_items':
+      if (!this.items || this.items.length < 2)
+        throw new Error('order_items necesita al menos 2 ítems');
+      break;
+
+    case 'match_pairs':
+      if (!this.pairs || this.pairs.length < 2)
+        throw new Error('match_pairs necesita al menos 2 pares');
+      {
+        const rights = this.pairs.map(p => normalizeAnswer(p.right));
+        if (new Set(rights).size !== rights.length)
+          throw new Error('match_pairs tiene valores duplicados en la columna derecha');
+      }
+      break;
+
+    case 'typing':
+      if (!this.typingText || !this.typingText.trim())
+        throw new Error('typing necesita un typingText');
+      break;
+
+    case 'code_python':
+      if (!this.testCases || this.testCases.length === 0)
+        throw new Error('code_python necesita al menos un caso de prueba');
+      if (this.testCases.some(tc => !tc.expectedOutput || !tc.expectedOutput.trim()))
+        throw new Error('Todos los casos de prueba necesitan expectedOutput');
+      break;
+  }
+});
+
+// Índices
 questionSchema.index({ lesson: 1, isActive: 1, difficulty: 1 });
 questionSchema.index({ tags: 1 });
-questionSchema.index({ "reports.0": 1 }); // Para buscar preguntas reportadas rápidamente
+questionSchema.index({ "reports.0": 1 });
 
 module.exports = mongoose.model("Question", questionSchema);
