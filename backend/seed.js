@@ -7,8 +7,7 @@ const mongoose = require("mongoose");
 
 // ─── Conexión ────────────────────────────────────────────────────────────────
 const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://derrbasilisk:cacorreatonoto@db.gqna69y.mongodb.net/TIENDA?retryWrites=true&w=majority";
+  process.env.MONGO_URI;
 
 // ─── Schemas (inline para no depender de rutas) ───────────────────────────────
 
