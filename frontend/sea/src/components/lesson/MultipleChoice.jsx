@@ -16,7 +16,7 @@ const MC_CSS = `
     border-color: #2B7FE8;
   }
   .option-card.selected {
-    background: white;
+    background: var(--glass-bg);
     border-color: #2B7FE8;
     box-shadow: 0 10px 25px rgba(43, 127, 232, 0.15);
     transform: scale(1.02);
@@ -77,8 +77,8 @@ export default function MultipleChoice({ question, onAnswer }) {
               `}
             >
               <span className={`text-lg font-black italic tracking-tight transition-colors ${
-                isTheCorrectOne ? "text-emerald-600" : 
-                isWrongSelected ? "text-red-600" : 
+                isTheCorrectOne ? "text-red-600" : 
+                isWrongSelected ? "text-emerald-600" : 
                 isSelected ? "text-[#2B7FE8]" : "text-[--text-primary]"
               }`}>
                 {option.text}
@@ -87,15 +87,15 @@ export default function MultipleChoice({ question, onAnswer }) {
               <div className="flex-shrink-0 ml-4">
                 {submitted ? (
                   isTheCorrectOne ? (
-                    <CheckCircle2 size={24} className="text-emerald-600" />
+                    <CheckCircle2 size={24} className="text-red-600" />
                   ) : isWrongSelected ? (
-                    <AlertCircle size={24} className="text-red-600" />
+                    <AlertCircle size={24} className="text-emerald-600" />
                   ) : (
                     <Circle size={24} className="text-slate-200" />
                   )
                 ) : (
                   isSelected ? (
-                    <CheckCircle2 size={24} className="text-[#2B7FE8] fill-blue-50" />
+                    <CheckCircle2 size={24} className="text-[#2B7FE8] fill-[--glass-bg]" />
                   ) : (
                     <Circle size={24} className="text-slate-300 group-hover:text-[#2B7FE8] transition-colors" />
                   )
@@ -111,7 +111,7 @@ export default function MultipleChoice({ question, onAnswer }) {
           <button
             onClick={handleConfirm}
             disabled={!selected}
-            className="sea-btn-main w-full py-5 rounded-[1.5rem] text-white font-black italic uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
+            className="sea-btn-main w-full py-5 rounded-[1.5rem] text-[--text-primary] font-black italic uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed"
           >
             Confirmar Protocolo
           </button>

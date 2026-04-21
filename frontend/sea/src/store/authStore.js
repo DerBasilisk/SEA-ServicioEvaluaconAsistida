@@ -56,7 +56,7 @@ const useAuthStore = create((set, get) => ({
         error: err.response?.data?.message || "Error al iniciar sesión",
         user: null 
       });
-      throw err;
+      return { ok: false, message: errorMsg };
     }
   },
 

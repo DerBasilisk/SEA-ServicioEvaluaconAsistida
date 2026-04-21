@@ -22,7 +22,11 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
 
-    // Solo redirigir si NO estamos ya en el login
+    // ─── LA CORRECCIÓN ───
+    // Detectamos si la ruta actual es el login
+    const isLoginPath = window.location.pathname === "/login";
+
+    // Solo redirigir si el error es 401 y NO estamos ya en el login
     if (status === 401 && !isLoginPath) {
       const { logout } = useAuthStore.getState();
       logout();

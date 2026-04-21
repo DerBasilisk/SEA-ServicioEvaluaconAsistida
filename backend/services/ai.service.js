@@ -188,7 +188,9 @@ async function callGroq(prompt) {
   return completion.choices[0].message.content;
 }
 
-async function callAI(prompt, { temperature } = {}) {
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+async function callAI(prompt, { temperature, attempt = 1 } = {}) {
   try {
     const result = await gemini.models.generateContent({
       model: GEMINI_MODEL,
@@ -197,7 +199,15 @@ async function callAI(prompt, { temperature } = {}) {
     });
     return result.text;
   } catch (error) {
-    console.warn('⚠️ Gemini falló → fallback a Groq:', error.message);
+    // Si el error es Rate Limit (429) y es el primer intento, esperamos un poco
+    if (error.status === 429 && attempt <= 2) {
+      const waitTime = attempt * 2000; // Espera 2s, luego 4s
+      console.warn(`Wait ${waitTime}ms due to Rate Limit...`);
+      await delay(waitTime);
+      return callAI(prompt, { temperature, attempt: attempt + 1 });
+    }
+
+    console.warn('⚠️ Gemini falló definitivamente → probando Groq');
     return await callGroq(prompt);
   }
 }

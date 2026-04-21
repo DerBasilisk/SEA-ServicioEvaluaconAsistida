@@ -7,8 +7,7 @@ const mongoose = require("mongoose");
 
 // ─── Conexión ────────────────────────────────────────────────────────────────
 const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://derrbasilisk:cacorreatonoto@db.gqna69y.mongodb.net/TIENDA?retryWrites=true&w=majority";
+  process.env.MONGO_URI;
 
 // ─── Schemas (inline para no depender de rutas) ───────────────────────────────
 
@@ -819,6 +818,88 @@ const CURRICULUM = [
           { name: "La filosofía del sufrimiento en Project Moon", type: "lesson", difficulty: "hard", aiTopicHint: "temas filosóficos del universo Project Moon: sufrimiento, redención, humanidad y distorsión" },
           { name: "Repaso: lore y conexiones", type: "review", difficulty: "hard", xpReward: 20 },
           { name: "Checkpoint final: Project Moon Master", type: "checkpoint", difficulty: "hard", xpReward: 30, questionCount: 15 },
+        ],
+      },
+    ],
+  },
+
+  // ── MATERIA 14: Left 4 Dead Trivia ──────────────────────────────────────
+  {
+    name: "Left 4 Dead Trivia",
+    description: "Trivia completa de Left 4 Dead 1 y 2: supervivientes, infectados especiales, campañas, mecánicas competitivas y los secretos de la IA Director.",
+    icon: "🧟",
+    color: "#DC2626",
+    aiPromptContext: "Materia de trivia sobre Left 4 Dead 1 y 2. Cubre supervivientes, infectados especiales (Boomer, Hunter, Smoker, Tank, Witch, Spitter, Jockey, Charger), campañas, mecánicas de juego, modo VS competitivo, estrategias, items, armas y la IA Director. Usa terminología oficial del juego.",
+    units: [
+      {
+        name: "Los Supervivientes",
+        description: "Los 8 supervivientes de ambos juegos: perfiles, frases y roles.",
+        lessons: [
+          { name: "Supervivientes de L4D1: Bill, Louis, Francis y Zoey", type: "lesson", difficulty: "easy", aiTopicHint: "perfiles, personalidades y frases icónicas de Bill Overbeck, Louis, Francis y Zoey en Left 4 Dead 1" },
+          { name: "Supervivientes de L4D2: Nick, Coach, Ellis y Rochelle", type: "lesson", difficulty: "easy", aiTopicHint: "perfiles, personalidades y frases icónicas de Nick, Coach, Ellis y Rochelle en Left 4 Dead 2" },
+          { name: "Frases y momentos icónicos de los supervivientes", type: "lesson", difficulty: "medium", aiTopicHint: "quotes memorables y momentos cómicos de los supervivientes de ambos juegos de Left 4 Dead" },
+          { name: "Historia y lore de los supervivientes", type: "lesson", difficulty: "hard", aiTopicHint: "trasfondo narrativo de los supervivientes: quiénes eran antes del apocalipsis zombie en Left 4 Dead" },
+          { name: "Checkpoint: supervivientes", type: "checkpoint", difficulty: "medium", xpReward: 20, questionCount: 10 },
+        ],
+      },
+      {
+        name: "Infectados Especiales — L4D1",
+        description: "Los 6 infectados especiales originales y cómo contrarrestarlos.",
+        lessons: [
+          { name: "El Boomer: bilis, horda y ceguera", type: "lesson", difficulty: "easy", aiTopicHint: "mecánicas del Boomer en Left 4 Dead: bilis, atraer horda, radio de explosión y cómo contrarrestarlo" },
+          { name: "El Hunter: pounce, scratches y parkour", type: "lesson", difficulty: "medium", aiTopicHint: "mecánicas del Hunter en Left 4 Dead: daño por pounce, altura del salto, self-clear y estrategias competitivas" },
+          { name: "El Smoker: lengua, constrict y daño", type: "lesson", difficulty: "medium", aiTopicHint: "mecánicas del Smoker en Left 4 Dead: distancia de lengua, daño por constricción y cómo liberarse" },
+          { name: "El Tank: spawn, roca y estrategias", type: "lesson", difficulty: "medium", aiTopicHint: "mecánicas del Tank en Left 4 Dead: puntuación de frustración, lanzamiento de roca, hitbox y estrategias para derrotarlo" },
+          { name: "La Witch: comportamiento, crown y startles", type: "lesson", difficulty: "hard", aiTopicHint: "comportamiento de la Witch en Left 4 Dead: crown one-shot, startles, daño, y estrategias para evitarla o eliminarla" },
+          { name: "Checkpoint: infectados L4D1", type: "checkpoint", difficulty: "hard", xpReward: 25, questionCount: 10 },
+        ],
+      },
+      {
+        name: "Infectados Especiales — L4D2",
+        description: "Los 3 nuevos infectados de L4D2 y sus mecánicas únicas.",
+        lessons: [
+          { name: "El Spitter: escupitajo, puddle y posicionamiento", type: "lesson", difficulty: "medium", aiTopicHint: "mecánicas del Spitter en Left 4 Dead 2: daño del puddle de ácido, duración, radio y uso competitivo" },
+          { name: "El Jockey: ride, steering y daño", type: "lesson", difficulty: "medium", aiTopicHint: "mecánicas del Jockey en Left 4 Dead 2: control de dirección, daño por segundo, combinaciones con Spitter y self-clear" },
+          { name: "El Charger: charge, pound y carry", type: "lesson", difficulty: "medium", aiTopicHint: "mecánicas del Charger en Left 4 Dead 2: distancia de carga, daño de pound, separación del grupo y usos competitivos" },
+          { name: "Sinergias entre infectados especiales", type: "lesson", difficulty: "hard", aiTopicHint: "combinaciones competitivas de infectados en Left 4 Dead 2: Jockey+Spitter, Charger+Boomer, Hunter+Smoker" },
+          { name: "Checkpoint: infectados L4D2", type: "checkpoint", difficulty: "hard", xpReward: 25, questionCount: 10 },
+        ],
+      },
+      {
+        name: "Campañas y mapas",
+        description: "Todas las campañas de ambos juegos: eventos, finales y secretos.",
+        lessons: [
+          { name: "Campañas de L4D1: Dead Center, No Mercy, Death Toll, Blood Harvest, Crash Course", type: "lesson", difficulty: "easy", aiTopicHint: "campañas originales de Left 4 Dead 1: No Mercy, Death Toll, Dead Air, Blood Harvest y Crash Course — eventos y finales" },
+          { name: "Campañas de L4D2: Dark Carnival, Swamp Fever, Hard Rain, The Parish", type: "lesson", difficulty: "easy", aiTopicHint: "campañas de Left 4 Dead 2: Dead Center, Dark Carnival, Swamp Fever, Hard Rain y The Parish — eventos y finales" },
+          { name: "Campañas cruzadas: The Passing y The Sacrifice", type: "lesson", difficulty: "medium", aiTopicHint: "campañas crossover de Left 4 Dead: The Passing (L4D2 con supervivientes de L4D1) y The Sacrifice (L4D1)" },
+          { name: "Eventos especiales y crescendo events", type: "lesson", difficulty: "medium", aiTopicHint: "crescendo events y eventos especiales de campañas en Left 4 Dead: alarmas, generadores, conciertos y fugas" },
+          { name: "Secretos, easter eggs y detalles ocultos", type: "lesson", difficulty: "hard", aiTopicHint: "easter eggs y secretos de Left 4 Dead 1 y 2: gnome Chompski, mensajes en paredes, referencias y detalles de lore" },
+          { name: "Checkpoint: campañas y mapas", type: "checkpoint", difficulty: "hard", xpReward: 20, questionCount: 10 },
+        ],
+      },
+      {
+        name: "Mecánicas de juego",
+        description: "Sistemas de juego, armas, items y el AI Director.",
+        lessons: [
+          { name: "El AI Director: hordas, pacing y frustration", type: "lesson", difficulty: "medium", aiTopicHint: "cómo funciona el AI Director de Left 4 Dead: sistema de pacing, hordas reactivas, frustration meter y spawns de infectados" },
+          { name: "Armas de L4D1 vs L4D2: diferencias y slots", type: "lesson", difficulty: "easy", aiTopicHint: "armas de Left 4 Dead 1 y 2: categorías, slots, armas nuevas en L4D2 (AK47, guitar, machete) y diferencias entre juegos" },
+          { name: "Items: pills, adren, desfibrilador y bile bomb", type: "lesson", difficulty: "medium", aiTopicHint: "items de Left 4 Dead 2: pills vs adrenalina, desfibrilador, bile bomb, laser sight y gnome — usos y prioridades" },
+          { name: "Sistema de daño, incapacitación y death hook", type: "lesson", difficulty: "hard", aiTopicHint: "sistema de HP, incapacitación, black and white, death hook y ledge hang en Left 4 Dead" },
+          { name: "Friendly fire, alarmas y hordas reactivas", type: "lesson", difficulty: "medium", aiTopicHint: "fuego amigo, alarmas de coches y hordas reactivas al ruido en Left 4 Dead" },
+          { name: "Checkpoint: mecánicas de juego", type: "checkpoint", difficulty: "hard", xpReward: 25, questionCount: 10 },
+        ],
+      },
+      {
+        name: "Modo VS Competitivo",
+        description: "Reglas, puntuación, estrategias y meta del modo VS.",
+        lessons: [
+          { name: "Reglas del modo VS: puntuación y rondas", type: "lesson", difficulty: "easy", aiTopicHint: "reglas del modo VS en Left 4 Dead: sistema de puntuación por distancia y supervivencia, rondas y límites de tiempo" },
+          { name: "Spawns de infectados en VS: tiempos y cooldowns", type: "lesson", difficulty: "hard", aiTopicHint: "mecánicas de spawn de infectados especiales en modo VS: respawn timer, limite de infectados simultáneos y posicionamiento" },
+          { name: "Estrategias de Survivors: posicionamiento y heals", type: "lesson", difficulty: "hard", aiTopicHint: "estrategias de supervivientes en modo VS: formation, cuándo curar, uso de pills vs medkits y comunicación" },
+          { name: "Estrategias de Infected: timing y combos", type: "lesson", difficulty: "hard", aiTopicHint: "estrategias del equipo de infectados en VS: combos (Charger+Jockey+Spitter), timing de ataques y coordinación" },
+          { name: "Meta competitivo: reglas custom y mapas comunes", type: "lesson", difficulty: "hard", aiTopicHint: "meta del VS competitivo de Left 4 Dead 2: configs custom (confogl, promod), mapas más jugados y reglas de torneo" },
+          { name: "Errores comunes y cómo explotarlos", type: "lesson", difficulty: "hard", aiTopicHint: "errores frecuentes de supervivientes e infectados en modo VS de Left 4 Dead y cómo aprovecharlos" },
+          { name: "Checkpoint final: VS Master", type: "checkpoint", difficulty: "hard", xpReward: 30, questionCount: 15 },
         ],
       },
     ],

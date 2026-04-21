@@ -296,12 +296,12 @@ export default function Lesson() {
     <div className="lesson-container min-h-screen flex flex-col overflow-hidden">
       <style>{LESSON_CSS}</style>
       
-      <header className="px-6 py-4 flex items-center gap-6 bg-white/30 backdrop-blur-md sticky top-0 z-50">
+      <header className="px-6 py-4 flex items-center gap-6 backdrop-blur-md sticky top-0 z-50">
         <button onClick={handleAbandon} className="p-2 hover:bg-white/50 rounded-xl transition text-slate-500"><X size={24} /></button>
         <div className="flex-1 progress-track">
           <div className="progress-fill h-full" style={{ width: `${progress}%` }} />
         </div>
-        <div className="flex items-center gap-1.5 bg-white/60 px-3 py-1.5 rounded-2xl border border-white">
+        <div className="flex items-center gap-1.5 bg-[--glass-bg] px-3 py-1.5 rounded-2xl border border-[--glass-border]">
           <Heart size={20} className="text-rose-500 fill-rose-500 animate-pulse" />
           <span className="font-black text-[--text-primary] text-sm">{hearts}</span>
         </div>
@@ -490,9 +490,9 @@ function FeedbackPanel({ feedback, hearts, question, onContinue, onRefilled, onC
 
 function LoadingScreen() {
   return (
-    <div className="bg-[var(--bg-gradient)] min-h-screen lesson-container flex items-center justify-center">
+    <div className="bg-[--bg-gradient] min-h-screen lesson-container flex items-center justify-center">
       <div className="text-center">
-        <div className="w-24 h-24 bg-[var(--bg-gradient)] rounded-[2rem] flex items-center justify-center animate-bounce-slow mb-6">
+        <div className="w-24 h-24 bg-[--glass-bg] rounded-[2rem] flex items-center justify-center animate-bounce-slow mb-6">
            <Sparkles size={40} className="text-[#2B7FE8]" />
         </div>
         <p className="text-[var(--text-primary)] font-black italic uppercase tracking-widest text-sm">Preparando Entorno...</p>

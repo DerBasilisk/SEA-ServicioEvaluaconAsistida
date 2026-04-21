@@ -84,10 +84,19 @@ export default function Login() {
     setSubmitting(true);
     try {
       const res = await login(form.email, form.password);
+      
+      // Si res.ok es false (por el return que pusimos en el store)
       if (res?.ok) {
         const { user } = useAuthStore.getState();
         navigate(user?.role === "admin" ? "/admin" : "/");
+      } else {
+        // Opcional: podrías hacer un log aquí, pero el error 
+        // ya está en el 'error' de Zustand y se mostrará en el card.
+        console.warn("Intento de login fallido:", res.message);
       }
+    } catch (err) {
+      // Esto solo se ejecutará si hay un error de código crítico
+      console.error("Error crítico:", err);
     } finally {
       setSubmitting(false);
     }
