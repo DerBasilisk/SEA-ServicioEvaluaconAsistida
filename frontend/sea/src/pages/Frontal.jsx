@@ -64,12 +64,11 @@ export default function Frontal() {
       <style>{FRONTAL_CSS}</style>
 
       {/* NAVBAR SUPERIOR - Ajustada para Mobile */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] sea-glass-nav px-4 md:px-8 py-3 md:py-4 flex justify-between items-center">
+      <nav className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 py-3 md:py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="bg-[var(--text-accent)] p-1.5 rounded-lg shadow-lg">
-             <img src="/sealogo.png" className="w-6 md:w-8 brightness-0 invert" alt="SEA" />
+             <img src="/sealogo.png" className="w-12 md:w-8 brightness-0 invert" alt="SEA" />
           </div>
-          <span className="font-black text-lg md:text-xl tracking-tighter text-[var(--landing-hero-text)]">SEA</span>
         </div>
         
         <div className="flex items-center gap-3 md:gap-6">
@@ -92,10 +91,7 @@ export default function Frontal() {
       {/* HERO SECTION */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center pt-28 pb-16 md:pt-32 md:pb-20">
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--glass-bg)] border border-[var(--glass-border)] mb-6 md:mb-8 shadow-sm">
-            <Sparkles size={14} className="text-[var(--text-accent)]" />
-            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-[var(--text-accent)]">IA Generativa Adaptativa</span>
-          </div>
+          
 
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] md:leading-[0.95] mb-6 md:mb-8 text-[var(--landing-hero-text)] uppercase italic">
             Tu mente es <span className="text-[var(--text-accent)]">única.</span> <br className="hidden sm:block" />

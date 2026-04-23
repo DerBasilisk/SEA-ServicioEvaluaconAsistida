@@ -91,8 +91,15 @@ const startLesson = async (req, res) => {
         allowedTypes: ["multiple_choice", "true_false", "fill_blank", "match_pairs", "sentence_builder", "order_items"] // ← mejorado
       });
 
+      const validAiQuestions = aiQuestions.filter(q => {
+        if (q.type === 'sentence_builder') {
+          return Array.isArray(q.wordBank) && q.wordBank.length >= 2;
+        }
+        return true;
+      });
+      if (validAiQuestions.length === 0) throw new Error('La IA no generó preguntas válidas');
       const saved = await Question.insertMany(
-        aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
+        validAiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
       );
       questions = saved;
     } else {
@@ -112,10 +119,18 @@ const startLesson = async (req, res) => {
             allowedTypes: ["multiple_choice", "true_false", "fill_blank", "match_pairs", "sentence_builder", "order_items"]
           });
 
-          const saved = await Question.insertMany(
-            aiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
-          );
-          allQuestions = [...allQuestions, ...saved];
+          const validAiQuestions = aiQuestions.filter(q => {
+            if (q.type === 'sentence_builder') {
+              return Array.isArray(q.wordBank) && q.wordBank.length >= 2;
+            }
+            return true;
+          });
+          if (validAiQuestions.length > 0) {
+            const saved = await Question.insertMany(
+              validAiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
+            );
+            allQuestions = [...allQuestions, ...saved];
+          }
         } catch (err) {
           console.error("Error generando preguntas adicionales:", err.message);
         }

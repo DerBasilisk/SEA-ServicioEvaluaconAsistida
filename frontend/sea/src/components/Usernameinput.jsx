@@ -64,7 +64,7 @@ export default function UsernameInput({ value, onChange, disabled }) {
       <style>{USERNAME_CSS}</style>
       
       <div className="flex items-center justify-between px-1">
-        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+        <label className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] flex items-center gap-2">
           <Fingerprint size={12} /> Identificador Único
         </label>
         <span className={`text-[9px] font-black tracking-widest ${value.length > 15 ? 'text-amber-500' : 'text-slate-600'}`}>
@@ -78,7 +78,7 @@ export default function UsernameInput({ value, onChange, disabled }) {
         ${status === "available" ? "status-available" : ""}
         ${status === "taken" ? "status-taken" : ""}
       `}>
-        <span className="pl-5 pr-2 text-[#2B7FE8] font-black italic text-lg select-none">@</span>
+        <span className="pl-5 pr-2 text-[--text-primary] font-black italic text-lg select-none">@</span>
         <input
           type="text"
           value={value}

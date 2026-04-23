@@ -151,6 +151,14 @@ userProgressSchema.methods.updateSpacedRepetition = function (score) {
   sr.nextReviewDate = nextDate;
 };
 
+userProgressSchema.methods.failSession = function () {
+  this.status = "available";   // vuelve a disponible, no "completed"
+  // NO toca completions, bestScore, totalXPEarned
+  this.lastCompletedAt = null;
+  // Limpiar sesión activa
+  this.currentSession = { startedAt: null, attempts: [], heartsAtStart: 5 };
+};
+
 // Índice único: un registro de progreso por usuario/lección
 userProgressSchema.index({ user: 1, lesson: 1 }, { unique: true });
 // Índice para buscar lecciones que necesitan repaso

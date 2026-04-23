@@ -6,6 +6,7 @@ import useAuthStore from "../store/authStore";
 import useThemeStore from "../store/themeStore";
 import api from "../api/axios";
 
+
 // ─── Estilos Globales SEA ──────────────────────────────────────────────────
 const SETTINGS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -34,6 +35,60 @@ const SETTINGS_CSS = `
     border: 1.5px solid var(--negative);
     color: var(--negative)
   }
+
+
+  // Mobil
+  /* ── Mobile responsive ─────────────────── */
+  @media (max-width: 640px) {
+    .sea-settings main {
+      padding-left: 1rem !important;
+      padding-right: 1rem !important;
+      padding-top: 1.5rem !important;
+    }
+
+    .sea-glass-card {
+      border-radius: 1.5rem !important;
+      padding: 1.25rem !important;
+    }
+
+    .danger-zone {
+      border-radius: 1.5rem !important;
+      padding: 1.25rem !important;
+    }
+
+    /* Título principal más pequeño en mobile */
+    .sea-settings h1 {
+      font-size: 1.75rem !important;
+    }
+
+    /* Botón de eliminar cuenta — full width en mobile */
+    .sea-settings .danger-zone button {
+      width: 100%;
+      justify-content: center;
+    }
+
+    /* Confirmación de borrado — stack vertical */
+    .delete-confirm-btns {
+      flex-direction: column !important;
+    }
+
+    /* Item social — compactar en mobile */
+    .social-item-icon {
+      width: 2.5rem !important;
+      height: 2.5rem !important;
+    }
+
+    /* Sección de daltonismo — stack en mobile */
+    .colorblind-row {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 1rem !important;
+    }
+
+    .colorblind-type-select {
+      width: 100%;
+    }
+  }
 `;
 
 export default function Settings() {
@@ -43,7 +98,7 @@ export default function Settings() {
   const [deleteInput, setDeleteInput] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [msg, setMsg] = useState(null);
-  const { colorblind, toggleColorblind } = useThemeStore();
+  const { colorblind, toggleColorblind, colorblindType, setColorblindType } = useThemeStore();
 
   const handleDeleteAccount = async () => {
     if (deleteInput !== user?.username) return;
@@ -118,45 +173,71 @@ export default function Settings() {
             Ajustes de percepción cromática
           </p>
 
-          <div className="flex items-center justify-between p-5 bg-[--glass-bg] border border-[--glass-border] rounded-[1.8rem]">
+          {/* Toggle principal */}
+          <div className="colorblind-row flex items-center justify-between p-5 bg-[--glass-bg] border border-[--glass-border] rounded-[1.8rem] mb-3">
             <div className="flex items-center gap-4">
-              {/* Paleta de muestra: verde→azul, rojo→naranja */}
               <div className="flex gap-1.5">
-                <div
-                  className="w-5 h-5 rounded-full border border-slate-200"
-                  style={{ background: colorblind ? "#0077BB" : "#10B981" }}
-                />
-                <div
-                  className="w-5 h-5 rounded-full border border-slate-200"
-                  style={{ background: colorblind ? "#EE7733" : "#EF4444" }}
-                />
+                <div className="w-5 h-5 rounded-full border border-slate-200"
+                  style={{ background: colorblind ? "#0077BB" : "#10B981" }} />
+                <div className="w-5 h-5 rounded-full border border-slate-200"
+                  style={{ background: colorblind ? "#EE7733" : "#EF4444" }} />
+                {colorblind && (
+                  <div className="w-5 h-5 rounded-full border border-slate-200"
+                    style={{ background: "#CC79A7" }} />
+                )}
               </div>
               <div>
                 <p className="text-[--text-primary] font-black italic uppercase text-sm tracking-tight">
                   Modo Daltónico
                 </p>
                 <p className="text-[9px] font-black text-[#7A9CC5] uppercase tracking-widest mt-0.5">
-                  Paleta Okabe-Ito · Compatible con deuteranopía y protanopía
+                  {colorblind ? "Activo · Paleta Okabe-Ito ampliada" : "Paleta estándar"}
                 </p>
               </div>
             </div>
-
-            {/* Toggle switch */}
             <button
               onClick={toggleColorblind}
-              className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none ${
+              className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none flex-shrink-0 ${
                 colorblind ? "bg-[#2B7FE8]" : "bg-slate-200"
               }`}
               aria-pressed={colorblind}
               aria-label="Activar modo daltónico"
             >
-              <span
-                className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${
-                  colorblind ? "translate-x-7" : "translate-x-0"
-                }`}
-              />
+              <span className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${
+                colorblind ? "translate-x-7" : "translate-x-0"
+              }`} />
             </button>
           </div>
+
+          {/* Selector de tipo — solo visible cuando está activo */}
+          {colorblind && (
+            <div className="p-5 bg-[--glass-bg] border border-[--glass-border] rounded-[1.8rem] animate-in slide-in-from-top-2 duration-200">
+              <p className="text-[9px] font-black text-[#7A9CC5] uppercase tracking-widest mb-3">
+                Tipo de daltonismo
+              </p>
+              <div className="colorblind-type-select grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "deuteranopia", label: "Deuteranopía", desc: "Verde" },
+                  { id: "protanopia",   label: "Protanopía",   desc: "Rojo" },
+                  { id: "tritan",       label: "Tritanopía",   desc: "Azul" },
+                  { id: "achromatopsia",label: "Acromatopsia", desc: "Total" },
+                ].map(({ id, label, desc }) => (
+                  <button
+                    key={id}
+                    onClick={() => setColorblindType(id)}
+                    className={`p-3 rounded-2xl border-2 text-left transition-all ${
+                      colorblindType === id
+                        ? "border-[#2B7FE8] bg-[#2B7FE8]/10 text-[--text-primary]"
+                        : "border-[--glass-border] text-[--text-secondary] hover:border-[#2B7FE8]/40"
+                    }`}
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-tight">{label}</p>
+                    <p className="text-[9px] text-[#7A9CC5] mt-0.5">{desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Privacidad */}

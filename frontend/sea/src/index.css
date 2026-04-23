@@ -149,25 +149,66 @@
 }
 
 [data-colorblind="true"] {
-  --correct: #0077BB;
-  --correct-bg: #0076bb17;
-  --incorrect: #EE7733;
-  --incorrect-bg: #EE77332F;
-  --negative:  #ff7a2e;
-  --panel-feedback-bg: #0077bb14;
-  --danger-bg: #3a140366;
-  --clue-border: #EE7733;
-  --clue-text:   #CC5500;
+  /* Correcto: azul Okabe, distinguible en deutera/proto/trita */
+  --correct:             #0077BB;
+  --correct-bg:          #0077bb17;
+
+  /* Error/Negativo: naranja-bermellón, no confundible con verde/azul */
+  --incorrect:           #EE7733;
+  --incorrect-bg:        #EE77332F;
+  --negative:            #EE7733;
+
+  /* Afirmativo: azul cielo claro, contrasta con naranja */
+  --afirmative:          #56B4E9;
+  --text-alternative:    #56B4E9;
+
+  /* Acento secundario: violeta rosado (distinguible en tritanopía) */
+  --text-accent:         #CC79A7;
+  --text-accent-hover:   #CC79A7e5;
+
+  /* Alerta: amarillo Okabe (usar solo con texto oscuro encima) */
+  --text-alternative-a:  #c9b800; /* versión oscurecida para legibilidad */
+
+  /* Éxito alternativo: azul cielo (reemplaza verde que falla en deutera) */
+  --text-alternative-b:  #0077BB;
+
+  /* Zonas de feedback */
+  --panel-feedback-bg:   #0077bb14;
+  --danger-bg:           #ee773318;
+
+  /* Pistas/clues: naranja en lugar de amarillo */
+  --clue-border:         #EE7733;
+  --clue-text:           #CC5500;
+  --clue-bg:             #ee773310;
+
+  /* Google/negativos de marca */
+  --google:              #CC5500;
 }
 
+/* ── Tritanopía específica (azul-amarillo): forzar distinción rojo/azul */
+[data-colorblind="true"][data-colorblind-type="tritan"] {
+  --correct:             #FF6B6B; /* rojo claro — distinguible para tritanopía */
+  --correct-bg:          #ff6b6b17;
+  --afirmative:          #EE7733;
+  --negative:            #CC79A7;
+}
+
+/* ── Alto contraste + daltonismo ─────────────────────────────────────── */
 [data-theme="high-contrast"][data-colorblind="true"] {
-  --correct:   #00BBFF;
-  --incorrect: #FF8800;
-  --negative:  #FF8800;
+  --correct:             #00BBFF;
+  --incorrect:           #FF8800;
+  --negative:            #FF8800;
+  --afirmative:          #00BBFF;
+  --text-accent:         #FF8800;
+  --clue-text:           #FF8800;
 }
 
+/* ── Dark + daltonismo ───────────────────────────────────────────────── */
 [data-theme="dark"][data-colorblind="true"] {
-  --clue-bg: #4b24047c;
+  --clue-bg:             #4b24047c;
+  --correct:             #56B4E9;   /* más brillante en fondos oscuros */
+  --text-accent:         #CC79A7;
+  --afirmative:          #56B4E9;
 }
 
 

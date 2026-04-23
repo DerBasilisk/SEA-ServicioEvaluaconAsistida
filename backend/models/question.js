@@ -286,6 +286,19 @@ questionSchema.pre('validate', function () {
       }
       break;
 
+    case "sentence_builder":
+      if (!this.wordBank || this.wordBank.length < 2)
+        throw new Error('sentence_builder necesita al menos 2 palabras en el wordBank');
+      
+      // Normalizar el prompt: asegurar que los espacios estén correctos
+      if (this.prompt) {
+        // Reemplazar "___" con " ___ " para asegurar espacios
+        this.prompt = this.prompt.replace(/___/g, " ___ ");
+        // Limpiar espacios múltiples
+        this.prompt = this.prompt.replace(/\s+/g, ' ').trim();
+      }
+      break;
+
     case 'typing':
       if (!this.typingText || !this.typingText.trim())
         throw new Error('typing necesita un typingText');

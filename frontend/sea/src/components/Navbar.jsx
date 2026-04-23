@@ -261,12 +261,6 @@ function LogoMark({ small }) {
       }}>
         <img src="/sealogo.png" width={imgSize} alt="SEA" style={{ filter: "brightness(0) invert(1)", display: "block" }} />
       </div>
-      <span style={{
-        fontWeight: 900, fontStyle: "italic", textTransform: "uppercase",
-        letterSpacing: "-0.03em", fontSize, color: "var(--text-primary)",
-      }}>
-        SEA
-      </span>
     </Link>
   );
 }

@@ -49,34 +49,6 @@ const MAP_CSS = `
     box-shadow: 0 15px 35px var(--glass-shadow);
   }
 
-  /* ── Nodo: gema cuadrada ── */
-  .map-node-btn {
-    position: relative;
-    border-radius: 1.5rem;
-    border: 2px solid rgba(255,255,255,0.6);
-    overflow: hidden;
-    display: flex; align-items: center; justify-content: center;
-    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
-                box-shadow 0.35s ease, opacity 0.2s ease;
-    /* tamaño: más pequeño en móvil */
-    width: 72px; height: 72px;
-  }
-  @media (min-width: 640px) {
-    .map-node-btn { width: 88px; height: 88px; border-radius: 1.75rem; }
-  }
-
-  .map-node-btn:not(:disabled):hover {
-    transform: translateY(-6px) scale(1.08);
-  }
-  .map-node-btn:not(:disabled):active {
-    transform: scale(0.94);
-  }
-  .map-node-btn.locked {
-    filter: grayscale(1);
-    opacity: 0.38;
-    transform: scale(0.88);
-    cursor: not-allowed;
-  }
 
   /* Brillo de cristal */
   .node-shine {
@@ -90,21 +62,6 @@ const MAP_CSS = `
     background: rgba(255,255,255,0.22);
     filter: blur(1px);
     pointer-events: none;
-  }
-
-  /* Glow al hacer hover */
-  .map-node-glow {
-    position: absolute; inset: -20px;
-    border-radius: 50%;
-    opacity: 0;
-    filter: blur(22px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    pointer-events: none;
-    transform: scale(0.7);
-  }
-  .group:hover .map-node-glow {
-    opacity: 0.55;
-    transform: scale(1);
   }
 
   /* Etiqueta bajo el nodo */
@@ -151,6 +108,65 @@ const MAP_CSS = `
     text-transform: uppercase; letter-spacing: 0.1em;
     color: var(--text-secondary);
     white-space: nowrap;
+  }
+`;
+
+const MAP_CSS_ADDITIONS = `
+/* ── Nodo circular ── */
+  .node-ring-wrap {
+    position: relative;
+    width: 88px;
+    height: 88px;
+    flex-shrink: 0;
+  }
+  @media (min-width: 640px) {
+    .node-ring-wrap { width: 104px; height: 104px; }
+  }
+ 
+  .node-ring-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+ 
+  .map-node-btn {
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.6);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+                box-shadow 0.35s ease, opacity 0.2s ease;
+  }
+  @media (min-width: 640px) {
+    .map-node-btn { inset: 12px; }
+  }
+
+  .map-node-btn:not(:disabled):active { transform: scale(0.94); }
+  .map-node-btn.locked {
+    filter: grayscale(1);
+    opacity: 0.38;
+    transform: scale(0.88);
+    cursor: not-allowed;
+  }
+ 
+  /* Glow al hacer hover */
+  .map-node-glow {
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    opacity: 0;
+    filter: blur(20px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+    transform: scale(0.7);
+  }
+  .group:hover .map-node-glow {
+    opacity: 0.5;
+    transform: scale(1);
   }
 `;
 
@@ -321,35 +337,71 @@ export default function SubjectMap() {
   );
 }
 
-/* ── Nodo de lección ── */
 function GlassNode({ lesson, onClick }) {
   const config   = STATUS_CONFIG[lesson.status] || STATUS_CONFIG.locked;
   const isLocked = lesson.status === "locked";
-
+ 
+  const completions = lesson.completions ?? 0;   // ← campo real del backend
+  const totalReps   = 4;
+ 
+  // Geometría del anillo: viewBox 100×100, r=47 → circunferencia ≈ 295.3
+  const radius       = 47;
+  const circumference = 2 * Math.PI * radius;
+  const dashArray    = `${circumference * (completions / totalReps)} ${circumference}`;
+ 
   return (
     <div className="relative group flex flex-col items-center">
-
+      <style>{MAP_CSS_ADDITIONS}</style>
+ 
       {/* Glow de fondo */}
       <div className="map-node-glow" style={{ backgroundColor: config.glow }} />
-
-      {/* Gema / botón */}
-      <button
-        onClick={() => !isLocked && onClick()}
-        disabled={isLocked}
-        className={`map-node-btn bg-gradient-to-br ${config.gradient}
-                    ${isLocked ? "locked" : "shadow-xl cursor-pointer"}`}
-        style={isLocked ? undefined : { boxShadow: `0 8px 24px ${config.glow}` }}
-        aria-label={lesson.name}
-      >
-        {!isLocked && (
-          <>
-            <div className="node-shine" />
-            <div className="node-shine-line" />
-          </>
-        )}
-        <div className="relative z-10 drop-shadow">{config.icon}</div>
-      </button>
-
+ 
+      {/* Contenedor del anillo + botón */}
+      <div className="node-ring-wrap">
+ 
+        {/* Anillo SVG */}
+        <svg className="node-ring-svg" viewBox="0 0 100 100">
+          {/* Track */}
+          <circle
+            cx="50" cy="50" r={radius}
+            fill="none"
+            stroke={isLocked ? "transparent" : `${config.base}22`}
+            strokeWidth="4"
+          />
+          {/* Progreso */}
+          {!isLocked && completions > 0 && (
+            <circle
+              cx="50" cy="50" r={radius}
+              fill="none"
+              stroke={config.base}
+              strokeWidth="4"
+              strokeDasharray={dashArray}
+              strokeLinecap="round"
+              transform="rotate(-90 50 50)"
+              style={{ transition: "stroke-dasharray 0.6s ease" }}
+            />
+          )}
+        </svg>
+ 
+        {/* Botón circular */}
+        <button
+          onClick={() => !isLocked && onClick()}
+          disabled={isLocked}
+          className={`map-node-btn bg-gradient-to-br ${config.gradient}
+                      ${isLocked ? "locked" : "shadow-xl cursor-pointer"}`}
+          style={isLocked ? undefined : { boxShadow: `0 8px 24px ${config.glow}` }}
+          aria-label={lesson.name}
+        >
+          {!isLocked && (
+            <>
+              <div className="node-shine" />
+              <div className="node-shine-line" />
+            </>
+          )}
+          <div className="relative z-10 drop-shadow">{config.icon}</div>
+        </button>
+      </div>
+ 
       {/* Etiqueta */}
       <div className={`node-label ${isLocked ? "opacity-40" : ""}`}>
         <p className={`text-[7px] sm:text-[8px] font-black uppercase tracking-[0.15em] mb-0.5
@@ -360,6 +412,13 @@ function GlassNode({ lesson, onClick }) {
                         ${isLocked ? "text-slate-400" : "text-[var(--text-primary)]"}`}>
           {lesson.name}
         </h3>
+        {/* Contador solo si no está bloqueado */}
+        {!isLocked && (
+          <p className="text-[7px] font-black mt-1 opacity-60"
+             style={{ color: config.base }}>
+            {completions}/{totalReps}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
+import { useState } from "react";
 import RefillHeartsButton from "./Refillheartsbutton";
-import { AlertTriangle, Ghost, LogOut } from "lucide-react";
+import { AlertTriangle, Ghost, LogOut, Loader2 } from "lucide-react";
 
 const EMERGENCY_CSS = `
   .emergency-panel {
@@ -19,6 +20,18 @@ const EMERGENCY_CSS = `
 `;
 
 export default function NoHeartsPanel({ onRefilled, onContinue }) {
+  const [leaving, setLeaving] = useState(false);   // ← nuevo
+
+  const handleAbandon = async () => {
+    if (leaving) return;           // bloquea clicks repetidos
+    setLeaving(true);
+    try {
+      await onContinue();
+    } catch {
+      setLeaving(false);           // reactiva si algo falla
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto emergency-panel rounded-[2.5rem] p-8 text-center animate-in zoom-in-95 duration-300">
       <style>{EMERGENCY_CSS}</style>
@@ -57,11 +70,18 @@ export default function NoHeartsPanel({ onRefilled, onContinue }) {
         </div>
 
         <button
-          onClick={onContinue}
-          className="sea-btn-secondary w-full group flex items-center justify-center gap-3 text-[var(--text-primary)] font-black italic uppercase tracking-[0.2em] py-4 rounded-2xl transition-all active:scale-95"
+          onClick={handleAbandon}
+          disabled={leaving}
+          className="sea-btn-secondary w-full group flex items-center justify-center gap-3 
+                     text-[var(--text-primary)] font-black italic uppercase tracking-[0.2em] 
+                     py-4 rounded-2xl transition-all active:scale-95 disabled:opacity-50 
+                     disabled:cursor-not-allowed"
         >
-          <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
-          <span>Abandonar Misión</span>
+          {leaving
+            ? <Loader2 size={16} className="animate-spin" />
+            : <LogOut size={16} className="group-hover:translate-x-1 transition-transform" />
+          }
+          <span>{leaving ? "Saliendo..." : "Abandonar Misión"}</span>
         </button>
       </div>
 

@@ -2,11 +2,73 @@
 const Groq = require('groq-sdk');
 const { GoogleGenAI } = require('@google/genai');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-const GROQ_MODEL = "llama-3.3-70b-versatile";
-const GEMINI_MODEL = "gemini-2.0-flash";
+// ─── Circuit Breaker ──────────────────────────────────────────────────────────
+// Si un proveedor falla muchas veces seguidas, se "abre" y deja de usarse
+// por un tiempo, evitando acumular errores 429 innecesarios.
+
+class CircuitBreaker {
+  constructor(name, { failureThreshold = 3, resetTimeMs = 60_000 } = {}) {
+    this.name = name;
+    this.failureThreshold = failureThreshold;
+    this.resetTimeMs = resetTimeMs;
+    this.failures = 0;
+    this.openedAt = null;
+  }
+
+  get isOpen() {
+    if (this.openedAt && Date.now() - this.openedAt > this.resetTimeMs) {
+      // Ventana de reset: intentar de nuevo (half-open)
+      this.failures = 0;
+      this.openedAt = null;
+      console.log(`🔄 Circuit breaker [${this.name}] reset → intentando de nuevo`);
+    }
+    return this.openedAt !== null;
+  }
+
+  recordSuccess() {
+    this.failures = 0;
+    this.openedAt = null;
+  }
+
+  recordFailure() {
+    this.failures++;
+    if (this.failures >= this.failureThreshold) {
+      this.openedAt = Date.now();
+      console.warn(
+        `⛔ Circuit breaker [${this.name}] ABIERTO por ${this.resetTimeMs / 1000}s después de ${this.failures} fallos`
+      );
+    }
+  }
+}
+
+const geminiBreaker = new CircuitBreaker('Gemini', { failureThreshold: 3, resetTimeMs: 60_000 });
+
+const GROQ_KEYS = [
+  process.env.GROQ_API_KEY_1,
+  process.env.GROQ_API_KEY_2,
+  process.env.GROQ_API_KEY_3,
+].filter(Boolean);
+
+const groqPool = GROQ_KEYS.map(apiKey => ({
+  client: new Groq({ apiKey }),
+  breaker: new CircuitBreaker(`Groq-${apiKey.slice(-6)}`),
+}));
+
+let groqPoolIndex = 0;
+
+function getNextGroqClient() {
+  // Busca la siguiente key que NO esté con el circuit breaker abierto
+  for (let i = 0; i < groqPool.length; i++) {
+    const entry = groqPool[groqPoolIndex];
+    groqPoolIndex = (groqPoolIndex + 1) % groqPool.length;
+    if (!entry.breaker.isOpen) return entry;
+  }
+  throw new Error('Todas las keys de Groq están saturadas');
+}
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GEMINI_MODEL = 'gemini-2.0-flash';
 
 // ─── Helpers de texto ─────────────────────────────────────────────────────────
 
@@ -25,34 +87,173 @@ const parseJsonSafely = (text) => {
   }
 };
 
-/**
- * Normaliza una cadena para comparación:
- * quita tildes, pasa a minúsculas, elimina espacios extra.
- */
 const normalizeText = (str = '') =>
-  str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim();
+  str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+// ─── Caché simple en memoria ──────────────────────────────────────────────────
+// Evita llamadas repetidas para hints y slides con los mismos parámetros.
+// En producción puedes reemplazar esto con Redis.
+
+const cache = new Map();
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutos
+
+function cacheGet(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function cacheSet(key, value) {
+  cache.set(key, { value, ts: Date.now() });
+  // Evitar que la caché crezca indefinidamente
+  if (cache.size > 500) {
+    const oldest = [...cache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+    cache.delete(oldest[0]);
+  }
+}
+
+// ─── Cola de concurrencia ─────────────────────────────────────────────────────
+// Limita cuántas llamadas a la IA pueden correr EN PARALELO.
+// Ajusta MAX_CONCURRENT según los límites de tu plan (empieza con 3).
+
+const MAX_CONCURRENT = 3;
+let activeRequests = 0;
+const requestQueue = [];
+
+function enqueueRequest(fn) {
+  return new Promise((resolve, reject) => {
+    requestQueue.push({ fn, resolve, reject });
+    drainQueue();
+  });
+}
+
+function drainQueue() {
+  while (activeRequests < MAX_CONCURRENT && requestQueue.length > 0) {
+    const { fn, resolve, reject } = requestQueue.shift();
+    activeRequests++;
+    fn()
+      .then(resolve)
+      .catch(reject)
+      .finally(() => {
+        activeRequests--;
+        drainQueue();
+      });
+  }
+}
+
+
+// ─── Backoff exponencial ──────────────────────────────────────────────────────
+
+async function withExponentialBackoff(fn, { maxRetries = 3, baseDelayMs = 1000, label = '' } = {}) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      const isRateLimit = error?.status === 429 || error?.message?.includes('rate');
+      const isLastAttempt = attempt === maxRetries;
+
+      if (!isRateLimit || isLastAttempt) throw error;
+
+      // Exponential backoff: 1s, 2s, 4s, 8s...  + jitter aleatorio
+      const waitMs = baseDelayMs * 2 ** (attempt - 1) + Math.random() * 500;
+      console.warn(`⏳ [${label}] Rate limit (intento ${attempt}/${maxRetries}), esperando ${Math.round(waitMs)}ms...`);
+      await delay(waitMs);
+    }
+  }
+}
+
+// ─── Llamadas a IA con circuit breaker ────────────────────────────────────────
+
+async function callGroqRaw(prompt, temperature = 0.75) {
+  const entry = getNextGroqClient(); // { client, breaker }
+
+  try {
+    const completion = await entry.client.chat.completions.create({
+      model: GROQ_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature,
+      max_tokens: 3200,
+      response_format: { type: 'json_object' },
+    });
+    entry.breaker.recordSuccess();
+    return completion.choices[0].message.content;
+  } catch (err) {
+    entry.breaker.recordFailure();
+    throw err;
+  }
+}
+
+async function callGeminiRaw(prompt, temperature) {
+  if (geminiBreaker.isOpen) throw new Error('Gemini circuit breaker abierto');
+
+  try {
+    const result = await gemini.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      generationConfig: temperature != null ? { temperature } : undefined,
+    });
+    geminiBreaker.recordSuccess();
+    return result.text;
+  } catch (err) {
+    geminiBreaker.recordFailure();
+    throw err;
+  }
+}
+
+// ─── callAI: Gemini primero, Groq como fallback ───────────────────────────────
+// Ambos con backoff exponencial y circuit breaker integrado.
+
+// ✅ Después — el pool maneja su propio estado
+async function callAI(prompt, { temperature } = {}) {
+  return enqueueRequest(async () => {
+    if (!geminiBreaker.isOpen) {
+      try {
+        return await withExponentialBackoff(
+          () => callGeminiRaw(prompt, temperature),
+          { maxRetries: 2, baseDelayMs: 1500, label: 'Gemini' }
+        );
+      } catch (err) {
+        console.warn('⚠️ Gemini falló definitivamente → usando Groq como fallback');
+      }
+    } else {
+      console.warn('⚡ Gemini circuit breaker abierto → usando Groq directamente');
+    }
+
+    // Sin groqBreaker — getNextGroqClient() ya lanza error si todos están abiertos
+    return await withExponentialBackoff(
+      () => callGroqRaw(prompt, temperature ?? 0.75),
+      { maxRetries: 2, baseDelayMs: 1000, label: 'Groq' }
+    );
+  });
+}
+
+// callGroq público: también pasa por la cola y tiene backoff
+async function callGroq(prompt, temperature = 0.75) {
+  return enqueueRequest(() =>
+    withExponentialBackoff(() => callGroqRaw(prompt, temperature), {
+      maxRetries: 2,
+      baseDelayMs: 1000,
+      label: 'Groq',
+    })
+  );
+}
 
 // ─── Reglas específicas por materia ──────────────────────────────────────────
 
-/**
- * Devuelve instrucciones adicionales para el prompt según la materia.
- * Se usa aiPromptContext del modelo Subject como fuente principal;
- * estas reglas añaden restricciones de formato específicas por tipo.
- */
 function getSubjectRules(subjectName = '', aiPromptContext = '') {
   const name = subjectName.toLowerCase();
   const rules = [];
 
-  // Contexto de materia (viene del campo Subject.aiPromptContext)
   if (aiPromptContext && aiPromptContext.trim()) {
     rules.push(`CONTEXTO DE MATERIA: ${aiPromptContext.trim()}`);
   }
 
-  // Reglas adicionales según nombre de la materia
   if (name.includes('mecanograf')) {
     rules.push(
       'Esta es una materia de MECANOGRAFÍA. Las preguntas deben ser sobre técnica dactilar, postura, zonas del teclado, dedos asignados a cada tecla, y conceptos de velocidad/precisión (PPM).',
@@ -109,57 +310,40 @@ function getSubjectRules(subjectName = '', aiPromptContext = '') {
 
 // ─── Validaciones de calidad ──────────────────────────────────────────────────
 
-/**
- * Verifica que las preguntas no tengan problemas de calidad:
- * - match_pairs con valores derechos duplicados
- * - multiple_choice con opciones de texto duplicado
- * - multiple_choice sin exactamente una respuesta correcta
- * - preguntas con prompt duplicado entre sí
- */
 function validateQuestions(questions) {
   const issues = [];
 
-  const prompts = questions.map(q => normalizeText(q.prompt));
-  const uniquePrompts = new Set(prompts);
-  if (uniquePrompts.size !== prompts.length) {
-    issues.push('duplicate_prompts');
-  }
+  const prompts = questions.map((q) => normalizeText(q.prompt));
+  if (new Set(prompts).size !== prompts.length) issues.push('duplicate_prompts');
 
   for (const q of questions) {
     if (q.type === 'match_pairs' && Array.isArray(q.pairs)) {
-      const rights = q.pairs.map(p => normalizeText(p.right));
+      const rights = q.pairs.map((p) => normalizeText(p.right));
       if (new Set(rights).size !== rights.length) {
         issues.push('match_pairs_duplicate_right');
         break;
       }
     }
-
     if (q.type === 'multiple_choice' && Array.isArray(q.options)) {
-      const texts = q.options.map(o => normalizeText(o.text));
+      const texts = q.options.map((o) => normalizeText(o.text));
       if (new Set(texts).size !== texts.length) {
         issues.push('multiple_choice_duplicate_options');
         break;
       }
-      const correctCount = q.options.filter(o => o.isCorrect).length;
-      if (correctCount !== 1) {
+      if (q.options.filter((o) => o.isCorrect).length !== 1) {
         issues.push('multiple_choice_wrong_correct_count');
         break;
       }
     }
   }
 
-  return issues; // array vacío = todo ok
+  return issues;
 }
 
 // ─── Enriquecer correctAnswers con variantes sin tilde ───────────────────────
 
-/**
- * Para preguntas fill_blank: añade automáticamente la versión
- * sin tildes de cada respuesta correcta, para que "México" y
- * "Mexico" sean ambas aceptadas sin depender de la IA.
- */
 function enrichCorrectAnswers(questions) {
-  return questions.map(q => {
+  return questions.map((q) => {
     if (q.type !== 'fill_blank' || !Array.isArray(q.correctAnswers)) return q;
 
     const extended = new Set();
@@ -168,70 +352,31 @@ function enrichCorrectAnswers(questions) {
       extended.add(ans.trim().toLowerCase());
       const normalized = normalizeText(ans);
       extended.add(normalized);
-      // Capitalizado sin tilde (ej: "Mexico")
       extended.add(normalized.charAt(0).toUpperCase() + normalized.slice(1));
     }
     return { ...q, correctAnswers: [...extended] };
   });
 }
 
-// ─── Llamadas a IA ───────────────────────────────────────────────────────────
-
-async function callGroq(prompt) {
-  const completion = await groq.chat.completions.create({
-    model: GROQ_MODEL,
-    messages: [{ role: 'user', content: prompt }],
-    temperature: 0.75,
-    max_tokens: 3200,
-    response_format: { type: 'json_object' },
-  });
-  return completion.choices[0].message.content;
-}
-
-const delay = (ms) => new Promise(res => setTimeout(res, ms));
-
-async function callAI(prompt, { temperature, attempt = 1 } = {}) {
-  try {
-    const result = await gemini.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: prompt,
-      generationConfig: temperature ? { temperature } : undefined,
-    });
-    return result.text;
-  } catch (error) {
-    // Si el error es Rate Limit (429) y es el primer intento, esperamos un poco
-    if (error.status === 429 && attempt <= 2) {
-      const waitTime = attempt * 2000; // Espera 2s, luego 4s
-      console.warn(`Wait ${waitTime}ms due to Rate Limit...`);
-      await delay(waitTime);
-      return callAI(prompt, { temperature, attempt: attempt + 1 });
-    }
-
-    console.warn('⚠️ Gemini falló definitivamente → probando Groq');
-    return await callGroq(prompt);
-  }
-}
-
 /* =============================================
    1. GENERAR PREGUNTAS (Principal)
    ============================================= */
+
 async function generateQuestions({
   subjectName,
   unitName,
   lessonName,
   topicHint,
-  aiPromptContext = '',   // <-- viene de Subject.aiPromptContext
+  aiPromptContext = '',
   difficulty = 'easy',
   count = 4,
   allowedTypes = ['multiple_choice', 'true_false', 'fill_blank', 'match_pairs', 'sentence_builder', 'free_text', 'typing'],
 }) {
-  // Temperatura más alta en hard para mayor variedad
   const temperature = difficulty === 'hard' ? 0.9 : 0.75;
 
-  // Reglas específicas de la materia
   const subjectRules = getSubjectRules(subjectName, aiPromptContext);
   const subjectRulesBlock = subjectRules.length
-    ? '\nREGLAS ESPECÍFICAS DE ESTA MATERIA:\n' + subjectRules.map(r => `- ${r}`).join('\n')
+    ? '\nREGLAS ESPECÍFICAS DE ESTA MATERIA:\n' + subjectRules.map((r) => `- ${r}`).join('\n')
     : '';
 
   const prompt = `Eres un profesor experto creando preguntas para un simulador de exámenes.
@@ -252,77 +397,65 @@ REGLAS GLOBALES (obligatorias en TODAS las preguntas):
 1. UNICIDAD DE PREGUNTAS
    - Cada pregunta debe cubrir un ASPECTO DIFERENTE del tema.
    - Está PROHIBIDO repetir el mismo concepto con diferente redacción.
-   - Si el tema es muy específico, crea preguntas sobre conceptos relacionados, ejemplos de aplicación o consecuencias del tema.
 
 2. TILDES Y ORTOGRAFÍA
-   - Las tildes NO son parte de la respuesta esperada. Trata "México" y "Mexico" como equivalentes.
-   - En fill_blank: el campo "correctAnswers" debe incluir SIEMPRE la versión con tilde Y la versión sin tilde de cada respuesta.
+   - Las tildes NO son parte de la respuesta esperada.
+   - En fill_blank: correctAnswers debe incluir versión con tilde Y sin tilde.
      Ejemplo: ["ecuación", "ecuacion", "Ecuación", "Ecuacion"]
-   - No pongas tildes en los distractores solo para hacer un distractor "incorrecto" — la diferencia debe ser conceptual.
 
 3. MATCH_PAIRS — COLUMNA DERECHA ÚNICA
-   - Todos los valores de "right" DEBEN SER DISTINTOS entre sí (no importa si son conceptos similares).
-   - Si el tema matemático genera resultados iguales (ej: 3+4=7 y 2+5=7), usa OTRO tipo de pregunta.
-   - Verifica mentalmente que ningún "right" se repita antes de escribir el JSON.
+   - Todos los valores de "right" DEBEN SER DISTINTOS entre sí.
 
 4. MULTIPLE_CHOICE — OPCIONES ÚNICAS
-   - Las 4 opciones deben ser conceptualmente distintas, no variantes de la misma idea.
    - Exactamente UNA opción debe tener isCorrect: true.
-   - Los distractores deben ser errores plausibles, no absurdos.
 
 5. CAMPOS OBLIGATORIOS en cada pregunta:
    - type, prompt, difficulty, xpValue, explanation, hint, conceptExplanation, tags
    - xpValue: 2=easy, 3=medium, 5=hard
    - hint: máximo 15 palabras, pista estratégica (NO revela la respuesta)
-   - explanation: educativa, explica POR QUÉ es correcta (NUNCA revela la respuesta antes de que el usuario intente)
-   - conceptExplanation: explica el concepto general con un ejemplo DIFERENTE al de la pregunta
-   - tags: array de 2-4 palabras clave del concepto
 
 6. REGLAS POR TIPO:
    - multiple_choice → exactamente 4 opciones: [{text, isCorrect, explanation}]
    - true_false → correctBoolean (true o false)
    - fill_blank → correctAnswers: array con variantes (con tilde, sin tilde, mayúscula, minúscula)
    - match_pairs → pairs: [{left, right}] con todos los "right" ÚNICOS
-   - sentence_builder → items: palabras/fragmentos en el ORDEN CORRECTO (se mostrarán mezclados)
-   - free_text → sin respuesta correcta, se evalúa con IA; el prompt debe ser una pregunta abierta
+   - sentence_builder → { "prompt": "oración con ___ para cada hueco (mín 2 huecos)", "wordBank": ["palabra1", "palabra2", "palabra3", "palabra_extra_distractor"], "correctOrder": [0, 1, 2] }
+   -   OBLIGATORIO: wordBank debe tener MÍNIMO 4 palabras (las correctas + al menos 1 distractor).
+   -   correctOrder es el array de índices de wordBank en el orden correcto.
    - typing → "prompt": instrucción al usuario, "typingText": texto corto a transcribir (máx 150 caracteres)
 
 Responde SOLO con el array JSON. Sin texto antes ni después.`;
 
   console.log(`📤 Generando ${count} preguntas | Materia: "${subjectName}" | Tema: "${topicHint}" | Dificultad: ${difficulty}`);
 
+  const MAX_ATTEMPTS = 3;
   let questions = [];
-  let attempts = 0;
-  const maxAttempts = 3;
 
-  while (attempts < maxAttempts) {
-    attempts++;
-
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const rawText = await callAI(prompt, { temperature });
     const cleaned = cleanJsonResponse(rawText);
     questions = parseJsonSafely(cleaned);
 
     if (!Array.isArray(questions) || questions.length === 0) {
-      console.warn(`⚠️ Intento ${attempts}: respuesta vacía o inválida`);
+      console.warn(`⚠️ Intento ${attempt}: respuesta vacía o inválida`);
       continue;
     }
 
     const issues = validateQuestions(questions);
 
     if (issues.length === 0) {
-      console.log(`✅ ${questions.length} preguntas válidas generadas (intento ${attempts})`);
+      console.log(`✅ ${questions.length} preguntas válidas (intento ${attempt})`);
       break;
     }
 
-    console.warn(`⚠️ Intento ${attempts}: problemas detectados → ${issues.join(', ')} → reintentando...`);
+    console.warn(`⚠️ Intento ${attempt}: ${issues.join(', ')} → reintentando...`);
 
-    if (attempts === maxAttempts) {
-      console.warn('⚠️ Máximo de intentos alcanzado, usando última respuesta con correcciones manuales');
-      // Corrección manual de match_pairs con duplicados
-      questions = questions.map(q => {
+    if (attempt === MAX_ATTEMPTS) {
+      console.warn('⚠️ Máximo de intentos, aplicando correcciones manuales');
+      questions = questions.map((q) => {
         if (q.type === 'match_pairs' && Array.isArray(q.pairs)) {
           const seen = new Set();
-          q.pairs = q.pairs.filter(p => {
+          q.pairs = q.pairs.filter((p) => {
             const key = normalizeText(p.right);
             if (seen.has(key)) return false;
             seen.add(key);
@@ -330,6 +463,14 @@ Responde SOLO con el array JSON. Sin texto antes ni después.`;
           });
         }
         return q;
+      }).filter(q => {
+        // Descartar sentence_builder con wordBank insuficiente en vez de lanzar error
+        if (q.type === 'sentence_builder') {
+          const ok = Array.isArray(q.wordBank) && q.wordBank.length >= 2;
+          if (!ok) console.warn('⚠️ sentence_builder descartada por wordBank insuficiente');
+          return ok;
+        }
+        return true;
       });
     }
   }
@@ -338,10 +479,9 @@ Responde SOLO con el array JSON. Sin texto antes ni después.`;
     throw new Error('No se pudieron generar preguntas válidas después de varios intentos');
   }
 
-  // Enriquecer correctAnswers con variantes sin tilde
   questions = enrichCorrectAnswers(questions);
 
-  return questions.map(q => ({
+  return questions.map((q) => ({
     ...q,
     isAIGenerated: true,
     aiModel: GEMINI_MODEL,
@@ -354,6 +494,7 @@ Responde SOLO con el array JSON. Sin texto antes ni después.`;
 /* =============================================
    2. EVALUAR RESPUESTA ABIERTA (free_text)
    ============================================= */
+
 async function evaluateOpenResponse({
   prompt,
   userAnswer,
@@ -385,23 +526,32 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta:
 }`;
 
   try {
+    // Groq es más rápido para evaluaciones cortas → úsalo primero aquí
+    // Si falla, callAI hará el fallback automáticamente
     const result = await callGroq(promptAI);
     return JSON.parse(cleanJsonResponse(result));
   } catch (err) {
-    console.error('Error evaluando respuesta abierta:', err);
-    return {
-      score: 0,
-      approved: false,
-      feedback: 'No se pudo evaluar la respuesta en este momento.',
-      strengths: '',
-      improvements: '',
-    };
+    console.warn('⚠️ Groq falló en evaluación, probando Gemini:', err.message);
+    try {
+      const result = await callAI(promptAI);
+      return JSON.parse(cleanJsonResponse(result));
+    } catch (err2) {
+      console.error('Error evaluando respuesta abierta:', err2);
+      return {
+        score: 0,
+        approved: false,
+        feedback: 'No se pudo evaluar la respuesta en este momento.',
+        strengths: '',
+        improvements: '',
+      };
+    }
   }
 }
 
 /* =============================================
-   3. GENERAR SLIDES DE TEORÍA
+   3. GENERAR SLIDES DE TEORÍA (con caché)
    ============================================= */
+
 async function generateTheorySlides({
   subjectName,
   unitName,
@@ -410,6 +560,14 @@ async function generateTheorySlides({
   aiPromptContext = '',
   difficulty = 'easy',
 }) {
+  // Clave de caché: mismo tema + dificultad → mismo resultado
+  const cacheKey = `slides:${normalizeText(subjectName)}:${normalizeText(lessonName)}:${normalizeText(topicHint)}:${difficulty}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) {
+    console.log('⚡ Slides desde caché');
+    return cached;
+  }
+
   const slideCount = difficulty === 'easy' ? 1 : 2;
   const contextBlock = aiPromptContext ? `\nContexto: ${aiPromptContext}` : '';
 
@@ -437,7 +595,9 @@ Usa lenguaje sencillo y ejemplos cotidianos. Adapta el nivel a la dificultad ind
 
   try {
     const slides = parseJsonSafely(cleaned);
-    return Array.isArray(slides) ? slides : [];
+    const result = Array.isArray(slides) ? slides : [];
+    cacheSet(cacheKey, result);
+    return result;
   } catch (err) {
     console.error('Error parseando slides:', err.message);
     return [];
@@ -445,9 +605,18 @@ Usa lenguaje sencillo y ejemplos cotidianos. Adapta el nivel a la dificultad ind
 }
 
 /* =============================================
-   4. GENERAR HINT (Pista)
+   4. GENERAR HINT (con caché)
    ============================================= */
+
 async function generateHint(question) {
+  // Misma pregunta → mismo hint → cachear
+  const cacheKey = `hint:${normalizeText(question.prompt)}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) {
+    console.log('⚡ Hint desde caché');
+    return cached;
+  }
+
   const prompt = `Genera una pista útil (máximo 15 palabras) para esta pregunta educativa.
 No reveles la respuesta. Enfócate en la estrategia de resolución o en qué parte del tema buscar.
 
@@ -458,23 +627,37 @@ Devuelve solo la pista, sin texto adicional ni comillas.`;
 
   try {
     const text = await callAI(prompt);
-    return text.trim().replace(/^["']|["']$/g, '');
+    const hint = text.trim().replace(/^["']|["']$/g, '');
+    cacheSet(cacheKey, hint);
+    return hint;
   } catch {
     return 'Piensa paso a paso antes de responder';
   }
 }
 
 /* =============================================
-   5. EVALUAR FILL_BLANK (con normalización)
+   5. EVALUAR FILL_BLANK (optimizado)
    ============================================= */
-async function evaluateFillBlankAnswer(questionPrompt, userAnswer, correctAnswers) {
-  // Primero: comparación directa normalizada (sin llamada a IA)
-  const userNorm = normalizeText(userAnswer);
-  const directMatch = correctAnswers.some(ans => normalizeText(ans) === userNorm);
 
+async function evaluateFillBlankAnswer(questionPrompt, userAnswer, correctAnswers) {
+  // Comparación directa normalizada (sin IA)
+  const userNorm = normalizeText(userAnswer);
+  const directMatch = correctAnswers.some((ans) => normalizeText(ans) === userNorm);
   if (directMatch) return true;
 
-  // Si no hay match directo, consultar a la IA para sinónimos/variantes
+  // Comparación por contenido (sin IA): userAnswer está dentro de alguna respuesta correcta
+  // Útil para respuestas parciales muy cercanas
+  const partialMatch = correctAnswers.some((ans) => {
+    const ansNorm = normalizeText(ans);
+    return ansNorm.includes(userNorm) || userNorm.includes(ansNorm);
+  });
+
+  // Si hay un partial match muy cercano, evitar la llamada a IA para casos obvios
+  if (partialMatch && Math.abs(userNorm.length - normalizeText(correctAnswers[0]).length) <= 2) {
+    return true;
+  }
+
+  // Solo consultar IA si la respuesta es realmente ambigua
   const prompt = `Eres un evaluador estricto pero justo para un examen educativo.
 
 Pregunta: "${questionPrompt}"
@@ -501,7 +684,7 @@ Responde ÚNICAMENTE con: true o false`;
   }
 }
 
-// ─── Exportar normalizeText para uso en controllers ──────────────────────────
+// ─── Exportar ─────────────────────────────────────────────────────────────────
 module.exports = {
   generateQuestions,
   generateTheorySlides,
