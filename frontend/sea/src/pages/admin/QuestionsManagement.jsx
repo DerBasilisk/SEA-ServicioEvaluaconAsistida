@@ -3,54 +3,232 @@ import { useState, useEffect } from "react";
 import { Search, Edit, Trash2, CheckCircle, ShieldAlert, XCircle, Sparkles, Plus, RotateCcw } from "lucide-react";
 import api from "../../api/axios";
 import QuestionModal from "../../components/admin/QuestionModal";
+import CustomSelect from "../../components/ui/CustomSelect";
+
+const QUESTIONS_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  .qm-page { font-family: 'Nunito', sans-serif; }
+
+  .qm-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 1.5rem; overflow: hidden;
+  }
+
+  .qm-filter-bar {
+    background: var(--glass-bg);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 1.5rem; padding: 1.5rem;
+    backdrop-filter: blur(10px);
+  }
+
+  .qm-input {
+    width: 100%;
+    background: var(--glass-bg-small);
+    border: 1.5px solid var(--glass-border); border-radius: 1rem;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-primary); font-family: 'Nunito', sans-serif;
+    font-weight: 600; font-size: 0.875rem;
+    transition: border-color 0.2s; outline: none;
+  }
+  .qm-input:focus { border-color: var(--text-accent); }
+  .qm-input::placeholder { color: var(--text-muted); }
+  .qm-input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .qm-search-wrap { position: relative; flex: 1; }
+  .qm-search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  .qm-search-input {
+    width: 100%; padding-left: 2.75rem;
+    background: var(--glass-bg-small); border: 1.5px solid var(--glass-border);
+    border-radius: 1rem; padding-top: 0.75rem; padding-right: 1rem; padding-bottom: 0.75rem; padding-left: 2.75rem;
+    color: var(--text-primary); font-family: 'Nunito', sans-serif;
+    font-weight: 600; font-size: 0.875rem; outline: none; transition: border-color 0.2s;
+  }
+  .qm-search-input:focus { border-color: var(--text-accent); }
+  .qm-search-input::placeholder { color: var(--text-muted); }
+
+  .qm-label {
+    font-size: 0.65rem; font-weight: 800; color: var(--text-secondary);
+    display: block; margin-bottom: 0.35rem;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  .qm-table-head { background: var(--glass-bg); border-bottom: 1.5px solid var(--glass-border); }
+  .qm-table-head th {
+    color: var(--text-secondary); font-weight: 800;
+    font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 1rem 1.5rem;
+  }
+
+  .qm-table-row { border-bottom: 1px solid var(--glass-border); transition: background 0.18s; }
+  .qm-table-row:last-child { border-bottom: none; }
+  .qm-table-row:hover { background: color-mix(in srgb, var(--text-accent) 5%, transparent); }
+  .qm-table-row td { padding: 1rem 1.5rem; vertical-align: middle; }
+
+  /* Difficulty dots */
+  .qm-diff-easy   { color: var(--correct); }
+  .qm-diff-medium { color: var(--text-alternative-a); }
+  .qm-diff-hard   { color: var(--incorrect); }
+
+  /* Type badge */
+  .qm-type-badge {
+    font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0.2rem 0.55rem; border-radius: 0.5rem;
+    background: var(--glass-bg); color: var(--text-secondary); border: 1px solid var(--glass-border);
+  }
+
+  /* AI badge */
+  .qm-ai-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-size: 0.6rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0.2rem 0.55rem; border-radius: 999px;
+    background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+    color: var(--text-accent);
+    border: 1px solid color-mix(in srgb, var(--text-accent) 25%, transparent);
+  }
+
+  /* Review toggle buttons */
+  .qm-reviewed-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.75rem; font-weight: 800; padding: 0.35rem 0.9rem;
+    border-radius: 999px; cursor: pointer; transition: all 0.2s; border: 1px solid;
+    font-family: 'Nunito', sans-serif;
+  }
+  .qm-reviewed-btn.reviewed {
+    background: var(--correct-bg); color: var(--correct);
+    border-color: color-mix(in srgb, var(--correct) 25%, transparent);
+  }
+  .qm-reviewed-btn.reviewed:hover { background: color-mix(in srgb, var(--correct) 20%, transparent); }
+  .qm-reviewed-btn.pending {
+    background: color-mix(in srgb, var(--text-alternative-a) 10%, transparent);
+    color: var(--text-alternative-a);
+    border-color: color-mix(in srgb, var(--text-alternative-a) 25%, transparent);
+  }
+  .qm-reviewed-btn.pending:hover { background: color-mix(in srgb, var(--text-alternative-a) 20%, transparent); }
+
+  /* Active toggle */
+  .qm-active-badge {
+    font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.65rem; border-radius: 999px; cursor: pointer;
+    font-family: 'Nunito', sans-serif; transition: all 0.2s; border: none;
+  }
+  .qm-active-badge.active   { background: var(--correct); color: white; }
+  .qm-active-badge.inactive { background: var(--glass-bg); color: var(--text-muted); border: 1px solid var(--glass-border); }
+
+  /* Reports badge */
+  .qm-report-badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.65rem; border-radius: 999px;
+    background: var(--incorrect-bg); color: var(--incorrect);
+    border: 1px solid color-mix(in srgb, var(--incorrect) 25%, transparent);
+  }
+
+  /* Action buttons */
+  .qm-btn-icon {
+    background: var(--glass-bg); border: 1.5px solid var(--glass-border);
+    border-radius: 0.65rem; padding: 0.45rem; cursor: pointer;
+    color: var(--text-secondary); transition: all 0.18s;
+    display: inline-flex; align-items: center;
+  }
+  .qm-btn-icon:hover { border-color: var(--text-accent); color: var(--text-primary); }
+  .qm-btn-icon.danger:hover { background: var(--incorrect-bg); color: var(--incorrect); border-color: color-mix(in srgb, var(--incorrect) 30%, transparent); }
+  .qm-btn-icon.edit:hover { background: color-mix(in srgb, var(--text-accent) 10%, transparent); color: var(--text-accent); border-color: color-mix(in srgb, var(--text-accent) 30%, transparent); }
+  .qm-btn-icon.success:hover { background: var(--correct-bg); color: var(--correct); border-color: color-mix(in srgb, var(--correct) 30%, transparent); }
+
+  /* Header buttons */
+  .qm-btn-ai {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--btn-primary); color: var(--btn-text);
+    border: none; border-radius: 1rem; padding: 0.75rem 1.5rem;
+    font-weight: 800; font-size: 0.875rem; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s; font-family: 'Nunito', sans-serif;
+  }
+  .qm-btn-ai:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); }
+  .qm-btn-ai:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .qm-btn-new {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--text-alternative-b); color: white;
+    border: none; border-radius: 1rem; padding: 0.75rem 1.5rem;
+    font-weight: 800; font-size: 0.875rem; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s; font-family: 'Nunito', sans-serif;
+  }
+  .qm-btn-new:hover { opacity: 0.88; transform: translateY(-1px); }
+
+  .qm-btn-clear {
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    width: 100%; padding: 0.75rem;
+    background: var(--glass-bg); color: var(--text-secondary);
+    border: 1.5px solid var(--glass-border); border-radius: 1rem;
+    font-weight: 700; font-size: 0.875rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'Nunito', sans-serif;
+  }
+  .qm-btn-clear:hover { border-color: var(--text-accent); color: var(--text-primary); }
+
+  .qm-btn-reported {
+    display: flex; align-items: center; gap: 0.5rem; white-space: nowrap;
+    padding: 0.75rem 1.25rem; border-radius: 1rem;
+    font-weight: 800; font-size: 0.8rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'Nunito', sans-serif;
+  }
+  .qm-btn-reported.on  { background: var(--incorrect); color: white; border: 1.5px solid var(--incorrect); }
+  .qm-btn-reported.off { background: var(--glass-bg); color: var(--text-secondary); border: 1.5px solid var(--glass-border); }
+  .qm-btn-reported.off:hover { border-color: var(--incorrect); color: var(--incorrect); }
+
+  /* Pagination */
+  .qm-page-btn {
+    background: var(--card-bg); color: var(--text-secondary);
+    border: 1.5px solid var(--glass-border); border-radius: 1rem;
+    padding: 0.6rem 1.5rem; font-weight: 700; font-size: 0.875rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'Nunito', sans-serif;
+  }
+  .qm-page-btn:hover:not(:disabled) { border-color: var(--text-accent); color: var(--text-primary); }
+  .qm-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Loading spinner */
+  .qm-spin { animation: qm-spin-anim 0.9s linear infinite; }
+  @keyframes qm-spin-anim { to { transform: rotate(360deg); } }
+`;
+
+const diffClass = (d) =>
+  d === "easy" ? "qm-diff-easy" : d === "medium" ? "qm-diff-medium" : "qm-diff-hard";
 
 export default function QuestionsManagement() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Datos para filtros jerárquicos
   const [subjects, setSubjects] = useState([]);
   const [units, setUnits] = useState([]);
   const [lessons, setLessons] = useState([]);
 
-  // Filtros
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selSubject, setSelSubject] = useState("");
   const [selUnit, setSelUnit] = useState("");
   const [selLesson, setSelLesson] = useState("");
 
-  // Paginación
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Modal
   const [showModal, setShowModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
 
-  // Estado para generación IA
   const [generating, setGenerating] = useState(false);
-
-  // Reportes
   const [showReportedOnly, setShowReportedOnly] = useState(false);
 
-  // Cargar materias
   useEffect(() => {
     api.get("/admin/subjects").then(res => setSubjects(res.data.data || []));
   }, []);
 
-  // Cargar unidades cuando cambia materia
   useEffect(() => {
     if (selSubject) {
       api.get(`/admin/subjects/${selSubject}/units`).then(res => setUnits(res.data.data || []));
     } else {
       setUnits([]);
     }
-    setSelUnit("");
-    setSelLesson("");
+    setSelUnit(""); setSelLesson("");
   }, [selSubject]);
 
-  // Cargar lecciones cuando cambia unidad
   useEffect(() => {
     if (selUnit) {
       api.get(`/admin/units/${selUnit}/lessons`).then(res => setLessons(res.data.data || []));
@@ -60,21 +238,18 @@ export default function QuestionsManagement() {
     setSelLesson("");
   }, [selUnit]);
 
-  // Cargar preguntas
   const fetchQuestions = async () => {
     try {
       setLoading(true);
       const params = {
-        page,
-        limit: 12,
+        page, limit: 12,
         search: search || undefined,
         reviewed: filterStatus === "all" ? undefined : (filterStatus === "reviewed"),
         subjectId: selSubject || undefined,
         unitId: selUnit || undefined,
         lessonId: selLesson || undefined,
-        reported: showReportedOnly ? "true" : undefined   // ← Nuevo
+        reported: showReportedOnly ? "true" : undefined
       };
-
       const { data } = await api.get("/admin/questions", { params });
       setQuestions(data.data.questions || []);
       setTotalPages(data.data.pages || 1);
@@ -85,112 +260,28 @@ export default function QuestionsManagement() {
     }
   };
 
-  const handleClearReports = async (questionId) => {
-    if (!confirm("¿Estás seguro de eliminar todos los reportes de esta pregunta?")) return;
+  useEffect(() => { fetchQuestions(); }, [page, filterStatus, search, selSubject, selUnit, selLesson, showReportedOnly]);
 
+  const handleClearReports = async (questionId) => {
+    if (!confirm("¿Eliminar todos los reportes de esta pregunta?")) return;
     try {
       await api.put(`/admin/questions/${questionId}/clear-reports`);
-      alert("Reportes eliminados correctamente.");
-      fetchQuestions(); // Refrescar la lista
-    } catch (err) {
-      alert("Error al limpiar los reportes");
-      console.error(err);
-    }
+      fetchQuestions();
+    } catch { alert("Error al limpiar los reportes"); }
   };
 
-  // Toggle rápido de Revisada / Pendiente
   const handleToggleReview = async (id, newReviewed) => {
     try {
       await api.put(`/admin/questions/${id}/review`, { approved: newReviewed });
-      fetchQuestions(); // Refrescar lista
-    } catch (err) {
-      alert("Error al actualizar estado de revisión");
-      console.error(err);
-    }
+      fetchQuestions();
+    } catch { alert("Error al actualizar estado de revisión"); }
   };
 
-  const handleReportQuestion = async (questionId) => {
-    const reasons = {
-      "wrong_answer": "La respuesta correcta es incorrecta",
-      "unclear": "La pregunta no está clara",
-      "typo": "Tiene errores de tipeo o gramática",
-      "too_hard": "Es demasiado difícil para el nivel",
-      "other": "Otro motivo"
-    };
-
-    const reasonKey = prompt(
-      "¿Por qué quieres reportar esta pregunta?\n\n" +
-      "1. Respuesta correcta incorrecta\n" +
-      "2. Pregunta poco clara\n" +
-      "3. Error de tipeo/gramática\n" +
-      "4. Demasiado difícil\n" +
-      "5. Otro\n\n" +
-      "Escribe el número:"
-    );
-
-    if (!reasonKey) return;
-
-    const reason = Object.keys(reasons)[parseInt(reasonKey) - 1] || "other";
-    const comment = prompt("Comentario adicional (opcional):") || "";
-
-    try {
-      await api.post(`/questions/${questionId}/report`, { reason, comment });
-      alert("¡Reporte enviado correctamente! Gracias por tu ayuda.");
-      fetchQuestions(); // refrescar lista
-    } catch (err) {
-      alert("Error al enviar el reporte");
-      console.error(err);
-    }
-  };
-
-  // Toggle rápido de Activa / Inactiva
   const handleToggleActive = async (id, newActive) => {
     try {
       await api.put(`/admin/questions/${id}`, { isActive: newActive });
       fetchQuestions();
-    } catch (err) {
-      alert("Error al actualizar estado activo");
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    fetchQuestions();
-  }, [page, filterStatus, search, selSubject, selUnit, selLesson, showReportedOnly]);
-
-  const resetFilters = () => {
-    setSearch("");
-    setFilterStatus("all");
-    setSelSubject("");
-    setSelUnit("");
-    setSelLesson("");
-    setPage(1);
-  };
-
-  // ==================== GENERACIÓN CON IA ====================
-  const handleGenerateAI = async () => {
-    if (!selLesson) {
-      alert("Por favor selecciona una Lección antes de generar preguntas con IA.");
-      return;
-    }
-
-    setGenerating(true);
-
-    try {
-      const { data } = await api.post("/admin/questions/generate", {
-        lessonId: selLesson,
-        count: 5,           // puedes hacer esto configurable
-        difficulty: "medium"
-      });
-
-      alert(data.message || `${data.data?.length || 0} preguntas generadas correctamente.`);
-      fetchQuestions();   // Refrescar la lista
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Error al generar preguntas con IA");
-    } finally {
-      setGenerating(false);
-    }
+    } catch { alert("Error al actualizar estado activo"); }
   };
 
   const handleDelete = async (id) => {
@@ -199,262 +290,253 @@ export default function QuestionsManagement() {
     fetchQuestions();
   };
 
+  const resetFilters = () => {
+    setSearch(""); setFilterStatus("all");
+    setSelSubject(""); setSelUnit(""); setSelLesson("");
+    setPage(1);
+  };
+
+  const handleGenerateAI = async () => {
+    if (!selLesson) {
+      alert("Por favor selecciona una Lección antes de generar preguntas con IA.");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const { data } = await api.post("/admin/questions/generate", {
+        lessonId: selLesson, count: 5, difficulty: "medium"
+      });
+      alert(data.message || `${data.data?.length || 0} preguntas generadas correctamente.`);
+      fetchQuestions();
+    } catch (err) {
+      alert(err.response?.data?.message || "Error al generar preguntas con IA");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleSaveQuestion = async (payload) => {
     try {
       let finalPayload = { ...payload };
-
-      // Si estamos creando una nueva pregunta y tenemos una lección seleccionada, la asignamos
-      if (!editingQuestion && selLesson) {
-        finalPayload.lesson = selLesson;
-      }
-
-      // Si estamos editando, no sobrescribimos el lesson a menos que se envíe explícitamente
+      if (!editingQuestion && selLesson) finalPayload.lesson = selLesson;
       if (editingQuestion?._id) {
         await api.put(`/admin/questions/${editingQuestion._id}`, finalPayload);
         alert("Pregunta actualizada correctamente");
       } else {
-        if (!finalPayload.lesson) {
-          alert("Debes seleccionar una lección para crear la pregunta");
-          return;
-        }
+        if (!finalPayload.lesson) { alert("Debes seleccionar una lección para crear la pregunta"); return; }
         await api.post("/admin/questions", finalPayload);
         alert("Pregunta creada correctamente");
       }
-
       setShowModal(false);
       setEditingQuestion(null);
-      fetchQuestions();        // Refrescar la lista
+      fetchQuestions();
     } catch (err) {
-      console.error(err);
-      console.error("Backend error:", err.response?.data);
       alert(err.response?.data?.message || "Error al guardar la pregunta");
     }
   };
 
   return (
-    <div className="space-y-6 pb-20">
+    <div className="qm-page space-y-6 pb-20">
+      <style>{QUESTIONS_CSS}</style>
+
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Gestión de Preguntas</h1>
-          <p className="text-gray-400">Control de calidad y generación con IA</p>
+          <h1 className="text-3xl font-black italic uppercase tracking-tight" style={{ color: "var(--text-primary)" }}>
+            Gestión de Preguntas
+          </h1>
+          <p className="text-sm font-semibold mt-0.5" style={{ color: "var(--text-secondary)" }}>
+            Control de calidad y generación con IA
+          </p>
         </div>
 
         <div className="flex gap-3">
-          <button 
-            onClick={handleGenerateAI}
-            disabled={generating || !selLesson}
-            className="bg-violet-600 hover:bg-violet-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl flex items-center gap-2 transition-all"
-          >
-            <Sparkles size={20} />
-            {generating ? "Generando..." : "Generar con IA"}
+          <button className="qm-btn-ai" onClick={handleGenerateAI}
+            disabled={generating || !selLesson}>
+            <Sparkles size={18} />
+            {generating ? "Generando…" : "Generar con IA"}
           </button>
-
-          <button 
-            onClick={() => { 
-              setEditingQuestion(null); 
-              setShowModal(true); 
-            }}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-2xl flex items-center gap-2 transition-all"
-          >
-            <Plus size={20} /> Nueva Manual
+          <button className="qm-btn-new"
+            onClick={() => { setEditingQuestion(null); setShowModal(true); }}>
+            <Plus size={18} /> Nueva Manual
           </button>
         </div>
       </div>
 
-      {/* Filtros Jerárquicos */}
-      <div className="bg-gray-900 border border-gray-800 p-6 rounded-3xl">
+      {/* Filtros */}
+      <div className="qm-filter-bar space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Materia</label>
-            <select value={selSubject} onChange={(e) => setSelSubject(e.target.value)} className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white">
-              <option value="">Todas las materias</option>
-              {subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-            </select>
+            <label className="qm-label">Materia</label>
+            <CustomSelect
+              value={selSubject}
+              onChange={setSelSubject}
+              options={subjects}
+              placeholder="Todas las materias"
+              getOptionValue={opt => opt._id}
+              getOptionLabel={opt => opt.name}
+            />
           </div>
-
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Unidad</label>
-            <select value={selUnit} onChange={(e) => setSelUnit(e.target.value)} disabled={!selSubject} className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white disabled:opacity-50">
-              <option value="">Todas las unidades</option>
-              {units.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
-            </select>
+            <label className="qm-label">Unidad</label>
+            <CustomSelect
+              value={selUnit}
+              onChange={setSelUnit}
+              options={units}
+              placeholder="Todas las unidades"
+              disabled={!selSubject}
+              getOptionValue={opt => opt._id}
+              getOptionLabel={opt => opt.name}
+            />
           </div>
-
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Lección</label>
-            <select value={selLesson} onChange={(e) => setSelLesson(e.target.value)} disabled={!selUnit} className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white disabled:opacity-50">
-              <option value="">Todas las lecciones</option>
-              {lessons.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
-            </select>
+            <label className="qm-label">Lección</label>
+            <CustomSelect
+              value={selLesson}
+              onChange={setSelLesson}
+              options={lessons}
+              placeholder="Todas las lecciones"
+              disabled={!selUnit}
+              getOptionValue={opt => opt._id}
+              getOptionLabel={opt => opt.name}
+            />
           </div>
-
           <div className="flex items-end">
-            <button onClick={resetFilters} className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-2xl text-white flex items-center justify-center gap-2">
-              <RotateCcw size={18} /> Limpiar Filtros
+            <button className="qm-btn-clear" onClick={resetFilters}>
+              <RotateCcw size={16} /> Limpiar Filtros
             </button>
           </div>
         </div>
 
-        {/* Buscador y estado */}
-        <div className="mt-4 flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar en el enunciado..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded-2xl pl-12 pr-4 py-3 text-white"
-            />
+        <div className="flex gap-3 flex-wrap">
+          <div className="qm-search-wrap">
+            <Search className="qm-search-icon" size={16} />
+            <input className="qm-search-input" type="text"
+              placeholder="Buscar en el enunciado…"
+              value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="bg-gray-800 border border-gray-700 text-white rounded-2xl px-6 py-3">
-            <option value="all">Todos los estados</option>
-            <option value="pending">Pendientes</option>
-            <option value="reviewed">Revisadas</option>
-          </select>
-          <button onClick={resetFilters} className="p-3 text-gray-400 hover:text-white transition-colors" title="Reiniciar filtros">
-            <RotateCcw size={22} />
-            </button>
-
-            <button
-              onClick={() => setShowReportedOnly(!showReportedOnly)}
-              className={`px-5 py-2.5 rounded-2xl text-sm font-medium transition-all flex items-center gap-2 border ${
-                showReportedOnly 
-                  ? "bg-orange-600 text-white border-orange-500" 
-                  : "bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
-              }`}
-            >
-              <ShieldAlert size={18} />
-              {showReportedOnly ? "Reportadas: ON" : "Reportadas: OFF"}
-            </button>
+          <CustomSelect
+            value={filterStatus}
+            onChange={setFilterStatus}
+            options={[
+              { value: "all", label: "Todos" },
+              { value: "pending", label: "Pendientes" },
+              { value: "reviewed", label: "Revisadas" },
+            ]}
+            getOptionValue={opt => opt.value}
+            getOptionLabel={opt => opt.label}
+          />
+          <button
+            className={`qm-btn-reported ${showReportedOnly ? "on" : "off"}`}
+            onClick={() => setShowReportedOnly(!showReportedOnly)}
+          >
+            <ShieldAlert size={16} />
+            {showReportedOnly ? "Reportadas: ON" : "Reportadas: OFF"}
+          </button>
         </div>
       </div>
 
-      {/* Tabla de Resultados */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
+      {/* Tabla */}
+      <div className="qm-card">
         {loading ? (
-          <div className="py-20 flex flex-col items-center justify-center">
-            <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-500">Cargando preguntas...</p>
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <div
+              className="qm-spin w-12 h-12 rounded-full border-4"
+              style={{ borderColor: "color-mix(in srgb, var(--text-accent) 25%, transparent)", borderTopColor: "var(--text-accent)" }}
+            />
+            <p className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>Cargando preguntas…</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-800 bg-gray-800/50">
-                  <th className="p-6 text-gray-400 font-medium text-sm uppercase">Pregunta</th>
-                  <th className="p-6 text-gray-400 font-medium text-sm uppercase">Tipo</th>
-                  <th className="p-6 text-gray-400 font-medium text-sm uppercase">Ubicación</th>
-                  <th className="p-6 text-center text-gray-400 font-medium text-sm uppercase">Estado</th>
-                  <th className="p-6 text-right text-gray-400 font-medium text-sm uppercase">Acciones</th>
+            <table className="w-full text-left">
+              <thead className="qm-table-head">
+                <tr>
+                  <th>Pregunta</th>
+                  <th>Tipo</th>
+                  <th>Ubicación</th>
+                  <th className="text-center">Estado</th>
+                  <th className="text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
+              <tbody>
                 {questions && questions.length > 0 ? (
-                  questions.map((q) => (
-                    <tr key={q._id} className="hover:bg-gray-800/30 transition-colors group">
-                      <td className="p-6 max-w-md">
-                        <div className="flex flex-col gap-1">
-                          <p className="text-white font-medium line-clamp-2" title={q.prompt}>
-                            {q.prompt}
-                          </p>
-                          {q.isAIGenerated && (
-                            <div className="flex items-center gap-1.5 text-[10px] bg-violet-500/10 text-violet-400 w-fit px-2 py-0.5 rounded-full border border-violet-500/20">
-                              <Sparkles size={10} /> IA GENERATED
-                            </div>
-                          )}
-                        </div>
+                  questions.map(q => (
+                    <tr key={q._id} className="qm-table-row">
+                      {/* Pregunta */}
+                      <td className="max-w-xs">
+                        <p className="text-sm font-black line-clamp-2" style={{ color: "var(--text-primary)" }}>
+                          {q.prompt}
+                        </p>
+                        {q.isAIGenerated && (
+                          <div className="qm-ai-badge mt-1.5">
+                            <Sparkles size={9} /> IA GENERATED
+                          </div>
+                        )}
                       </td>
-                      
-                      <td className="p-6">
+
+                      {/* Tipo */}
+                      <td>
                         <div className="flex flex-col gap-2">
-                          <span className="text-xs text-gray-300 bg-gray-800 px-2 py-1 rounded-md w-fit border border-gray-700">
+                          <span className="qm-type-badge">
                             {q.type?.replace("_", " ").toUpperCase()}
                           </span>
-                          <span className={`text-[11px] font-bold uppercase tracking-tight ${
-                            q.difficulty === 'easy' ? 'text-emerald-400' :
-                            q.difficulty === 'medium' ? 'text-amber-400' : 'text-red-400'
-                          }`}>
+                          <span className={`text-xs font-black uppercase tracking-tight ${diffClass(q.difficulty)}`}>
                             ● {q.difficulty}
                           </span>
                         </div>
                       </td>
 
-                      <td className="p-6">
-                        <div className="text-sm">
-                          <p className="text-gray-300 font-medium">{q.lesson?.name || "—"}</p>
-                          <p className="text-gray-500 text-xs italic">{q.lesson?.unit?.name || "Sin unidad"}</p>
-                        </div>
+                      {/* Ubicación */}
+                      <td>
+                        <p className="text-sm font-black" style={{ color: "var(--text-primary)" }}>
+                          {q.lesson?.name || "—"}
+                        </p>
+                        <p className="text-xs italic" style={{ color: "var(--text-muted)" }}>
+                          {q.lesson?.unit?.name || "Sin unidad"}
+                        </p>
                       </td>
 
-                      {/* Nueva columna: Toggle de Revisión */}
-                      <td className="p-6">
+                      {/* Estado */}
+                      <td>
                         <div className="flex flex-col items-center gap-2">
                           <button
+                            className={`qm-reviewed-btn ${q.isReviewed ? "reviewed" : "pending"}`}
                             onClick={() => handleToggleReview(q._id, !q.isReviewed)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                              q.isReviewed 
-                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20" 
-                                : "bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
-                            }`}
                           >
-                            {q.isReviewed ? (
-                              <>
-                                <CheckCircle size={16} />
-                                Revisada
-                              </>
-                            ) : (
-                              <>
-                                <XCircle size={16} />
-                                Pendiente
-                              </>
-                            )}
+                            {q.isReviewed ? <><CheckCircle size={14} /> Revisada</> : <><XCircle size={14} /> Pendiente</>}
                           </button>
-
-                          {/* Toggle de Activa */}
                           <button
-                            disabled onClick={() => handleToggleActive(q._id, !q.isActive)}
-                            className={`text-xs px-3 py-1 rounded-full transition-all ${
-                              q.isActive 
-                                ? "bg-emerald-600/80 text-white" 
-                                : "bg-gray-700 text-gray-400 hover:bg-gray-600"
-                            }`}
+                            className={`qm-active-badge ${q.isActive ? "active" : "inactive"}`}
+                            disabled
+                            onClick={() => handleToggleActive(q._id, !q.isActive)}
                           >
                             {q.isActive ? "Activa" : "Inactiva"}
                           </button>
-
-                          {/* Badge de reportes */}
-                            {q.reports && q.reports.length > 0 && (
-                              <div className="inline-flex items-center gap-1 bg-red-500/10 text-red-400 text-xs px-3 py-1 rounded-full border border-red-500/30">
-                                <ShieldAlert size={14} />
-                                {q.reports.length} reporte{q.reports.length > 1 ? "s" : ""}
-                              </div>
-                            )}
+                          {q.reports && q.reports.length > 0 && (
+                            <div className="qm-report-badge">
+                              <ShieldAlert size={12} />
+                              {q.reports.length} reporte{q.reports.length > 1 ? "s" : ""}
+                            </div>
+                          )}
                         </div>
                       </td>
 
-                      <td className="p-6">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => { setEditingQuestion(q); setShowModal(true); }}
-                            className="p-2.5 bg-gray-800 hover:bg-gray-700 text-blue-400 rounded-xl transition-all"
-                          >
-                            <Edit size={18} />
+                      {/* Acciones */}
+                      <td>
+                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ opacity: 1 }}>
+                          <button className="qm-btn-icon edit"
+                            onClick={() => { setEditingQuestion(q); setShowModal(true); }}>
+                            <Edit size={16} />
                           </button>
-                          <button 
-                            onClick={() => handleDelete(q._id)}
-                            className="p-2.5 bg-gray-800 hover:bg-red-500/20 text-red-400 rounded-xl transition-all"
-                          >
-                            <Trash2 size={18} />
+                          <button className="qm-btn-icon danger"
+                            onClick={() => handleDelete(q._id)}>
+                            <Trash2 size={16} />
                           </button>
-
                           {q.reports && q.reports.length > 0 && (
-                            <button 
+                            <button className="qm-btn-icon success"
                               onClick={() => handleClearReports(q._id)}
-                              className="p-2.5 bg-gray-800 hover:bg-green-500/20 text-green-400 rounded-xl transition-all"
-                              title="Limpiar todos los reportes"
-                            >
-                              <ShieldAlert size={18} /> {/* o usa un icono de "check" si prefieres */}
+                              title="Limpiar reportes">
+                              <ShieldAlert size={16} />
                             </button>
                           )}
                         </div>
@@ -464,9 +546,9 @@ export default function QuestionsManagement() {
                 ) : (
                   <tr>
                     <td colSpan="5" className="p-20 text-center">
-                      <div className="flex flex-col items-center gap-3 text-gray-500">
-                        <Search size={40} className="opacity-20" />
-                        <p>No se encontraron preguntas con estos filtros.</p>
+                      <div className="flex flex-col items-center gap-3" style={{ color: "var(--text-muted)" }}>
+                        <Search size={36} style={{ opacity: 0.3 }} />
+                        <p className="text-sm font-bold">No se encontraron preguntas con estos filtros.</p>
                       </div>
                     </td>
                   </tr>
@@ -479,25 +561,27 @@ export default function QuestionsManagement() {
 
       {/* Paginación */}
       <div className="flex justify-center gap-4 items-center">
-         <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="px-5 py-2 bg-gray-800 text-white rounded-xl disabled:opacity-20">Anterior</button>
-         <span className="text-gray-400 text-sm font-mono">Página {page} / {totalPages}</span>
-         <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="px-5 py-2 bg-gray-800 text-white rounded-xl disabled:opacity-20">Siguiente</button>
+        <button className="qm-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+          Anterior
+        </button>
+        <span className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>
+          Página <span style={{ color: "var(--text-primary)" }}>{page}</span> / {totalPages}
+        </span>
+        <button className="qm-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+          Siguiente
+        </button>
       </div>
 
       {showModal && (
-        <QuestionModal 
-          isOpen={showModal} 
-          onClose={() => { 
-            setShowModal(false); 
-            setEditingQuestion(null); 
-          }}
+        <QuestionModal
+          isOpen={showModal}
+          onClose={() => { setShowModal(false); setEditingQuestion(null); }}
           question={editingQuestion}
           onSave={handleSaveQuestion}
-          // Pasamos los datos jerárquicos
           subjects={subjects}
           units={units}
           lessons={lessons}
-          selectedLessonId={selLesson}   // lección actualmente seleccionada
+          selectedLessonId={selLesson}
         />
       )}
     </div>

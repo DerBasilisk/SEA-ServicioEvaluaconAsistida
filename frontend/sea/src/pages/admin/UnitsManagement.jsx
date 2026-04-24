@@ -1,7 +1,229 @@
 // frontend/sea/src/pages/admin/UnitsManagement.jsx
 import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, RotateCcw, Lock, X, } from "lucide-react";
+import { Plus, Edit, Trash2, RotateCcw, Lock, X, Search as SearchIcon, Filter } from "lucide-react";
 import api from "../../api/axios";
+import CustomSelect from "../../components/ui/CustomSelect";
+import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
+
+const UNITS_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+  .um-page { font-family: 'Nunito', sans-serif; }
+
+  .um-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 1.5rem;
+    overflow: hidden;
+  }
+
+  .um-filter-bar {
+    background: var(--glass-bg);
+    border: 1.5px solid var(--glass-border);
+    border-radius: 1.5rem;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+  }
+
+  /* Unit Card - Mobile */
+  .um-unit-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 1.25rem;
+    transition: all 0.2s ease;
+  }
+  .um-unit-card:active {
+    transform: scale(0.99);
+  }
+
+  .um-subject-badge {
+    background: color-mix(in srgb, var(--text-alternative-b) 12%, transparent);
+    color: var(--text-alternative-b);
+    border: 1px solid color-mix(in srgb, var(--text-alternative-b) 25%, transparent);
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .um-input {
+    width: 100%;
+    background: var(--glass-bg-small);
+    border: 1.5px solid var(--card-border);
+    border-radius: 1rem;
+    padding: 0.75rem 1.25rem;
+    color: var(--text-primary);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .um-input:focus { border-color: var(--text-accent); background: color-mix(in srgb, var(--text-accent) 4%, var(--card-bg)); }
+  .um-input::placeholder { color: var(--text-muted); }
+
+  .um-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Modal - Bottom sheet en móvil */
+  .um-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 1rem;
+  }
+  @media (min-width: 640px) {
+    .um-modal-overlay {
+      align-items: center;
+    }
+  }
+  .um-modal {
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 1.5rem;
+    width: 100%;
+    max-width: 32rem;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 60px var(--glass-shadow);
+    position: relative;
+  }
+  @media (min-width: 640px) {
+    .um-modal {
+      border-radius: 2rem;
+    }
+  }
+
+  .um-btn-primary {
+    width: 100%;
+    background: var(--text-alternative-b);
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .um-btn-primary:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+  .um-btn-primary:disabled {
+    background: var(--card-border);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .um-btn-ghost {
+    background: var(--glass-bg);
+    color: var(--text-secondary);
+    border: 1.5px solid var(--card-border);
+    border-radius: 1rem;
+    padding: 0.7rem 1rem;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Nunito', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .um-btn-ghost:active {
+    transform: scale(0.96);
+  }
+
+  .um-btn-icon {
+    background: transparent;
+    border: 1.5px solid transparent;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.18s;
+    display: inline-flex;
+    align-items: center;
+  }
+  .um-btn-icon:active {
+    transform: scale(0.92);
+  }
+  .um-btn-icon.danger:active {
+    background: var(--incorrect-bg);
+    color: var(--incorrect);
+  }
+
+  .um-new-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--text-alternative-b);
+    color: white;
+    border: none;
+    border-radius: 1rem;
+    padding: 0.7rem 1.2rem;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Nunito', sans-serif;
+  }
+  .um-new-btn:active {
+    transform: scale(0.96);
+  }
+
+  .um-close-btn {
+    position: sticky;
+    top: 0.75rem;
+    right: 0.75rem;
+    float: right;
+    background: var(--glass-bg);
+    border: 1.5px solid var(--card-border);
+    border-radius: 0.75rem;
+    padding: 0.4rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.18s;
+    display: flex;
+    z-index: 10;
+  }
+  .um-close-btn:active {
+    transform: scale(0.92);
+  }
+
+  .um-expand-icon {
+    transition: transform 0.2s ease;
+  }
+  .um-expand-icon.expanded {
+    transform: rotate(180deg);
+  }
+
+  /* Scroll horizontal para filtros */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+`;
 
 export default function UnitsManagement() {
   const [units, setUnits] = useState([]);
@@ -10,21 +232,12 @@ export default function UnitsManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
+  const [expandedUnit, setExpandedUnit] = useState(null);
 
-  // Filtros
   const [selectedSubject, setSelectedSubject] = useState("");
   const [search, setSearch] = useState("");
 
-  const initialForm = {
-    subject: "",
-    name: "",
-    description: "",
-    icon: "📖",
-    order: 1,
-    requiredXP: 0,
-    isActive: true
-  };
-
+  const initialForm = { subject: "", name: "", description: "", icon: "📖", order: 1, requiredXP: 0, isActive: true };
   const [form, setForm] = useState(initialForm);
 
   const fetchData = async () => {
@@ -42,18 +255,11 @@ export default function UnitsManagement() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  // Filtro inteligente
   const filteredUnits = units.filter(unit => {
-    const matchesSubject = !selectedSubject || 
-      String(unit.subject?._id || unit.subject) === String(selectedSubject);
-
-    const matchesSearch = !search || 
-      unit.name.toLowerCase().includes(search.toLowerCase());
-
+    const matchesSubject = !selectedSubject || String(unit.subject?._id || unit.subject) === String(selectedSubject);
+    const matchesSearch = !search || unit.name.toLowerCase().includes(search.toLowerCase());
     return matchesSubject && matchesSearch;
   });
 
@@ -62,19 +268,13 @@ export default function UnitsManagement() {
       setEditingUnit(unit);
       setForm({
         subject: unit.subject?._id || unit.subject,
-        name: unit.name,
-        description: unit.description || "",
-        icon: unit.icon || "📖",
-        order: unit.order,
-        requiredXP: unit.requiredXP || 0,
-        isActive: unit.isActive ?? true
+        name: unit.name, description: unit.description || "",
+        icon: unit.icon || "📖", order: unit.order,
+        requiredXP: unit.requiredXP || 0, isActive: unit.isActive ?? true
       });
     } else {
       setEditingUnit(null);
-      setForm({ 
-        ...initialForm, 
-        subject: selectedSubject || subjects[0]?._id || "" 
-      });
+      setForm({ ...initialForm, subject: selectedSubject || subjects[0]?._id || "" });
     }
     setShowModal(true);
   };
@@ -82,6 +282,10 @@ export default function UnitsManagement() {
   const saveUnit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    if (!validarNombre(form.name)) {
+      alert(NOMBRE_ERROR);
+      return;
+    }
     try {
       if (editingUnit) {
         await api.put(`/admin/units/${editingUnit._id}`, form);
@@ -90,8 +294,9 @@ export default function UnitsManagement() {
       }
       setShowModal(false);
       fetchData();
+      if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert(err.response?.data?.message || "Error al guardar. Revisa que el orden no esté repetido en la materia.");
+      alert(err.response?.data?.message || "Error al guardar. Revisa que el orden no esté repetido.");
     } finally {
       setIsSubmitting(false);
     }
@@ -102,215 +307,234 @@ export default function UnitsManagement() {
     try {
       await api.delete(`/admin/units/${id}`);
       fetchData();
+      if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
       alert("Error al eliminar la unidad");
     }
   };
 
-  const resetFilters = () => {
-    setSelectedSubject("");
-    setSearch("");
+  const resetFilters = () => { setSelectedSubject(""); setSearch(""); };
+
+  const getSubjectName = (subjectId) => {
+    const subject = subjects.find(s => s._id === subjectId);
+    return subject?.name || "Sin materia";
   };
 
-  if (loading) return <div className="text-center py-20 text-white">Cargando unidades...</div>;
+  if (loading) {
+    return (
+      <div className="um-page flex items-center justify-center py-20">
+        <style>{UNITS_CSS}</style>
+        <div className="w-8 h-8 border-3 rounded-full animate-spin" style={{ borderColor: "var(--text-accent)", borderTopColor: "transparent" }} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
+    <div className="um-page space-y-5 pb-20">
+      <style>{UNITS_CSS}</style>
+
+      {/* Header con botón nueva unidad */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-white">Gestión de Unidades</h1>
-          <p className="text-gray-400">Organiza los temas principales de cada materia.</p>
+          <h1 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tight" style={{ color: "var(--text-primary)" }}>
+            Unidades
+          </h1>
+          <p className="text-xs sm:text-sm font-semibold mt-0.5" style={{ color: "var(--text-secondary)" }}>
+            {filteredUnits.length} unidades · {subjects.length} materias
+          </p>
         </div>
-        <button 
-          onClick={() => openModal()} 
-          className="bg-emerald-600 hover:bg-emerald-700 px-6 py-3 rounded-2xl text-white flex items-center gap-2 transition-colors"
-        >
-          <Plus size={20} /> Nueva Unidad
+        <button className="um-new-btn" onClick={() => openModal()}>
+          <Plus size={16} /> <span className="hidden sm:inline">Nueva Unidad</span>
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 flex flex-col md:flex-row gap-4">
-        <div className="flex-1">
-          <label className="text-gray-400 text-sm block mb-2">Filtrar por Materia</label>
-          <select
-            value={selectedSubject}
-            onChange={(e) => setSelectedSubject(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-white"
-          >
-            <option value="">Todas las materias</option>
-            {subjects.map(s => (
-              <option key={s._id} value={s._id}>{s.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex-1">
-          <label className="text-gray-400 text-sm block mb-2">Buscar Unidad</label>
-          <input
-            type="text"
-            placeholder="Nombre de la unidad..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-2xl px-5 py-3 text-white"
-          />
-        </div>
-
-        <div className="flex items-end">
-          <button
-            onClick={resetFilters}
-            className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl flex items-center gap-2 transition-colors"
-          >
-            <RotateCcw size={18} />
-            Limpiar
-          </button>
-        </div>
-      </div>
-
-      {/* Tabla */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-gray-800/50 text-gray-400 text-sm">
-              <th className="p-6">Icono</th>
-              <th className="p-6">Materia</th>
-              <th className="p-6">Nombre de Unidad</th>
-              <th className="p-6 text-center">XP Requerido</th>
-              <th className="p-6 text-center">Orden</th>
-              <th className="p-6 text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800 text-gray-300">
-            {filteredUnits.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="p-12 text-center text-gray-400">
-                  No se encontraron unidades con los filtros aplicados.
-                </td>
-              </tr>
-            ) : (
-              filteredUnits.map(u => (
-                <tr key={u._id} className="hover:bg-gray-800/30 transition-colors">
-                  <td className="p-6 text-3xl">{u.icon}</td>
-                  <td className="p-6">
-                    <span className="bg-gray-800 px-3 py-1 rounded text-emerald-400 text-sm border border-emerald-500/20">
-                      {u.subject?.name || "Sin materia"}
-                    </span>
-                  </td>
-                  <td className="p-6 font-medium text-white">{u.name}</td>
-                  <td className="p-6 text-center flex items-center justify-center gap-1">
-                    <Lock size={14} className="text-gray-500" /> {u.requiredXP}
-                  </td>
-                  <td className="p-6 text-center font-mono">{u.order}</td>
-                  <td className="p-6 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button 
-                        onClick={() => openModal(u)} 
-                        className="p-2 hover:bg-gray-700 rounded-xl transition-colors"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        onClick={() => deleteUnit(u._id)} 
-                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modal (mantengo tu modal actual, solo agregué pequeño ajuste) */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-8 w-full max-w-lg relative shadow-2xl">
-            <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white"><X /></button>
-            
-            <h2 className="text-2xl font-bold mb-6 text-white">
-              {editingUnit ? "Editar Unidad" : "Nueva Unidad"}
-            </h2>
-
-            <form onSubmit={saveUnit} className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Materia</label>
-                <select 
-                  value={form.subject} 
-                  onChange={e => setForm({...form, subject: e.target.value})} 
-                  className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500"
-                  required
-                >
-                  <option value="" disabled>Seleccionar materia...</option>
-                  {subjects.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                </select>
+      {/* Filtros - Mobile optimizado */}
+      <div className="um-filter-bar">
+        <div className="space-y-3">
+          {/* Selector de materia - Mobile full width */}
+          <div>
+            <label className="um-label text-[10px]">Filtrar por Materia</label>
+            <CustomSelect
+              value={selectedSubject}
+              onChange={setSelectedSubject}
+              options={[{ _id: "", name: "Todas las materias" }, ...subjects]}
+              placeholder="Todas las materias"
+              getOptionValue={opt => opt._id}
+              getOptionLabel={opt => opt.name}
+            />
+          </div>
+          
+          {/* Buscador y limpiar en fila */}
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="um-label text-[10px]">Buscar</label>
+              <div className="relative">
+                <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }} />
+                <input className="um-input pl-9" type="text" placeholder="Nombre..."
+                  value={search} onChange={e => setSearch(e.target.value)} />
               </div>
-
-              <div className="grid grid-cols-4 gap-4">
-                <div className="col-span-1">
-                  <label className="text-sm text-gray-400 mb-2 block">Icono</label>
-                  <input 
-                    type="text" 
-                    value={form.icon} 
-                    onChange={e => setForm({...form, icon: e.target.value})} 
-                    className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-center text-xl" 
-                  />
-                </div>
-                <div className="col-span-3">
-                  <label className="text-sm text-gray-400 mb-2 block">Nombre</label>
-                  <input 
-                    type="text" 
-                    placeholder="Ej: Álgebra Lineal" 
-                    value={form.name} 
-                    onChange={e => setForm({...form, name: e.target.value})} 
-                    className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-emerald-500" 
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm text-gray-400 mb-2 block">Descripción</label>
-                <textarea 
-                  value={form.description} 
-                  onChange={e => setForm({...form, description: e.target.value})} 
-                  className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-white h-24 resize-none"
-                  placeholder="De qué trata esta unidad..."
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">Orden</label>
-                  <input 
-                    type="number" 
-                    value={form.order} 
-                    onChange={e => setForm({...form, order: Number(e.target.value)})} 
-                    className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-white" 
-                    required 
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-2 block">XP Requerido</label>
-                  <input 
-                    type="number" 
-                    value={form.requiredXP} 
-                    onChange={e => setForm({...form, requiredXP: Number(e.target.value)})} 
-                    className="w-full bg-gray-800 border border-gray-700 rounded-2xl p-4 text-white" 
-                  />
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-700 rounded-2xl text-white font-bold text-lg transition-all shadow-lg shadow-emerald-900/20"
-              >
-                {isSubmitting ? "Guardando..." : (editingUnit ? "Actualizar Unidad" : "Crear Unidad")}
+            </div>
+            <div className="flex items-end">
+              <button className="um-btn-ghost" onClick={resetFilters}>
+                <RotateCcw size={14} /> Limpiar
               </button>
-            </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista de Unidades - Cards */}
+      <div className="space-y-3">
+        {filteredUnits.length === 0 ? (
+          <div className="um-card p-8 text-center">
+            <p className="font-bold" style={{ color: "var(--text-secondary)" }}>
+              No se encontraron unidades
+            </p>
+            <button 
+              onClick={resetFilters}
+              className="mt-3 text-xs font-bold uppercase tracking-wider"
+              style={{ color: "var(--text-accent)" }}
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        ) : (
+          filteredUnits.map(unit => (
+            <div key={unit._id} className="um-unit-card">
+              {/* Header de la tarjeta */}
+              <div 
+                className="p-4 cursor-pointer"
+                onClick={() => setExpandedUnit(expandedUnit === unit._id ? null : unit._id)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-3xl">{unit.icon || "📖"}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black text-base truncate" style={{ color: "var(--text-primary)" }}>
+                        {unit.name}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        <span className="um-subject-badge">{getSubjectName(unit.subject?._id || unit.subject)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 ml-2">
+                    {/* Botones de acción - No cierran el expand */}
+                    <button 
+                      className="um-btn-icon" 
+                      onClick={(e) => { e.stopPropagation(); openModal(unit); }}
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button 
+                      className="um-btn-icon danger" 
+                      onClick={(e) => { e.stopPropagation(); deleteUnit(unit._id); }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Stats resumidos */}
+                <div className="flex items-center justify-between mt-3 pt-2 border-t" style={{ borderColor: "var(--card-border)" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <Lock size={12} style={{ color: "var(--text-muted)" }} />
+                      <span className="text-xs font-bold" style={{ color: "var(--text-secondary)" }}>
+                        XP: {unit.requiredXP || 0}
+                      </span>
+                    </div>
+                    <div className="text-xs font-mono" style={{ color: "var(--text-secondary)" }}>
+                      Orden: {unit.order}
+                    </div>
+                  </div>
+                  <div className="text-xs font-bold px-2 py-1 rounded-full" style={{ 
+                    background: unit.isActive ? "color-mix(in srgb, var(--correct) 10%, transparent)" : "color-mix(in srgb, var(--incorrect) 10%, transparent)",
+                    color: unit.isActive ? "var(--correct)" : "var(--incorrect)"
+                  }}>
+                    {unit.isActive ? "Activa" : "Inactiva"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Descripción expandible */}
+              {expandedUnit === unit._id && unit.description && (
+                <div className="px-4 pb-4 pt-1 border-t" style={{ borderColor: "var(--card-border)" }}>
+                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                    {unit.description}
+                  </p>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Modal - Bottom sheet en móvil */}
+      {showModal && (
+        <div className="um-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="um-modal" onClick={e => e.stopPropagation()}>
+            <button className="um-close-btn" onClick={() => setShowModal(false)}><X size={18} /></button>
+
+            <div className="p-5 pt-12">
+              <h2 className="text-xl sm:text-2xl font-black italic uppercase tracking-tight mb-5" style={{ color: "var(--text-primary)" }}>
+                {editingUnit ? "Editar Unidad" : "Nueva Unidad"}
+              </h2>
+
+              <form onSubmit={saveUnit} className="space-y-4">
+                <div>
+                  <label className="um-label">Materia</label>
+                  <CustomSelect
+                    value={form.subject}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || NOMBRE_REGEX.test(val)) setForm({ ...form, name: val });
+                    }}
+                    options={subjects}
+                    placeholder="Seleccionar materia…"
+                    getOptionValue={opt => opt._id}
+                    getOptionLabel={opt => opt.name}
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="col-span-1">
+                    <label className="um-label">Icono</label>
+                    <input className="um-input text-center text-xl" type="text"
+                      value={form.icon} onChange={e => setForm({ ...form, icon: e.target.value })} maxLength={2} />
+                  </div>
+                  <div className="col-span-3">
+                    <label className="um-label">Nombre</label>
+                    <input className="um-input" type="text" placeholder="Ej: Álgebra Lineal"
+                      value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="um-label">Descripción</label>
+                  <textarea className="um-input" rows={3} value={form.description}
+                    onChange={e => setForm({ ...form, description: e.target.value })}
+                    placeholder="De qué trata esta unidad…" style={{ resize: "none" }} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="um-label">Orden</label>
+                    <input className="um-input" type="number"
+                      value={form.order} onChange={e => setForm({ ...form, order: Number(e.target.value) })} required />
+                  </div>
+                  <div>
+                    <label className="um-label">XP Requerido</label>
+                    <input className="um-input" type="number"
+                      value={form.requiredXP} onChange={e => setForm({ ...form, requiredXP: Number(e.target.value) })} />
+                  </div>
+                </div>
+
+                <button type="submit" className="um-btn-primary" disabled={isSubmitting}>
+                  {isSubmitting ? "Guardando…" : (editingUnit ? "Actualizar" : "Crear Unidad")}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

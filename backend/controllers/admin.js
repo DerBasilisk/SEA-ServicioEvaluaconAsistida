@@ -9,14 +9,28 @@ const { generateQuestions } = require("../services/ai.service");
 
 const getUsers = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search = "" } = req.query;
-    const query = search
-      ? { $or: [
-          { username: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } },
-          { displayName: { $regex: search, $options: "i" } },
-        ]}
-      : {};
+    const { page = 1, limit = 20, search = "", role, status } = req.query;
+    
+    const query = {};
+
+    // Filtro de búsqueda
+    if (search) {
+      query.$or = [
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { displayName: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Filtro de rol
+    if (role && role !== "all") {
+      query.role = role;
+    }
+
+    // Filtro de estado
+    if (status && status !== "all") {
+      query.isActive = status === "active";
+    }
 
     const total = await User.countDocuments(query);
     const users = await User.find(query)
