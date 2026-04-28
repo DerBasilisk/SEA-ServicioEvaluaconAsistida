@@ -16,7 +16,7 @@ const PUBLIC_PROFILE_CSS = `
   .sea-glass {
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     box-shadow: 0 20px 50px var(--glass-shadow);
   }
 
@@ -134,7 +134,7 @@ export default function PublicProfile() {
 
           {/* CONTENIDO DEL PERFIL */}
           <div className="px-10 pb-10 text-center -mt-16 relative">
-            <div className="inline-block p-1.5 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl mb-4 relative">
+            <div className="inline-block backdrop-blur-md rounded-2xl shadow-xl mb-4 relative">
               <Avatar src={profile.avatar} name={displayName} size="xl" className="border-2 border-white rounded-2xl" />
             </div>
 
@@ -147,11 +147,11 @@ export default function PublicProfile() {
             </div>
             
             <div className="flex items-center justify-center gap-3 flex-wrap mb-8">
-              <div className="px-5 py-2 bg-[var(--card-bg)] border border-white rounded-full text-[10px] font-black text-[--text-primary] uppercase tracking-widest shadow-sm">
+              <div className="px-5 py-2 bg-[var(--card-bg)] border-2 border-white rounded-full text-[10px] font-black text-[--text-primary] uppercase tracking-widest shadow-sm">
                 NIVEL {profile.level}
               </div>
               {league && (
-                <div className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border border-white shadow-sm ${league.bg} ${league.color}`}>
+                <div className={`flex items-center gap-2 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border-2 border-white shadow-sm ${league.bg} ${league.color}`}>
                   {league.icon} {league.name}
                 </div>
               )}
@@ -161,8 +161,8 @@ export default function PublicProfile() {
             <div className="max-w-xs mx-auto">
               {profile.friendStatus === "accepted" ? (
                 <button onClick={handleRemove} disabled={actionLoading}
-                  className="w-full py-4 rounded-2xl bg-rose-[--incorrect-bg] text-[--negative] border border-[--negative] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[--negative] hover:text-white transition-all flex items-center justify-center gap-2">
-                  <UserMinus size={14} /> Eliminar Contacto
+                  className="w-full py-4 rounded-2xl bg-rose-[--incorrect-bg] text-[--negative] border-2 border-[--negative] font-black text-[10px] uppercase tracking-[0.2em] hover:bg-[--negative] hover:text-white transition-all flex items-center justify-center gap-2">
+                  <UserMinus size={20} /> Eliminar Contacto
                 </button>
               ) : profile.friendStatus === "pending" ? (
                 <div className="w-full py-4 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-2">

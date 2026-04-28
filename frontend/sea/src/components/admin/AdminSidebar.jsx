@@ -4,7 +4,7 @@ import {
   BarChart3, Users, ListChecks,
   BookOpen, Layers, BookText,
   LogOut, Home, ChevronLeft,
-  ShieldCheck, X
+  ShieldCheck, X, Menu
 } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import Avatar from "../Avatar";
@@ -43,9 +43,13 @@ const SIDEBAR_CSS = `
     transform: translateX(3px);
   }
   .sea-nav-link.active {
-    background: color-mix(in srgb, var(--text-accent) 15%, transparent);
+    background: color-mix(in srgb, var(--text-secondary) 15%, transparent);
     color: var(--text-accent);
     border-color: color-mix(in srgb, var(--text-accent) 35%, transparent);
+  }
+
+  [data-theme="high-contrast"] .sea-nav-link {
+    background: var(--glass-bg);
   }
 
   /* Botón de logout */
@@ -78,22 +82,22 @@ const SIDEBAR_CSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     width: 100%;
-    padding: 0.65rem;
+    padding: 0.85rem;
     border-radius: 1rem;
-    font-weight: 700;
-    font-size: 0.75rem;
+    font-weight: 800;
+    font-size: 0.8rem;
     transition: all 0.22s ease;
-    color: var(--text-muted);
-    background: transparent;
-    border: none;
+    color: var(--text-secondary);
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
     cursor: pointer;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
   .sea-back-btn:hover {
-    color: var(--text-primary);
+    color: var(--correct);
   }
 
   /* Badge de status */
@@ -127,6 +131,7 @@ const SIDEBAR_CSS = `
     margin-bottom: 0.5rem;
     display: block;
   }
+
 
   /* Divider */
   .sea-divider {
@@ -180,7 +185,7 @@ const SIDEBAR_CSS = `
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--glass-bg);
+    background: var(--card-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top-left-radius: 1.5rem;
@@ -362,7 +367,7 @@ export default function AdminSidebar({ mobileOpen, onMobileClose }) {
             ? 'active' 
             : ''}`}
         >
-          <Layers size={22} />
+          <Menu size={22} />
           <span>Más</span>
         </button>
       </div>
@@ -382,13 +387,13 @@ export default function AdminSidebar({ mobileOpen, onMobileClose }) {
         <div className="sea-drag-indicator" />
         <div className="px-4 pb-6">
           <div className="flex items-center justify-between mb-4 px-2">
-            <h3 className="font-black text-lg" style={{ color: "var(--text-primary)" }}>
+            <h3 className="font-black text-lg" style={{ color: "var(--text-secondary)" }}>
               Más opciones
             </h3>
             <button
               onClick={() => setBottomSheetOpen(false)}
               className="p-2 rounded-xl"
-              style={{ background: "var(--glass-bg-small)" }}
+              style={{ background: "var(--glass-bg-small)", color: "var(--text-secondary)" }}
             >
               <X size={18} />
             </button>
@@ -401,7 +406,7 @@ export default function AdminSidebar({ mobileOpen, onMobileClose }) {
               to={item.to}
               end={item.end}
               onClick={() => setBottomSheetOpen(false)}
-              className="sea-nav-link w-full mb-2"
+              className="sea-nav-link w-full mb-2 bg-[--glass-border] rounded-2xl"
             >
               {item.icon}
               <span>{item.label}</span>

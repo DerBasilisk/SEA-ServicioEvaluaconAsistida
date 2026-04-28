@@ -37,6 +37,9 @@ import SubjectsManagement from "./pages/admin/SubjectsManagement";
 import UnitsManagement from "./pages/admin/UnitsManagement";        // ← Corregido (plural)
 import LessonsManagement from "./pages/admin/LessonsManagement";
 
+// Adiciones
+import AudioManager from "./components/AudioManager";
+
 import DuelInviteToast from "./components/Duelinvitetoast";
 
 function App() {
@@ -55,6 +58,7 @@ function App() {
 
   return (
     <BrowserRouter>
+    <AudioManager />
       <Routes>
         {/* Rutas Públicas */}
         

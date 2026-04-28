@@ -91,7 +91,7 @@ export default function Register() {
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-[1.5rem] mb-6 bg-[var(--text-accent)] shadow-xl rotate-[-6deg]">
-               <img src="/sealogo.png" width="50" alt="SEA" className="brightness-0 invert" />
+               <img src="/logos/LogoWhite.svg" width="50" alt="SEA" className="brightness-0 invert" />
             </div>
             <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[var(--text-primary)]">
               Nueva Cuenta

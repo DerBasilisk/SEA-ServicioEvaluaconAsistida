@@ -124,7 +124,7 @@ export default function Login() {
           <div className="text-center mb-8" style={{ animation: "login-fadeUp .45s ease both" }}>
             <div className="sea-login-logo inline-flex items-center justify-center w-40 h-20 rounded-[2rem] mb-6">
             <div className="bg-[#2B7FE8] p-1.5 rounded-3xl shadow-lg rotate-[-3deg] group-hover:rotate-0 transition-all">
-             <img src="/sealogo.png" width="120" alt="SEA" className="brightness-0 invert" />
+             <img src="/logos/LogoWhite.svg" width="120" alt="SEA" className="brightness-0 invert" />
             </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter italic uppercase text-[--text-primary]">

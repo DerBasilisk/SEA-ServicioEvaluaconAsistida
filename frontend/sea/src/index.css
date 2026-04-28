@@ -20,11 +20,11 @@
   --text-alternative: #51a2ff;
   --text-alternative-a: #fdc700;
   --text-alternative-b: #00d492;
-  --text-muted: #AAC0D8;
+  --text-muted: #9aabbd;
   --text-accent: #2B7FE8;
   --text-accent-hover: #2B7FE8e5;
   --deco-blob: #ffffff4d;
-  --deco-blob2: #60a5fa1a;
+  --deco-blob2: #1e68c23f;
   --progress-track: #ffffff66;
   --subject-icon-bg: #f8fafc;
   --subject-icon-border: #e2e8f0;
@@ -73,8 +73,8 @@
   --text-muted: #64748b;      /* Para detalles menos importantes */
   --text-accent: #60a5fa;     /* Un azul más eléctrico y visible */
   --text-accent-hover: #60a5fae5;
-  --deco-blob: #3b82f608;
-  --deco-blob2: #8b5cf60a;
+  --deco-blob: #3b83f631;
+  --deco-blob2: #8a5cf625;
   --progress-track: #ffffff0d;
   --subject-icon-bg: #0f172a;
   --subject-icon-border: #334155;
@@ -122,9 +122,9 @@
   --text-muted: #FFFF00; /* El amarillo sobre negro es el contraste más alto posible */
   --text-accent: #00ffff;
   --text-accent-hover: #00ffffe5;
-  --deco-blob: transparent;
-  --deco-blob2: transparent;
-  --progress-track: #333333;
+  --deco-blob: #000000;
+  --deco-blob2: #000000;
+  --progress-track: #000000;
   --subject-icon-bg: #000000;
   --subject-icon-border: #FFFFFF;
   --progress-bar-bg: #FFFFFF;

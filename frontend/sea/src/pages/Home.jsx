@@ -1,78 +1,193 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { 
-  Plus, ChevronRight, 
+import {
+  Plus, ChevronRight,
   GraduationCap, Zap,
-  Flame, Star, Award
+  Flame, Star, Award, TrendingUp, BookOpen
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
 import Avatar from "../components/Avatar";
 
+/* ─────────────────────────────────────────────
+   CSS global del módulo
+───────────────────────────────────────────── */
 const HOME_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800;1,900&display=swap');
+
   .sea-home { font-family: 'Nunito', sans-serif; }
-  
+
+  /* ── Focus visible global: accesibilidad teclado ── */
+  .sea-home *:focus-visible {
+    outline: 3px solid var(--text-accent);
+    outline-offset: 3px;
+    border-radius: 0.5rem;
+  }
+
+  /* ── Glass cards ── */
   .sea-glass-main {
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1.5px solid var(--glass-border);
-    box-shadow: 0 20px 50px var(--glass-shadow);
+    box-shadow: 0 8px 32px var(--glass-shadow);
     color: var(--text-primary);
   }
-
-  .subject-card {
-    background: var(--card-bg);
-    border: 1.5px solid var(--card-border);
-    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .subject-card h3 { color: var(--text-primary); }
-  .subject-card p  { color: var(--text-secondary); }
-
-  .subject-card:hover {
-    transform: translateY(-6px) scale(1.02);
-    border-color: var(--text-accent);
-    box-shadow: 0 15px 30px var(--glass-shadow);
-  }
-
-  .progress-bar-inner {
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
   .sea-sidebar-card {
     background: var(--sidebar-bg);
     border: 1.5px solid var(--sidebar-border);
     backdrop-filter: blur(10px);
   }
 
-  /* ── HERO LEVEL: fuente grande sólo en desktop ── */
-  .level-number {
-    font-size: clamp(3rem, 10vw, 6rem);
+  /* ── Hero XP bar ── */
+  .xp-bar-track {
+    background: rgba(0,0,0,0.08);
+    border: 1px solid var(--glass-border);
+    border-radius: 99px;
+    overflow: hidden;
+    height: 12px;
+  }
+  .xp-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--text-accent), #10B981);
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Número de nivel grande ── */
+  .level-display {
+    font-size: clamp(2.8rem, 9vw, 5.5rem);
     font-weight: 900;
     font-style: italic;
     line-height: 1;
     letter-spacing: -0.04em;
-    text-transform: uppercase;
+    color: var(--text-primary);
   }
 
-  /* ── SUBJECT CARD en móvil: fila compacta ── */
-  @media (max-width: 639px) {
-    .subject-card {
-      border-radius: 1.25rem;
-      padding: 0.75rem 1rem 0.75rem 1.25rem;
-    }
-    .subject-card:hover {
-      transform: translateY(-3px) scale(1.01);
-    }
+  /* ── Subject Cards ── */
+  .subject-card {
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 1.5rem;
+    cursor: pointer;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.35s ease,
+                border-color 0.25s ease;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
   }
+  .subject-card:hover,
+  .subject-card:focus-visible {
+    transform: translateY(-5px) scale(1.015);
+    border-color: var(--text-accent);
+    box-shadow: 0 16px 36px var(--glass-shadow);
+  }
+  .subject-card:active { transform: scale(0.98); }
+
+  /* ── Accent stripe lateral ── */
+  .card-stripe {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 5px;
+    border-radius: 99px 0 0 99px;
+    opacity: 0.85;
+  }
+
+  /* ── Add card ── */
+  .add-card {
+    border: 2px dashed rgba(var(--card-border), 0.4);
+    border-color: color-mix(in srgb, var(--text-accent) 25%, transparent);
+    border-radius: 1.5rem;
+    background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 80px;
+    padding: 1.25rem;
+  }
+  .add-card:hover, .add-card:focus-visible {
+    border-color: var(--text-accent);
+    background: color-mix(in srgb, var(--text-accent) 8%, transparent);
+    transform: scale(1.01);
+  }
+
+  /* ── Leaderboard item ── */
+  .rank-item {
+    border-radius: 1rem;
+    padding: 0.6rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    transition: background 0.2s;
+  }
+  .rank-item:hover { background: rgba(255,255,255,0.08); }
+
+  /* ── Stat pill ── */
+  .stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  /* ── Skeleton loader ── */
+  @keyframes shimmer {
+    0%   { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  .skeleton {
+    border-radius: 1rem;
+    background: linear-gradient(90deg,
+      rgba(255,255,255,0.06) 25%,
+      rgba(255,255,255,0.14) 50%,
+      rgba(255,255,255,0.06) 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.4s infinite;
+  }
+
+  /* ── Responsive grid ── */
+  @media (max-width: 1023px) {
+    .subject-card { border-radius: 1.25rem; }
+  }
+  @media (max-width: 639px) {
+    .add-card { min-height: 64px; }
+  }
+
+  /* ── Progress circle rotate ── */
+  .prog-svg { transform: rotate(-90deg); }
+
+  /* ── Entrada suave ── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeSlideUp 0.45s ease both; }
+  .delay-1 { animation-delay: 0.08s; }
+  .delay-2 { animation-delay: 0.16s; }
+  .delay-3 { animation-delay: 0.24s; }
+  .delay-4 { animation-delay: 0.32s; }
 `;
 
+/* ─────────────────────────────────────────────
+   Componente principal
+───────────────────────────────────────────── */
 export default function Home() {
-  const navigate   = useNavigate();
-  const { user }   = useAuthStore();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [subjects,    setSubjects]    = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -96,284 +211,474 @@ export default function Home() {
     fetchData();
   }, [user?.favoriteSubjects]);
 
-  const progress = user ? Math.min(100, (user.xp / 1000) * 100) : 0;
+  const xpProgress  = user ? Math.min(100, (user.xp / 1000) * 100) : 0;
+  const currentLevel = user?.level || 1;
+  const nextLevel    = currentLevel + 1;
 
   return (
     <div
-      className="sea-home min-h-screen pb-16 relative overflow-hidden"
+      className="sea-home min-h-screen pb-24 lg:pb-10 relative overflow-x-hidden"
       style={{ background: "var(--bg-gradient)", color: "var(--text-primary)" }}
     >
       <style>{HOME_CSS}</style>
 
       {/* Blobs decorativos */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-5%] left-[-10%] w-[300px] md:w-[700px] h-[300px] md:h-[700px] rounded-full bg-[var(--deco-blob)] blur-[80px] md:blur-[140px]" />
-        <div className="absolute bottom-[-5%] right-[-10%] w-[250px] md:w-[600px] h-[250px] md:h-[600px] rounded-full bg-[var(--deco-blob2)] blur-[80px] md:blur-[140px]" />
+      <div className="fixed inset-0 pointer-events-none" aria-hidden="true">
+        <div className="absolute top-[-8%] left-[-12%] w-[280px] sm:w-[520px] lg:w-[700px] h-[280px] sm:h-[520px] lg:h-[700px] rounded-full"
+          style={{ background: "var(--deco-blob)", filter: "blur(90px)" }} />
+        <div className="absolute bottom-[-8%] right-[-12%] w-[240px] sm:w-[480px] lg:w-[600px] h-[240px] sm:h-[480px] lg:h-[600px] rounded-full"
+          style={{ background: "var(--deco-blob2)", filter: "blur(100px)" }} />
       </div>
 
       <Navbar />
 
       {/*
-        Layout general:
-        - Móvil  (<lg): 1 columna, orden: Hero → Misiones → Perfil → Ranking
-        - Desktop (≥lg): 3 columnas [2 | 8 | 2] (perfil | centro | ranking)
+        Layout:
+        - Móvil (<lg):   1 columna, orden Hero → Ranking → Misiones → Perfil
+        - Desktop (≥lg): 3 columnas 2|8|2 → Perfil | Centro | Ranking
       */}
-      <main className="w-full mx-auto px-3 sm:px-5 pt-5 relative z-10
-                        grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 max-w-[1600px]">
+      <main
+        id="main-content"
+        className="w-full max-w-[1600px] mx-auto px-3 sm:px-5 pt-4 sm:pt-6 relative z-10
+                   grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6"
+        aria-label="Panel principal"
+      >
 
-        {/* ── PERFIL ── orden-3 en móvil → orden-1 en desktop */}
-        <aside className="lg:col-span-2 order-3 lg:order-1 space-y-4">
-
-          {/* Card de usuario: horizontal en móvil, vertical en desktop */}
-          <section className="sea-glass-main rounded-2xl lg:rounded-[2rem] p-4 lg:p-5
-                               flex flex-row lg:flex-col items-center lg:text-center gap-4 lg:gap-0">
-            <div className="w-14 h-14 lg:w-20 lg:h-20 shrink-0 lg:mx-auto lg:mb-3">
-              <Avatar
-                src={user?.avatar}
-                name={user?.displayName}
-                size="xl"
-                className="rounded-2xl border-2 border-white/50 shadow-lg w-full h-full object-cover"
-              />
+        {/* ════════════════════════════════
+            PANEL PERFIL  (orden 4 móvil | col 1 desktop)
+        ════════════════════════════════ */}
+        <aside
+          className="lg:col-span-2 order-4 lg:order-1 flex flex-col gap-3"
+          aria-label="Perfil de usuario"
+        >
+          {/* Card de usuario */}
+          <section
+            className="sea-glass-main rounded-2xl lg:rounded-[2rem] p-4 animate-in delay-4
+                       flex flex-row lg:flex-col items-center lg:items-center gap-4 lg:gap-3 lg:text-center"
+          >
+            {/* Avatar */}
+            <div className="shrink-0 relative">
+              <div className="w-14 h-14 lg:w-18 lg:h-18 rounded-2xl overflow-hidden border-2"
+                style={{ borderColor: "var(--text-accent)" }}>
+                <Avatar
+                  src={user?.avatar}
+                  name={user?.displayName}
+                  size="xl"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              {/* Indicador de racha superpuesto */}
+              {user?.streak?.current > 0 && (
+                <div
+                  className="absolute -bottom-1.5 -right-1.5 flex items-center gap-0.5
+                             px-1.5 py-0.5 rounded-full text-[9px] font-black"
+                  style={{ background: "#f97316", color: "white" }}
+                  aria-label={`Racha de ${user.streak.current} días`}
+                >
+                  <Flame size={9} fill="white" />
+                  {user.streak.current}
+                </div>
+              )}
             </div>
+
+            {/* Info */}
             <div className="flex-1 min-w-0 lg:w-full">
-              <h2 className="text-sm lg:text-base font-black italic uppercase tracking-tighter leading-tight truncate lg:whitespace-normal lg:mb-3">
-                Agente {user?.username}
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-0.5">Agente</p>
+              <h2 className="font-black italic uppercase tracking-tighter text-base lg:text-lg
+                             leading-tight truncate lg:whitespace-normal" title={user?.username}>
+                {user?.username}
               </h2>
-              {/* Streak */}
-              <div className="inline-flex lg:w-full items-center justify-center gap-2 px-3 py-1.5 rounded-xl
-                              bg-white/20 border border-white/30 lg:mb-3">
-                <Flame className="text-orange-500 fill-orange-500 shrink-0" size={13} />
-                <p className="text-[10px] font-black uppercase">{user?.streak?.current || 0} Días</p>
+
+              {/* Stats en línea */}
+              <div className="flex lg:flex-col gap-2 mt-2.5">
+                <span className="stat-pill" aria-label={`Racha de ${user?.streak?.current || 0} días`}>
+                  <Flame size={11} style={{ color: "#f97316", fill: "#f97316" }} />
+                  {user?.streak?.current || 0} días
+                </span>
+                <span className="stat-pill" aria-label={`Nivel ${currentLevel}`}>
+                  <Zap size={11} fill="currentColor" style={{ color: "var(--text-accent)" }} />
+                  Lvl {currentLevel}
+                </span>
               </div>
             </div>
-            {/* Botón expediente: solo visible en desktop para no saturar móvil */}
+
+            {/* Botón expediente — desktop */}
             <Link
               to="/profile"
               className="hidden lg:flex w-full items-center justify-center gap-2 py-2.5 rounded-xl
-                         bg-[var(--text-accent)] text-white font-black text-[10px] uppercase tracking-widest
-                         hover:scale-[1.02] transition-transform"
+                         font-black text-[10px] uppercase tracking-widest transition-all
+                         hover:opacity-90 hover:scale-[1.02] mt-1"
+              style={{ background: "var(--text-accent)", color: "white" }}
+              aria-label="Ver mi expediente completo"
             >
-              Expediente <ChevronRight size={12} />
+              Expediente <ChevronRight size={12} aria-hidden="true" />
             </Link>
           </section>
 
           {/* Medallas — solo desktop */}
-          <section className="sea-sidebar-card rounded-[2rem] p-5 hidden lg:block">
-            <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-4 flex items-center gap-2">
-              <Award size={13} className="text-[var(--text-accent)]" /> Medallas
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              {user?.achievements?.slice(0, 3).map((ach, idx) => (
-                <div
-                  key={idx}
-                  className="aspect-square bg-white/10 rounded-xl flex items-center justify-center text-lg border border-white/20"
-                >
-                  {ach.icon}
-                </div>
-              ))}
-            </div>
-          </section>
+          {user?.achievements?.length > 0 && (
+            <section
+              className="sea-sidebar-card rounded-[2rem] p-4 hidden lg:block animate-in delay-4"
+              aria-label="Medallas obtenidas"
+            >
+              <h3 className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.2em] opacity-60 mb-3">
+                <Award size={12} style={{ color: "var(--text-accent)" }} aria-hidden="true" />
+                Medallas
+              </h3>
+              <div className="grid grid-cols-3 gap-2" role="list">
+                {user.achievements.slice(0, 6).map((ach, idx) => (
+                  <div
+                    key={idx}
+                    role="listitem"
+                    title={ach.name || "Medalla"}
+                    className="aspect-square bg-white/10 rounded-xl flex items-center justify-center
+                               text-xl border-2 border-white/20 cursor-default"
+                    aria-label={ach.name || `Medalla ${idx + 1}`}
+                  >
+                    {ach.icon}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
         </aside>
 
-        {/* ── CENTRO: Hero + Misiones ── orden-1 en móvil → orden-2 en desktop */}
-        <section className="lg:col-span-8 order-1 lg:order-2 space-y-4 lg:space-y-6">
+        {/* ════════════════════════════════
+            CENTRO: Hero + Misiones  (orden 1 móvil | col 2 desktop)
+        ════════════════════════════════ */}
+        <section className="lg:col-span-8 order-1 lg:order-2 flex flex-col gap-4 lg:gap-6">
 
-          {/* Hero de nivel */}
-          <section className="sea-glass-main rounded-2xl lg:rounded-[3rem] p-5 sm:p-7 lg:p-10 relative overflow-hidden">
-            <div className="absolute top-0 right-0 opacity-[0.04] rotate-12 pointer-events-none text-[var(--text-primary)]">
-              <GraduationCap size={160} />
-            </div>
+          {/* ── Hero de nivel ── */}
+          <section
+            className="sea-glass-main rounded-2xl lg:rounded-[2.5rem] p-5 sm:p-7 relative overflow-hidden animate-in"
+            aria-label={`Estado actual: Nivel ${currentLevel}, ${user?.xp || 0} XP`}
+          >
+            {/* Ícono decorativo */}
+            <GraduationCap
+              size={180}
+              aria-hidden="true"
+              className="absolute -top-4 -right-6 opacity-[0.04] rotate-12 pointer-events-none"
+              style={{ color: "var(--text-primary)" }}
+            />
 
-            <div className="flex flex-row items-center justify-between relative z-10 gap-3">
+            <div className="relative z-10 flex items-start justify-between gap-4">
               {/* Nivel */}
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--text-accent)]/20 text-[var(--text-accent)] mb-2">
-                  <Zap size={11} fill="currentColor" />
-                  <span className="text-[9px] font-black uppercase tracking-widest">Estatus</span>
+                <div
+                  className="stat-pill mb-2"
+                  style={{ color: "var(--text-accent)" }}
+                  aria-hidden="true"
+                >
+                  <Zap size={10} fill="currentColor" /> Estatus
                 </div>
-                <p className="level-number">NIVEL {user?.level || 1}</p>
+                <p className="level-display" aria-label={`Nivel ${currentLevel}`}>
+                  Nivel {currentLevel}
+                </p>
               </div>
+
               {/* XP */}
               <div className="text-right shrink-0">
-                <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest mb-0.5">
-                  Meta: Lvl {(user?.level || 1) + 1}
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-0.5">
+                  Meta: Lvl {nextLevel}
                 </p>
-                <p className="text-2xl sm:text-3xl lg:text-4xl font-black italic text-[var(--text-accent)]">
+                <p
+                  className="text-3xl sm:text-4xl font-black italic"
+                  style={{ color: "var(--text-accent)" }}
+                  aria-label={`${user?.xp || 0} de 1000 XP`}
+                >
                   {user?.xp || 0}
-                  <span className="text-xs sm:text-sm lg:text-base not-italic opacity-60"> / 1000 XP</span>
+                  <span className="text-sm not-italic opacity-50"> / 1000 XP</span>
                 </p>
               </div>
             </div>
 
-            {/* Barra de progreso */}
-            <div className="h-4 lg:h-6 w-full bg-black/5 rounded-full p-0.5 border border-white/20 mt-5">
+            {/* Barra XP */}
+            <div className="mt-5 space-y-1.5">
               <div
-                className="progress-bar-inner h-full bg-gradient-to-r from-[var(--text-accent)] to-[#10B981] rounded-full"
-                style={{ width: `${progress}%` }}
-              />
+                className="xp-bar-track"
+                role="progressbar"
+                aria-valuenow={user?.xp || 0}
+                aria-valuemin={0}
+                aria-valuemax={1000}
+                aria-label={`Progreso XP: ${Math.round(xpProgress)}%`}
+              >
+                <div className="xp-bar-fill" style={{ width: `${xpProgress}%` }} />
+              </div>
+              <div className="flex justify-between text-[10px] font-black opacity-40 px-0.5">
+                <span>Lvl {currentLevel}</span>
+                <span>{Math.round(xpProgress)}%</span>
+                <span>Lvl {nextLevel}</span>
+              </div>
             </div>
           </section>
 
-          {/* Cabecera de misiones */}
-          <div className="flex items-center justify-between px-1">
+          {/* ── Cabecera Misiones ── */}
+          <div className="flex items-center justify-between px-1 animate-in delay-1">
             <div className="flex items-center gap-2.5">
-              <div className="w-1 h-7 lg:w-1.5 lg:h-8 bg-[var(--text-accent)] rounded-full" />
-              <h2 className="text-2xl lg:text-4xl font-black uppercase italic tracking-tighter">Misiones</h2>
+              <div
+                className="w-1 h-8 rounded-full"
+                style={{ background: "var(--text-accent)" }}
+                aria-hidden="true"
+              />
+              <h2 className="text-2xl lg:text-3xl font-black italic uppercase tracking-tighter">
+                Misiones
+              </h2>
             </div>
-            <span className="text-[10px] font-black opacity-50 uppercase tracking-widest">
-              {subjects.length} Materias
+            <span
+              className="text-[10px] font-black uppercase tracking-widest opacity-40"
+              aria-label={`${subjects.length} materias activas`}
+            >
+              {subjects.length} {subjects.length === 1 ? "materia" : "materias"}
             </span>
           </div>
 
-          {/* Grid de materias
-              Móvil: 1 col  |  sm: 2 col  |  lg: 2 col  |  xl: 3 col */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-5">
-            {subjects.map((subject) => (
-              <SubjectCard
-                key={subject._id}
-                subject={subject}
-                onClick={() => navigate(`/subject/${subject.slug}`)}
-              />
-            ))}
-
-            {/* Botón añadir materia */}
-            <button
-              onClick={() => navigate("/subject-catalog")}
-              className="border-2 border-dashed border-white/10 rounded-[1.5rem] lg:rounded-[2.5rem]
-                         p-5 lg:p-8 flex items-center justify-center gap-3 group
-                         hover:border-[var(--text-accent)]/50 transition-all bg-white/5
-                         min-h-[72px] lg:min-h-[unset]"
+          {/* ── Grid de materias ── */}
+          {loading ? (
+            <SkeletonGrid />
+          ) : (
+            <div
+              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4 animate-in delay-2"
+              role="list"
+              aria-label="Lista de materias activas"
             >
-              <div className="w-9 h-9 lg:w-12 lg:h-12 rounded-full bg-white/10 flex items-center justify-center
-                              group-hover:scale-110 transition-transform">
-                <Plus size={18} className="text-[var(--text-secondary)]" />
-              </div>
-              <span className="text-[11px] font-black uppercase tracking-widest text-[var(--text-secondary)]
-                               sm:hidden lg:hidden">
-                Añadir materia
-              </span>
-            </button>
-          </div>
+              {subjects.map((subject, i) => (
+                <SubjectCard
+                  key={subject._id}
+                  subject={subject}
+                  onClick={() => navigate(`/subject/${subject.slug}`)}
+                  animDelay={i * 0.06}
+                />
+              ))}
+
+              {/* Botón añadir */}
+              <button
+                onClick={() => navigate("/subject-catalog")}
+                className="add-card group"
+                aria-label="Añadir nueva materia al catálogo"
+              >
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center
+                             border-2 transition-all group-hover:scale-110 group-hover:rotate-90"
+                  style={{
+                    borderColor: "var(--text-accent)",
+                    color: "var(--text-accent)",
+                  }}
+                >
+                  <Plus size={18} aria-hidden="true" />
+                </div>
+                <span
+                  className="text-[11px] font-black uppercase tracking-widest"
+                  style={{ color: "var(--text-secondary)" }}
+                >
+                  Añadir materia
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Estado vacío */}
+          {!loading && subjects.length === 0 && (
+            <EmptyMissions onAdd={() => navigate("/subject-catalog")} />
+          )}
         </section>
 
-        {/* ── RANKING ── orden-2 en móvil (debajo del hero) → orden-3 en desktop */}
-        <aside className="lg:col-span-2 order-2 lg:order-3">
-          <section className="sea-sidebar-card rounded-2xl lg:rounded-[2rem] p-4 lg:p-6">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)] mb-3 lg:mb-4 flex items-center gap-2">
-              <Star size={13} className="text-yellow-500 fill-yellow-500" /> TOP Rango
+        {/* ════════════════════════════════
+            RANKING  (orden 2 móvil | col 3 desktop)
+        ════════════════════════════════ */}
+        <aside
+          className="lg:col-span-2 order-2 lg:order-3"
+          aria-label="Tabla de clasificación"
+        >
+          <section className="sea-sidebar-card rounded-2xl lg:rounded-[2rem] p-4 lg:p-5 animate-in delay-1">
+            <h3
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest opacity-60 mb-3"
+              id="leaderboard-heading"
+            >
+              <Star size={12} style={{ color: "#f59e0b", fill: "#f59e0b" }} aria-hidden="true" />
+              TOP Rango
             </h3>
 
-            {/*
-              Móvil: fila horizontal scrolleable
-              Desktop (lg+): columna vertical
-            */}
-            <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 overflow-x-auto pb-1 lg:pb-0
-                            scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
-              {leaderboard.map((entry, i) => (
-                <div
-                  key={entry.user._id}
-                  className="flex items-center gap-2.5 shrink-0 lg:shrink
-                             bg-white/5 lg:bg-transparent
-                             px-3 py-2 lg:p-0
-                             rounded-xl lg:rounded-none
-                             min-w-[140px] lg:min-w-0"
-                >
-                  <div className={`w-6 h-6 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-black
-                                   ${i === 0 ? "bg-yellow-100 text-yellow-700" : "bg-slate-100 text-slate-500"}`}>
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-black truncate uppercase">{entry.user.displayName}</p>
-                    <div className="h-1 w-full bg-black/10 rounded-full mt-1 overflow-hidden">
-                      <div
-                        className="h-full bg-[var(--text-accent)]"
-                        style={{ width: `${(entry.xpEarned / 1000) * 100}%` }}
-                      />
+            {/* Móvil: scroll horizontal | Desktop: columna */}
+            <div
+              className="flex flex-row lg:flex-col gap-2 lg:gap-1
+                         overflow-x-auto pb-1 lg:pb-0
+                         [scrollbar-width:none] [-ms-overflow-style:none]
+                         [&::-webkit-scrollbar]:hidden"
+              role="list"
+              aria-labelledby="leaderboard-heading"
+            >
+              {leaderboard.length === 0 && (
+                <p className="text-[11px] opacity-40 font-bold py-2 shrink-0">
+                  Sin datos aún
+                </p>
+              )}
+              {leaderboard.map((entry, i) => {
+                const isFirst = i === 0;
+                const barW    = Math.min(100, (entry.xpEarned / 1000) * 100);
+                return (
+                  <div
+                    key={entry.user._id}
+                    role="listitem"
+                    className="rank-item shrink-0 lg:shrink min-w-[150px] lg:min-w-0"
+                    aria-label={`Posición ${i + 1}: ${entry.user.displayName}, ${entry.xpEarned} XP`}
+                  >
+                    {/* Badge posición */}
+                    <div
+                      className="w-6 h-6 shrink-0 rounded-lg flex items-center justify-center text-[10px] font-black"
+                      style={{
+                        background: isFirst ? "var(--rank-1-bg)" : "var(--rank-n-bg)",
+                        color:      isFirst ? "var(--rank-1-text)" : "var(--rank-n-text)",
+                      }}
+                      aria-hidden="true"
+                    >
+                      {i + 1}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-black uppercase truncate leading-tight">
+                        {entry.user.displayName}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <div
+                          className="h-1.5 flex-1 rounded-full overflow-hidden"
+                          style={{ background: "rgba(0,0,0,0.1)" }}
+                        >
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${barW}%`,
+                              background: isFirst
+                                ? "linear-gradient(90deg,#f59e0b,#f97316)"
+                                : "var(--text-accent)",
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="text-[9px] font-black shrink-0"
+                          style={{ color: "var(--text-secondary)" }}
+                        >
+                          {entry.xpEarned}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </aside>
-
       </main>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════
-   SubjectCard
-   - Móvil (<sm): fila compacta con círculo de progreso
-   - Desktop (≥md): card vertical con barra de progreso
-═══════════════════════════════════════════════════════ */
-function SubjectCard({ subject, onClick }) {
-  const progress = subject.progressPercent || 0;
+/* ─────────────────────────────────────────────
+   SubjectCard — responsive mejorada
+───────────────────────────────────────────── */
+function SubjectCard({ subject, onClick, animDelay = 0 }) {
+  const progress    = subject.progressPercent || 0;
+  const accentColor = subject.color || "#2B7FE8";
 
   return (
     <button
       onClick={onClick}
-      className="subject-card rounded-[1.25rem] sm:rounded-[2rem] lg:rounded-[2.5rem]
-                 p-3 sm:p-5 lg:p-8 text-left relative overflow-hidden group
-                 shadow-sm flex flex-col h-full"
+      className="subject-card"
+      style={{ animationDelay: `${animDelay}s`, borderColor: subject.color }}
+      role="listitem"
+      aria-label={`${subject.name}: ${progress}% completado, ${subject.completedLessons} de ${subject.totalLessons} lecciones`}
     >
-      {/* Franja de color lateral */}
-      <div
-        className="absolute top-0 left-0 bottom-0 w-1.5 lg:w-2 opacity-80"
-        style={{ backgroundColor: subject.color || "#2B7FE8" }}
-      />
+      {/* Stripe lateral de color */}
+      <div className="card-stripe" style={{ backgroundColor: accentColor }} aria-hidden="true" />
 
-      {/* Contenido: fila en móvil, columna en desktop */}
-      <div className="flex flex-row md:flex-col items-center md:items-start gap-3 md:gap-0 h-full pl-1">
+      {/* Contenido: fila compacta en móvil, columna en sm+ */}
+      <div className="flex flex-row sm:flex-col gap-3 sm:gap-0 p-4 sm:p-5 lg:p-6 pl-5 sm:pl-5 lg:pl-6 h-full">
 
-        {/* Icono + círculo progreso móvil */}
-        <div className="md:hidden relative shrink-0">
-          <ProgressCircle progress={progress} color={subject.color} size={56}>
-            <span className="text-lg">{subject.icon || "📚"}</span>
+        {/* ── Móvil: círculo progreso + emoji ── */}
+        <div className="sm:hidden shrink-0 self-center">
+          <ProgressCircle progress={progress} color={accentColor} size={52}>
+            <span className="text-base" aria-hidden="true">{subject.icon || "📚"}</span>
           </ProgressCircle>
         </div>
 
-        {/* Icono desktop */}
-        <div className="hidden md:block p-3 lg:p-4 bg-[--glass-bg] rounded-[1.5rem] lg:rounded-[1.8rem]
-                        group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 mb-5">
-          <span className="text-3xl lg:text-4xl">{subject.icon || "📚"}</span>
+        {/* ── Desktop: emoji en bloque ── */}
+        <div
+          className="hidden sm:flex mb-4 w-12 h-12 lg:w-14 lg:h-14 rounded-2xl items-center justify-center text-2xl lg:text-3xl
+                     border-2 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+          style={{
+            background:   "var(--glass-bg)",
+            borderColor:  "var(--glass-border)",
+          }}
+          aria-hidden="true"
+        >
+          {subject.icon || "📚"}
         </div>
 
-        {/* Textos */}
-        <div className="flex-1 min-w-0">
-          <h3 className="text-[var(--text-primary)] font-black text-sm md:text-xl lg:text-2xl
-                         italic uppercase tracking-tighter leading-tight
-                         truncate md:whitespace-normal md:mb-2">
+        {/* Texto */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <h3
+            className="font-black italic uppercase tracking-tighter leading-tight
+                       text-sm sm:text-lg lg:text-xl mb-0.5 sm:mb-1
+                       truncate sm:whitespace-normal"
+            style={{ color: "var(--text-primary)" }}
+          >
             {subject.name}
           </h3>
-          <p className="hidden md:block text-[var(--text-secondary)] text-sm font-bold mb-5 line-clamp-2">
-            {subject.description}
-          </p>
 
+          {/* Descripción — solo sm+ */}
+          {subject.description && (
+            <p
+              className="hidden sm:block text-sm font-semibold leading-snug mb-3 line-clamp-2 flex-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {subject.description}
+            </p>
+          )}
+
+          {/* Etiqueta de lecciones */}
           <span
-            className="inline-block text-[9px] font-black px-2 py-0.5 rounded-full border mt-1 md:mt-0"
+            className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full border-2 self-start"
             style={{
-              backgroundColor: subject.color + "15",
-              borderColor:     subject.color + "30",
-              color:           subject.color,
+              backgroundColor: accentColor + "18",
+              borderColor:     accentColor + "35",
+              color:           accentColor,
             }}
+            aria-hidden="true"
           >
-            {subject.completedLessons}/{subject.totalLessons}{" "}
-            <span className="hidden md:inline">Lecciones</span>
+            <BookOpen size={9} />
+            {subject.completedLessons}/{subject.totalLessons}
+            <span className="hidden sm:inline"> lecciones</span>
           </span>
-        </div>
 
-        {/* Barra de progreso desktop */}
-        <div className="hidden md:block w-full mt-auto pt-4">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-black text-[var(--text-primary)] uppercase tracking-widest">{progress}%</span>
-            <ChevronRight className="text-[var(--text-secondary)] group-hover:translate-x-1 transition-transform" size={15} />
-          </div>
-          <div className="w-full bg-slate-100 rounded-full h-2.5 p-0.5 border border-slate-50 shadow-inner">
+          {/* Barra progreso — solo sm+ */}
+          <div className="hidden sm:block mt-auto pt-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <span
+                className="text-[10px] font-black"
+                style={{ color: accentColor }}
+              >
+                {progress}%
+              </span>
+              <ChevronRight
+                size={14}
+                className="transition-transform group-hover:translate-x-1"
+                style={{ color: "var(--text-secondary)" }}
+                aria-hidden="true"
+              />
+            </div>
             <div
-              className="h-full rounded-full progress-bar-inner"
-              style={{ width: `${progress}%`, backgroundColor: subject.color || "#2B7FE8" }}
-            />
+              className="w-full rounded-full overflow-hidden"
+              style={{ height: 6, background: "var(--progress-bar-bg)" }}
+              role="progressbar"
+              aria-valuenow={progress}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-1000"
+                style={{ width: `${progress}%`, backgroundColor: accentColor }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -381,30 +686,34 @@ function SubjectCard({ subject, onClick }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════
-   ProgressCircle — usado en SubjectCard móvil
-═══════════════════════════════════════════════════════ */
-function ProgressCircle({ progress, color, size = 56, children }) {
-  const stroke       = 4;
-  const radius       = (size / 2) - (stroke / 2);
-  const circumference = radius * 2 * Math.PI;
-  const offset       = circumference - (progress / 100) * circumference;
+/* ─────────────────────────────────────────────
+   ProgressCircle — solo móvil en SubjectCard
+───────────────────────────────────────────── */
+function ProgressCircle({ progress, color, size = 52, children }) {
+  const stroke       = 3.5;
+  const radius       = size / 2 - stroke;
+  const circumference = 2 * Math.PI * radius;
+  const offset       = circumference * (1 - progress / 100);
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="rotate-[-90deg]">
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    >
+      <svg width={size} height={size} className="prog-svg">
         <circle
           cx={size / 2} cy={size / 2} r={radius}
-          stroke="rgba(0,0,0,0.06)"
+          stroke="rgba(0,0,0,0.07)"
           strokeWidth={stroke}
-          fill="rgba(255,255,255,0.35)"
+          fill="rgba(255,255,255,0.3)"
         />
         <circle
           cx={size / 2} cy={size / 2} r={radius}
           stroke={color || "#2B7FE8"}
           strokeWidth={stroke}
           strokeDasharray={circumference}
-          style={{ strokeDashoffset: offset }}
+          strokeDashoffset={offset}
           strokeLinecap="round"
           fill="transparent"
         />
@@ -412,6 +721,62 @@ function ProgressCircle({ progress, color, size = 56, children }) {
       <div className="absolute inset-0 flex items-center justify-center">
         {children}
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Skeleton loader para la grid de materias
+───────────────────────────────────────────── */
+function SkeletonGrid() {
+  return (
+    <div
+      className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4"
+      aria-label="Cargando materias…"
+      aria-busy="true"
+    >
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="skeleton" style={{ height: 160 }} />
+      ))}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   Estado vacío — sin misiones
+───────────────────────────────────────────── */
+function EmptyMissions({ onAdd }) {
+  return (
+    <div
+      className="sea-glass-main rounded-2xl p-8 text-center flex flex-col items-center gap-4 animate-in delay-2"
+      role="status"
+      aria-live="polite"
+    >
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl"
+        style={{ background: "var(--glass-bg)", border: "1.5px solid var(--glass-border)" }}
+        aria-hidden="true"
+      >
+        🎯
+      </div>
+      <div>
+        <p className="font-black text-lg italic uppercase tracking-tight mb-1">
+          Sin misiones activas
+        </p>
+        <p className="text-sm font-semibold opacity-50 max-w-[240px] mx-auto leading-snug">
+          Elige tus materias favoritas y comienza a aprender
+        </p>
+      </div>
+      <button
+        onClick={onAdd}
+        className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm
+                   uppercase tracking-widest transition-all hover:opacity-90 hover:scale-[1.02]"
+        style={{ background: "var(--text-accent)", color: "white" }}
+        aria-label="Ir al catálogo de materias"
+      >
+        <Plus size={15} aria-hidden="true" />
+        Explorar catálogo
+      </button>
     </div>
   );
 }

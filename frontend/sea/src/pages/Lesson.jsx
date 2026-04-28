@@ -35,12 +35,12 @@ const LESSON_CSS = `
     background: var(--glass-bg);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     box-shadow: 0 15px 35px var(--glass-shadow);
   }
   .progress-track {
     background: var(--progress-track);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     height: 10px;
     border-radius: 99px;
     overflow: hidden;
@@ -61,7 +61,7 @@ const LESSON_CSS = `
   /* ── Panel de concepto collapsible en movil ── */
   .concept-panel {
     background: var(--glass-bg);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     border-radius: 20px;
     overflow: hidden;
   }
@@ -440,7 +440,7 @@ export default function Lesson() {
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
         <div className="flex items-center gap-1.5 bg-[var(--glass-bg)] px-3 py-1.5
-                        rounded-2xl border border-[var(--glass-border)] shrink-0">
+                        rounded-2xl border-2 border-[var(--glass-border)] shrink-0">
           <Heart size={15} className="text-rose-500 fill-rose-500" />
           <span className="font-black text-[var(--text-primary)] text-sm">{hearts}</span>
         </div>

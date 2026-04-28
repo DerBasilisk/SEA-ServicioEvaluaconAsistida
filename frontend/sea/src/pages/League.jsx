@@ -15,7 +15,7 @@ const LEAGUE_CSS = `
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     box-shadow: 0 20px 50px var(--glass-shadow);
   }
 

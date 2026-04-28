@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Rocket, BrainCircuit, Target, Sparkles, ArrowRight, Menu } from "lucide-react";
+import useThemeStore from "../store/themeStore";
+import { useForceTheme } from "../hooks/useForceTheme";
 
 const FRONTAL_CSS = `
   @keyframes float {
@@ -25,6 +27,7 @@ const FRONTAL_CSS = `
 `;
 
 export default function Frontal() {
+  useForceTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -66,8 +69,8 @@ export default function Frontal() {
       {/* NAVBAR SUPERIOR - Ajustada para Mobile */}
       <nav className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 py-3 md:py-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <div className="bg-[var(--text-accent)] p-1.5 rounded-lg shadow-lg">
-             <img src="/sealogo.png" className="w-12 md:w-8 brightness-0 invert" alt="SEA" />
+          <div className="p-1.5 rounded-lg">
+             <LogoMark />
           </div>
         </div>
         
@@ -153,5 +156,41 @@ function FeatureItem({ icon, title, desc }) {
       <h3 className="font-black text-[10px] md:text-xs uppercase tracking-widest text-[var(--text-primary)] mb-2">{title}</h3>
       <p className="text-[10px] md:text-[11px] font-bold text-[var(--text-secondary)] uppercase leading-tight">{desc}</p>
     </div>
+  );
+}
+
+function LogoMark() {
+  const { theme } = useThemeStore();
+
+  const getLogoSrc = (theme) => {
+    switch (theme) {
+      case 'light':        return '/logos/LogoBlue.svg';
+      case 'dark':         return '/logos/LogoWhite.svg';
+      case 'high-contrast': return '/logos/LogoCyan.svg';
+      default:             return '/logos/LogoWhite.svg';
+    }
+  };
+
+  return (
+    <Link 
+      to="/" 
+      style={{ 
+        display: "flex", 
+        alignItems: "center", 
+        gap: 8, 
+        textDecoration: "none", 
+        flexShrink: 0 
+      }}
+    >
+      <img 
+        src={getLogoSrc(theme)}
+        width={70} 
+        alt="SEA" 
+        style={{ 
+          display: "block",
+          transition: "opacity 0.4s ease, transform 0.3s ease"
+        }} 
+      />
+    </Link>
   );
 }

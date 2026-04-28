@@ -23,12 +23,12 @@ const PROFILE_CSS = `
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     box-shadow: 0 20px 50px var(--glass-shadow);
   }
   .sea-stat-card {
     background: var(--card-bg);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   .sea-stat-card:hover {
@@ -120,7 +120,7 @@ const PROFILE_CSS = `
   .friend-row {
     display: flex; align-items: center; gap: 12px;
     padding: 10px 12px; border-radius: 18px;
-    cursor: pointer; transition: background 0.15s, border 0.15s;
+    cursor: pointer; transition: background 0.15s, border-2 0.15s;
     border: 1px solid transparent;
   }
   .friend-row:hover {
@@ -411,7 +411,7 @@ export default function Profile() {
                     <span className="text-[var(--text-muted)] text-xs not-italic font-bold"> / 1000 XP</span>
                   </p>
                 </div>
-                <div className="h-4 sm:h-5 w-full bg-black/5 rounded-full p-0.5 border border-white/20">
+                <div className="h-4 sm:h-5 w-full bg-black/5 rounded-full p-0.5 border-2 border-white/20">
                   <div
                     className="h-full bg-gradient-to-r from-[var(--text-accent)] to-[#10B981]
                                rounded-full transition-all duration-1000
@@ -519,7 +519,7 @@ function EditPanelContent({
             </span>
           )}
           <button onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-[var(--card-bg)] border border-[var(--glass-border)]
+            className="w-8 h-8 rounded-xl bg-[var(--card-bg)] border-2 border-[var(--glass-border)]
                        flex items-center justify-center hover:border-rose-300 hover:text-rose-400 transition-all">
             <X size={14} />
           </button>

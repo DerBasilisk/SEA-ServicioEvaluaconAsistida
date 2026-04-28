@@ -19,7 +19,7 @@ const FRIENDS_CSS = `
     background: var(--glass-bg);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     box-shadow: 0 20px 50px var(--glass-shadow);
   }
 
@@ -31,7 +31,7 @@ const FRIENDS_CSS = `
 
   .sea-item-card {
     background: var(--card-bg);
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     transition: all 0.2s ease;
   }
   .sea-item-card:hover {
@@ -55,7 +55,7 @@ const FRIENDS_CSS = `
     font-size: 10px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.1em;
     white-space: nowrap; flex-shrink: 0;
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     background: var(--card-bg);
     color: var(--text-secondary);
     transition: all 0.2s;
@@ -84,7 +84,7 @@ const FRIENDS_CSS = `
     padding: 14px 20px; border-radius: 1.5rem;
     font-size: 11px; font-weight: 800;
     text-transform: uppercase; letter-spacing: 0.12em;
-    border: 1.5px solid var(--glass-border);
+    border: 2px solid var(--glass-border);
     background: var(--card-bg);
     color: var(--text-secondary);
     transition: all 0.2s; cursor: pointer;
@@ -119,7 +119,7 @@ const FRIENDS_CSS = `
 
   .lesson-btn {
     width: 100%; text-align: left;
-    background: var(--card-bg); border: 1.5px solid var(--glass-border);
+    background: var(--card-bg); border: 2px solid var(--glass-border);
     padding: 12px 16px; border-radius: 16px;
     transition: all 0.15s; cursor: pointer;
   }
@@ -317,7 +317,7 @@ export default function Friends() {
               <h2 className="text-xl font-black tracking-tighter text-[var(--text-primary)] uppercase italic">
                 {user?.username}
               </h2>
-              <div className="mt-3 bg-[var(--card-bg)] py-2 px-4 rounded-2xl border border-[var(--glass-border)]">
+              <div className="mt-3 bg-[var(--card-bg)] py-2 px-4 rounded-2xl border-2 border-[var(--glass-border)]">
                 <p className="text-[8px] font-extrabold text-[var(--text-accent)] uppercase tracking-[0.2em]">Rango Actual</p>
                 <p className="text-lg font-black italic text-[var(--text-primary)]">NIVEL {user?.level || 1}</p>
               </div>
@@ -543,7 +543,7 @@ function FriendItem({ user, onProfile, onRemove, onDuel }) {
 function RequestItem({ request, onAccept, onReject }) {
   const u = request.requester;
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--glass-border)]
+    <div className="bg-[var(--card-bg)] border-2 border-[var(--glass-border)]
                     rounded-[1.5rem] sm:rounded-[2rem] flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
       <Avatar src={u.avatar} name={u.displayName || u.username}
               size="sm" className="rounded-xl border-2 border-white shadow-inner shrink-0" />
@@ -560,7 +560,7 @@ function RequestItem({ request, onAccept, onReject }) {
           <Check size={15} />
         </button>
         <button onClick={onReject}
-          className="border border-rose-100 text-rose-500 p-2.5 rounded-xl
+          className="border-2 border-rose-100 text-rose-500 p-2.5 rounded-xl
                      hover:bg-rose-500 hover:text-white transition-all">
           <X size={15} />
         </button>
@@ -601,7 +601,7 @@ function SearchItem({ user, onSendRequest, onProfile }) {
     <div className="sea-item-card rounded-[1.5rem] sm:rounded-[2rem] flex items-center gap-3 p-3 sm:p-4">
       <div onClick={onProfile} className="cursor-pointer shrink-0">
         <Avatar src={user.avatar} name={user.displayName || user.username}
-                size="sm" className="rounded-xl border border-white" />
+                size="sm" className="rounded-xl border-2 border-white" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-black text-[var(--text-primary)] uppercase italic truncate">
@@ -611,7 +611,7 @@ function SearchItem({ user, onSendRequest, onProfile }) {
       </div>
       {user.friendStatus ? (
         <span className="text-[9px] font-black text-[var(--text-muted)] uppercase
-                         px-3 py-1.5 bg-[var(--glass-bg)] rounded-xl border border-[var(--glass-border)] shrink-0">
+                         px-3 py-1.5 bg-[var(--glass-bg)] rounded-xl border-2 border-[var(--glass-border)] shrink-0">
           Aliado
         </span>
       ) : (
