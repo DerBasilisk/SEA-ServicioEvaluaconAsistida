@@ -36,39 +36,39 @@ const useChatStore = create((set, get) => ({
       set({ connected: false });
     });
 
-    // Mensaje nuevo (texto o imagen)
-    socket.on("chat:message", ({ conversationId, message }) => {
-      set((state) => {
-        const prev = state.messages[conversationId] || [];
-        if (prev.find((m) => m._id === message._id)) return state; // deduplicar
+  socket.on("chat:message", ({ conversationId, message }) => {
+  set((state) => {
+    const prev = state.messages[conversationId] || [];
+    if (prev.find((m) => m._id === message._id)) return state;
 
-        const convExists = state.conversations.find(c => c._id === conversationId);
-        if (!convExists) {
-          get().loadConversations();
-        }
+    const convExists = state.conversations.find(c => c._id === conversationId);
 
-        // Actualizar preview en lista de conversaciones
-        const updatedConvs = state.conversations
-          .map((c) =>
-            c._id === conversationId
-              ? { ...c, lastMessage: message, lastActivity: message.createdAt }
-              : c
+    // Siempre recarga si la conv no existe O si no tiene participantes cargados
+    if (!convExists || !convExists.participants?.length) {
+      get().loadConversations();
+    }
+
+    const updatedConvs = convExists
+      ? state.conversations
+          .map(c => c._id === conversationId
+            ? { ...c, lastMessage: message, lastActivity: message.createdAt }
+            : c
           )
-          .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
+          .sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity))
+      : state.conversations; // se actualiza cuando llegue loadConversations
 
-        // Sumar no leídos si no está la conversación activa
-        const newUnread = { ...state.unread };
-        if (state.activeConvId !== conversationId) {
-          newUnread[conversationId] = (newUnread[conversationId] || 0) + 1;
-        }
+    const newUnread = { ...state.unread };
+    if (state.activeConvId !== conversationId) {
+      newUnread[conversationId] = (newUnread[conversationId] || 0) + 1;
+    }
 
-        return {
-          messages: { ...state.messages, [conversationId]: [...prev, message] },
-          conversations: updatedConvs,
-          unread: newUnread,
-        };
-      });
-    });
+    return {
+      messages: { ...state.messages, [conversationId]: [...prev, message] },
+      conversations: updatedConvs,
+      unread: newUnread,
+    };
+  });
+});
 
     // Indicador de escritura
     socket.on("chat:typing", ({ conversationId, userId, isTyping }) => {

@@ -891,6 +891,13 @@ export default function Chat() {
   const [mobileView, setMobileView] = useState("list"); // "list" | "chat"
   const [newConvModal, setNewConvModal] = useState(false);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Conectar socket
   useEffect(() => {
     if (token) connect(token);
