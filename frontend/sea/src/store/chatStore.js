@@ -42,6 +42,11 @@ const useChatStore = create((set, get) => ({
         const prev = state.messages[conversationId] || [];
         if (prev.find((m) => m._id === message._id)) return state; // deduplicar
 
+        const convExists = state.conversations.find(c => c._id === conversationId);
+        if (!convExists) {
+          get().loadConversations();
+        }
+
         // Actualizar preview en lista de conversaciones
         const updatedConvs = state.conversations
           .map((c) =>

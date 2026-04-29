@@ -936,7 +936,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="sea-chat">
+    <div className="sea-chat" style={{ background: "var(--bg-gradient)" }}>
       <style>{CHAT_CSS}</style>
       <Navbar />
 
