@@ -18,6 +18,7 @@ const adminRoutes = require("./routes/admin");
 
 const http = require("http");
 const { setupDuelSocket } = require("./duel.socket");
+const { setupChatSocket } = require("./chat.socket"); // ← NUEVO
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -47,8 +48,8 @@ app.use("/api/friends", require("./routes/friends"));
 app.use("/api/upload", require("./routes/upload"));
 app.use("/api/leagues", require("./routes/league"));
 app.use("/api/admin", adminRoutes);
+app.use("/api/chat", require("./routes/chat")); // ← NUEVO
 setupCronJobs();
-
 
 // ── Health check ───────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
@@ -71,11 +72,9 @@ app.use((err, req, res, next) => {
 
 // ── Arranque ──────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-setupDuelSocket(httpServer);
-//connectDB().then(() => {
-//  app.listen(PORT, () => {console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
-//  });
-//});
+const io = setupDuelSocket(httpServer); // ← capturar io (antes no se guardaba)
+setupChatSocket(io);                    // ← NUEVO: montar namespace /chat
+
 connectDB().then(() => {
   httpServer.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
 });

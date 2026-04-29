@@ -1,3 +1,10 @@
+// ── ÚNICO CAMBIO respecto al original ─────────────────────────
+// 1. Se captura `io` en variable de módulo para poder exportarlo.
+// 2. Se exporta `getIO` junto a `setupDuelSocket`.
+// Esto permite que chat.socket.js use el mismo Server de Socket.io
+// montando un namespace /chat sin crear un segundo servidor.
+// ──────────────────────────────────────────────────────────────
+
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
@@ -11,11 +18,15 @@ const MODIFIERS = {
   blackout:        { id: "blackout",        label: "Pantalla oscura",   icon: "🌑", description: "3 segundos de pantalla negra"       },
 };
 
+let _io = null; // ← NUEVO: referencia al Server compartido
+
 function setupDuelSocket(httpServer) {
-  const io = new Server(httpServer, {
+  _io = new Server(httpServer, { // ← NUEVO: guardar en _io
     cors: { origin: process.env.FRONTEND_URL, credentials: true },
     path: "/socket.io",
   });
+
+  const io = _io; // alias local para no tocar nada del código original
 
   // Auth middleware
   io.use((socket, next) => {
@@ -115,28 +126,24 @@ function setupDuelSocket(httpServer) {
 
         await createDuel(duelId, duelState);
 
-        // Payload para ambos jugadores
         const startPayload = {
           duelId,
           questions: sanitized,
-          opponentId: null, // se rellena por jugador
+          opponentId: null,
         };
 
-        // Unir al receptor al duelo y notificarle
         socket.join(`duel:${duelId}`);
         socket.emit("duel:start", { ...startPayload, opponentId: invite.requesterId });
 
-        // Para el retador: intentar entrega directa, si no guardar como pendiente
         const requesterSockets = await io.in(`user:${invite.requesterId}`).fetchSockets();
         if (requesterSockets.length > 0) {
           requesterSockets.forEach((s) => s.join(`duel:${duelId}`));
           io.to(`user:${invite.requesterId}`).emit("duel:start", { ...startPayload, opponentId: socket.userId });
           console.log(`[Duel] duel:start enviado directamente al retador ${invite.requesterId}`);
         } else {
-          // Guardar como pendiente — se entrega cuando reconecte
           await redis.setex(
             `pending_duel:${invite.requesterId}`,
-            120, // 2 minutos para reconectar
+            120,
             JSON.stringify({ ...startPayload, opponentId: socket.userId })
           );
           console.log(`[Duel] Retador desconectado, duelo guardado como pendiente para ${invite.requesterId}`);
@@ -284,10 +291,12 @@ async function endDuel(duelId, duel, io) {
 
   io.to(`duel:${duelId}`).emit("duel:finished", finishedPayload);
 
-  // Guardar resultado para jugadores que se reconecten
   for (const p of players) {
     await redis.setex(`duel_result:${p.userId}`, 300, JSON.stringify(finishedPayload));
   };
 }
 
-module.exports = { setupDuelSocket };
+// ← NUEVO: exportar getIO para que chat.socket pueda acceder al Server
+function getIO() { return _io; }
+
+module.exports = { setupDuelSocket, getIO }; // ← getIO añadido

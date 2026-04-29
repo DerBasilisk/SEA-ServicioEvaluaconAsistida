@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { io } from "socket.io-client";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import {
   Users, UserPlus, Trophy, Search, Sword,
-  Check, X, Trash2, Zap, UserCircle, Star,
+  Check, X, Trash2, Zap, UserCircle, Star, MessageCircle
 } from "lucide-react";
 import Avatar from "../components/Avatar";
 import toast from "react-hot-toast";
@@ -247,10 +247,12 @@ export default function Friends() {
     { id: "friends",      label: "Amigos",     icon: <Users    size={15} />, count: friends.length  },
     { id: "requests",     label: "Solicitudes", icon: <UserPlus size={15} />, count: requests.length },
     { id: "leaderboard",  label: "Ranking",    icon: <Trophy   size={15} />, count: null            },
+    { id: "chat",         label: "Chat",       to: "/chat",       icon: <MessageCircle  size={15} />, count: null            },
     { id: "search",       label: "Buscar",     icon: <Search   size={15} />, count: null            },
   ];
 
   const activeTab = tabs.find(t => t.id === tab);
+  
 
   return (
     <div className="sea-friends min-h-screen pb-24 relative overflow-hidden"
@@ -274,7 +276,7 @@ export default function Friends() {
           <div className="mobile-tabs px-1">
             {tabs.map(t => (
               <button key={t.id} className={`mobile-tab${tab === t.id ? " active" : ""}`}
-                      onClick={() => setTab(t.id)}>
+                      onClick={() => t.to ? navigate(t.to) : setTab(t.id)}>
                 {t.icon}
                 {t.label}
                 {t.count > 0 && <span className="tab-badge">{t.count}</span>}
@@ -325,7 +327,7 @@ export default function Friends() {
 
             <nav className="flex flex-col gap-2">
               {tabs.map(t => (
-                <button key={t.id} onClick={() => setTab(t.id)}
+                <button key={t.id} onClick={() => t.to ? navigate(t.to) : setTab(t.id)}
                   className={`desktop-tab${tab === t.id ? " active" : ""}`}>
                   <div className="flex items-center gap-3">{t.icon} {t.label}</div>
                   {t.count > 0 && (

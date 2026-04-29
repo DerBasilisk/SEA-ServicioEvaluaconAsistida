@@ -47,10 +47,24 @@ async function uploadBanner(buffer, userId) {
 }
 
 /**
+ * Sube imagen de chat — máx 1200px de ancho, sin recorte forzado
+ * public_id único por mensaje para no sobrescribir
+ */
+async function uploadChatImage(buffer, userId) { // ← NUEVO
+  return uploadBuffer(buffer, {
+    folder:          `sea/chat`,
+    public_id:       `chat_${userId}_${Date.now()}`,
+    overwrite:       false,
+    transformation:  [{ width: 1200, crop: "limit" }],
+    resource_type:   "image",
+  });
+}
+
+/**
  * Eliminar imagen de Cloudinary
  */
 async function deleteImage(publicId) {
   return cloudinary.uploader.destroy(publicId);
 }
 
-module.exports = { uploadAvatar, uploadBanner, deleteImage };
+module.exports = { uploadAvatar, uploadBanner, uploadChatImage, deleteImage }; // ← uploadChatImage añadido
