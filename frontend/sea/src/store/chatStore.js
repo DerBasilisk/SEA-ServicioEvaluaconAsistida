@@ -119,6 +119,28 @@ const useChatStore = create((set, get) => ({
     set({ socket: null, connected: false });
   },
 
+  refreshMessages: async (convId) => {
+    const { messages } = get();
+    const cached = messages[convId] || [];
+    try {
+      const { data } = await api.get(`/chat/conversations/${convId}/messages`);
+      const fresh = data.messages || [];
+      // Merge: mantén los del cache que no estén en fresh (optimistas), agrega los nuevos
+      const merged = fresh.map(m => {
+        const cached = (messages[convId] || []).find(c => c._id === m._id);
+        return cached || m;
+      });
+      // Agrega cualquier mensaje del cache que no esté en fresh (enviados offline)
+      const freshIds = new Set(fresh.map(m => m._id));
+      const extra = cached.filter(m => !freshIds.has(m._id));
+      set((state) => ({
+        messages: { ...state.messages, [convId]: [...merged, ...extra].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt)) },
+      }));
+    } catch (err) {
+      console.error("[Chat] refreshMessages:", err);
+    }
+  },
+
   // ── REST: cargar conversaciones ──────────────────────────────
   loadConversations: async () => {
     try {

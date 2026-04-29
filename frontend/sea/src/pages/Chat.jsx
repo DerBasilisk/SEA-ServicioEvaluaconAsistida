@@ -655,7 +655,7 @@ function ChatWindow({ conv, myId, onBack }) {
   const {
     messages, hasMore, typing,
     openConversation, loadMoreMessages,
-    sendMessage, sendImage, emitTyping, deleteMessage,
+    sendMessage, sendImage, emitTyping, deleteMessage, refreshMessages,
   } = useChatStore();
 
   const [text, setText] = useState("");
@@ -679,6 +679,13 @@ function ChatWindow({ conv, myId, onBack }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs.length]);
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        refreshMessages(conv._id);
+      }, 5000);
+      return () => clearInterval(interval);
+    }, [conv._id]);
 
   const handleSend = () => {
     if (!text.trim()) return;
