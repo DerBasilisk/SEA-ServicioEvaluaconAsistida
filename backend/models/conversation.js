@@ -40,6 +40,11 @@ const conversationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    lastDuel: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Duel",
+      default: null,
+    },
   },
   {
     timestamps: true,

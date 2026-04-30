@@ -62,7 +62,8 @@ export default function Duel() {
       }, 100);
     });
 
-    socket.on("duel:start", ({ questions: qs, opponentId: oppId }) => {
+    socket.on("duel:start", (data) => {
+      const { questions: qs, opponentId: oppId } = data;
       console.log("[Duel] duel:start recibido:", data);
       toast.success("¡Duelo Iniciado! Prepárate.", { icon: '⚔️' });
       setQuestions(qs);

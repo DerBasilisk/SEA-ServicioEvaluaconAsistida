@@ -185,22 +185,35 @@ export default function Friends() {
     finally { setLoading(false); }
   };
 
-  const handleDuelClick = async (friendId, friendName) => {
-    try {
-      const { data } = await api.get("/subjects");
-      const allLessons = [];
-      for (const subject of data.data) {
-        const { data: sd } = await api.get(`/subjects/${subject.slug}`);
-        sd.data.units?.forEach(u =>
-          u.lessons?.forEach(l => {
-            if (l.status !== "locked")
-              allLessons.push({ ...l, subjectName: subject.name });
-          })
-        );
-      }
-      setLessons(allLessons);
-      setDuelModal({ friendId, friendName });
-    } catch { alert("Error cargando lecciones"); }
+  const handleDuelClick = (friendId, friendName) => {
+    setDuelModal({ friendId, friendName, step: "selectSubject", subjects: [], units: [], selectedSubject: null, loading: true });
+    api.get("/subjects")
+      .then(({ data }) => setDuelModal(m => ({ ...m, subjects: data.data || [], loading: false })))
+      .catch(() => { toast.error("Error cargando materias"); setDuelModal(null); });
+  };
+
+  const handleSelectSubject = (subject) => {
+    setDuelModal(m => ({ ...m, step: "selectUnit", selectedSubject: subject, units: [], loading: true }));
+    api.get(`/subjects/${subject.slug}`)
+      .then(({ data }) => {
+        const available = (data.data.units || []).filter(u => u.lessons?.some(l => l.status !== "locked"));
+        setDuelModal(m => ({ ...m, units: available, loading: false }));
+      })
+      .catch(() => { toast.error("Error cargando unidades"); setDuelModal(m => ({ ...m, step: "selectSubject", loading: false })); });
+  };
+
+  const handleSelectUnit = (unit) => {
+    if (!socketRef.current || !duelModal) return;
+    const available = unit.lessons?.filter(l => l.status !== "locked") || [];
+    if (available.length === 0) { toast.error("Sin lecciones disponibles"); return; }
+    const randomLesson = available[Math.floor(Math.random() * available.length)];
+    socketRef.current.emit("duel:invite", {
+      friendId: duelModal.friendId,
+      lessonId: randomLesson._id,
+      isDuelMode: true,
+    });
+    toast.success(`¡Desafío enviado a ${duelModal.friendName}!`, { icon: "⚔️", duration: 4000 });
+    setDuelModal(null);
   };
 
   const handleSendDuelInvite = (lessonId) => {

@@ -14,8 +14,15 @@ const messageSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["text", "image"],
+      enum: ["text", "image", "duel_invite", "duel_result"],
       default: "text",
+    },
+    // Metadata del duelo (opcional)
+    duelData: {
+      duelId: { type: mongoose.Schema.Types.ObjectId, ref: "Duel" },
+      resultSummary: { type: mongoose.Schema.Types.Mixed }, // { winnerName, loserName, winnerScore, ... }
+      inviteCode: { type: String },
+      expiresAt: { type: Date }, // para invitaciones temporales
     },
     // Texto del mensaje o URL de imagen en Cloudinary
     content: {

@@ -3,6 +3,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 :root {
   --bg-gradient: linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%);
   --alt-gradient: linear-gradient(145deg, #0a3e8d 0%, #306ac7 100%);

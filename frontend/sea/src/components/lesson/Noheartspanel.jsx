@@ -60,7 +60,7 @@ export default function NoHeartsPanel({ onRefilled, onContinue }) {
       {/* Opciones de Recuperación */}
       <div className="space-y-4">
         <div className="p-1 rounded-2xl bg-white/5">
-          <RefillHeartsButton onRefilled={onRefilled} />
+          <RefillHeartsButton onRefilled={onRefilled} forceShow={true} />
         </div>
 
         <div className="relative flex items-center py-2">

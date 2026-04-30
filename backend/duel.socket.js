@@ -1,14 +1,7 @@
-// ── ÚNICO CAMBIO respecto al original ─────────────────────────
-// 1. Se captura `io` en variable de módulo para poder exportarlo.
-// 2. Se exporta `getIO` junto a `setupDuelSocket`.
-// Esto permite que chat.socket.js use el mismo Server de Socket.io
-// montando un namespace /chat sin crear un segundo servidor.
-// ──────────────────────────────────────────────────────────────
-
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
-const { createDuel, getDuel, updateDuel, deleteDuel, createInvite, getInvite, deleteInvite, redis } = require("./services/duel.service");
+const { createDuel, getDuel, updateDuel, deleteDuel, createInvite, getInvite, deleteInvite, redis, createDuelInMongo, finishDuelInMongo, abandonDuelInMongo } = require("./services/duel.service");
 const { Question, Lesson } = require("./models");
 const { getAdaptiveConfig, selectQuestions } = require("./services/adaptive.service");
 
@@ -61,30 +54,29 @@ function setupDuelSocket(httpServer) {
 
     // ── INVITACIÓN ─────────────────────────────────────────────
 
-    socket.on("duel:invite", async ({ friendId, lessonId }) => {
-      try {
-        const inviteId = uuidv4();
-        const invite = {
-          inviteId, lessonId,
-          requesterId: socket.userId,
-          recipientId: friendId,
-          createdAt: Date.now(),
-        };
-        await createInvite(inviteId, invite);
-        io.to(`user:${friendId}`).emit("duel:invited", { inviteId, lessonId, requesterId: socket.userId });
-        socket.emit("duel:invite_sent", { inviteId });
-      } catch (err) {
-        socket.emit("duel:error", { message: err.message });
-      }
-    });
+    socket.on("duel:invite", async ({ friendId, lessonId, conversationId }) => {
+    try {
+      const inviteId = uuidv4();
+      const invite = {
+        inviteId,
+        lessonId,
+        requesterId: socket.userId,
+        recipientId: friendId,
+        conversationId, // ← guardar para usarlo después
+        createdAt: Date.now(),
+      };
+      await createInvite(inviteId, invite);
+      io.to(`user:${friendId}`).emit("duel:invited", { inviteId, lessonId, requesterId: socket.userId, conversationId });
+      socket.emit("duel:invite_sent", { inviteId });
+    } catch (err) {
+      socket.emit("duel:error", { message: err.message });
+    }
+  });
 
     socket.on("duel:accept", async ({ inviteId }) => {
       try {
-        console.log("[Duel] Accept recibido, inviteId:", inviteId);
-        const invite = await getInvite(inviteId);
-        console.log("[Duel] Invite encontrado:", invite);
+         const invite = await getInvite(inviteId);
         if (!invite) return;
-
         await deleteInvite(inviteId);
 
         const duelId = uuidv4();
@@ -116,6 +108,7 @@ function setupDuelSocket(httpServer) {
           lessonName: lesson.name,
           questions: sanitized,
           questionIds: questions.map((q) => q._id.toString()),
+          conversationId: invite.conversationId,
           players: {
             [invite.requesterId]: { userId: invite.requesterId, score: 0, correct: 0, currentIndex: 0, finished: false, modifiers: [] },
             [socket.userId]:      { userId: socket.userId,      score: 0, correct: 0, currentIndex: 0, finished: false, modifiers: [] },
@@ -123,8 +116,27 @@ function setupDuelSocket(httpServer) {
           startedAt: Date.now(),
           status: "active",
         };
-
+        
         await createDuel(duelId, duelState);
+
+        // Persistir en MongoDB
+        const mongoDuel = await createDuelInMongo({
+          duelId,                                    // usamos el mismo ID
+          lessonId: invite.lessonId,
+          creatorId: invite.requesterId,
+          players: Object.values(duelState.players).map(p => ({
+            userId: p.userId,
+            score: p.score,
+            correct: p.correct,
+            finished: p.finished,
+          })),
+          type: "direct",
+          conversationId: invite.conversationId,
+          questionIds: duelState.questionIds,
+        });
+        // Guardar el mongoId en Redis para futuras actualizaciones
+        duelState.mongoId = mongoDuel._id.toString();
+        await updateDuel(duelId, duelState);
 
         const startPayload = {
           duelId,
@@ -256,6 +268,7 @@ function setupDuelSocket(httpServer) {
       duel.players[socket.userId].abandoned = true;
       duel.status = "abandoned";
       await updateDuel(duelId, duel);
+      await abandonDuelInMongo(duelId, socket.userId); // ← nueva línea
       socket.to(`duel:${duelId}`).emit("duel:opponent_abandoned");
     });
 
@@ -280,6 +293,62 @@ async function endDuel(duelId, duel, io) {
   duel.status = "finished";
   duel.winner = winner.userId;
   await updateDuel(duelId, duel);
+
+  let mongoDuel;
+  try {
+    await finishDuelInMongo(duelId, {
+      players: players.map(p => ({
+        userId: p.userId,
+        correct: p.correct,
+        score: p.score,
+        timeSpent: p.timeSpent,
+        finishedAt: p.finishedAt,
+        abandoned: p.abandoned,
+      })),
+    });
+  } catch (err) {
+    console.error("[Duel] Error al guardar en MongoDB:", err);
+  }
+
+  if (duel.conversationId) {
+    const winnerData = players.find(p => p.userId === winner.userId);
+    const loserData = players.find(p => p.userId !== winner.userId);
+    const winnerName = winnerData.userName || "Ganador";
+    const loserName = loserData.userName || "Perdedor";
+
+    const message = await sendDuelResultMessage({
+      conversationId: duel.conversationId,
+      duelId: duelId,
+      winner: {
+        userId: winner.userId,
+        userName: winnerName,
+        correct: winnerData.correct,
+      },
+      loser: {
+        userId: loserData.userId,
+        userName: loserName,
+        correct: loserData.correct,
+      },
+      totalQuestions: duel.questions.length,
+      duration: Math.round((Date.now() - duel.startedAt) / 1000),
+    });
+
+    if (message) {
+      io.of("/chat").to(`conv:${duel.conversationId}`).emit("chat:message", {
+        conversationId: duel.conversationId,
+        message: {
+          _id: message._id,
+          type: message.type,
+          content: message.content,
+          sender: message.sender,
+          readBy: message.readBy,
+          createdAt: message.createdAt,
+          duelData: message.duelData,
+        },
+      });
+    }
+  }
+
   const finishedPayload = {
     winner: winner.userId,
     players: players.map((p) => ({
@@ -293,7 +362,7 @@ async function endDuel(duelId, duel, io) {
 
   for (const p of players) {
     await redis.setex(`duel_result:${p.userId}`, 300, JSON.stringify(finishedPayload));
-  };
+  }
 }
 
 // ← NUEVO: exportar getIO para que chat.socket pueda acceder al Server

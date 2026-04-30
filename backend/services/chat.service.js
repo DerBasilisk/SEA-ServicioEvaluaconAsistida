@@ -224,6 +224,45 @@ async function deleteMessage(messageId, userId) {
   return message;
 }
 
+async function sendDuelResultMessage({ conversationId, duelId, winner, loser, totalQuestions, duration }) {
+  if (!conversationId) return null;
+
+  // Construir el resumen para mostrar en el frontend
+  const resultSummary = {
+    winnerName: winner.userName,
+    loserName: loser.userName,
+    winnerCorrect: winner.correct,
+    loserCorrect: loser.correct,
+    totalQuestions,
+    duration, // segundos
+  };
+
+  const message = new Message({
+    conversation: conversationId,
+    sender: winner.userId, // el ganador aparece como "remitente" del mensaje de sistema (opcional)
+    type: "duel_result",
+    content: `⚔️ Duelo finalizado: ${winner.userName} venció a ${loser.userName} (${winner.correct}/${totalQuestions} vs ${loser.correct}/${totalQuestions})`,
+    duelData: {
+      duelId,
+      resultSummary,
+    },
+    readBy: [], // nadie lo ha leído aún
+  });
+
+  await message.save();
+
+  // Actualizar el campo lastMessage y lastActivity de la conversación
+  await Conversation.findByIdAndUpdate(conversationId, {
+    lastMessage: message._id,
+    lastActivity: new Date(),
+  });
+
+  // Poblar el sender para devolverlo con datos de usuario
+  await message.populate("sender", "name avatar");
+
+  return message;
+}
+
 module.exports = {
   getOrCreateDirect,
   createGroup,
@@ -235,4 +274,5 @@ module.exports = {
   markAsRead,
   getUnreadCounts,
   deleteMessage,
+  sendDuelResultMessage,
 };

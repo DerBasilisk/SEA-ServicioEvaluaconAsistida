@@ -117,6 +117,12 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // backend/models/user.js (agregar)
+    duelsStats: {
+      total: { type: Number, default: 0 },
+      wins: { type: Number, default: 0 },
+      losses: { type: Number, default: 0 },
+    },
   },
   {
     timestamps: true,

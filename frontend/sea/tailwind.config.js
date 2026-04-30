@@ -6,25 +6,16 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        sea: {
-          bg: '#FCFDF2',
-          card: '#FFFFFF',
-          edge: '#8CCED3',
-          action: '#1A7F84',
-          text: '#146B70',
-          tbody: '#1A7F84',
-          night: {
-            bg: '#082F32',
-            card: '#0D4145',
-            edge: '#146B70',
-            action: '#5AB9C1',
-            text: '#E2F8F9',
-            tbody: '#8CCED3',
-          }
-        }
-      }
-    }
+      keyframes: {
+        shimmer: {
+          "0%": { transform: "translateX(-150%)" },
+          "100%": { transform: "translateX(250%)" },
+        },
+      },
+      animation: {
+        shimmer: "shimmer 1.8s linear infinite",
+      },
+    },
   },
   plugins: [],
 }

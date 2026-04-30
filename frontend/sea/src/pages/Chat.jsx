@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Send, Image, Users, MessageSquare, Plus,
   X, Check, ChevronDown, Trash2, UserCircle, Search,
+  Swords, Loader2, Trophy, Clock, Zap,
 } from "lucide-react";
+import { io } from "socket.io-client";
 import Navbar from "../components/Navbar";
 import Avatar from "../components/Avatar";
 import useAuthStore from "../store/authStore";
@@ -19,6 +21,13 @@ const CHAT_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
   .sea-chat { font-family: 'Nunito', sans-serif; }
 
+  .chat-body {
+  padding: 4px 12px 0;}
+
+  @media (max-width: 1023px) {
+  .chat-body {padding: 0px 0px 0px 0px;}
+  }
+
   /* Layout */
   .chat-shell {
     display: flex;
@@ -28,12 +37,15 @@ const CHAT_CSS = `
     gap: 12px;
   }
   @media (max-width: 1023px) {
-    .chat-shell { height: calc(100dvh - 72px); gap: 0; }
+    .chat-shell { height: calc(100dvh - 72px); gap: 0; margin: 0;}
+    
   }
 
   /* Sidebar */
   .chat-sidebar {
     width: 320px;
+    margin-top: 12px;
+    height: 97%;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -45,16 +57,20 @@ const CHAT_CSS = `
   }
   @media (max-width: 1023px) {
     .chat-sidebar {
+      margin-top: 0px;
       width: 100%;
       border-radius: 0;
       border: none;
+      height: 100%;
     }
     .chat-sidebar.hidden-mobile { display: none; }
   }
 
   /* Main panel */
   .chat-main {
+    margin-top: 12px;
     flex: 1;
+    height: 97%;
     display: flex;
     flex-direction: column;
     background: var(--card-bg);
@@ -66,8 +82,10 @@ const CHAT_CSS = `
   }
   @media (max-width: 1023px) {
     .chat-main {
+      margin-top: 0px;
       border-radius: 0;
       border: none;
+      height: 100%;
     }
     .chat-main.hidden-mobile { display: none; }
   }
@@ -312,6 +330,338 @@ function getConvAvatar(conv, myId) {
   return other?.avatar || null;
 }
 
+function DuelInviteModal({ conversation, myId, onClose, onInviteSent }) {
+  const [step, setStep] = useState("selectPlayer"); // "selectPlayer" | "selectSubject" | "selectUnit" | "sending"
+  const [targetUser, setTargetUser] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [units, setUnits] = useState([]);
+  const [selectedUnit, setSelectedUnit] = useState(null);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [sending, setSending] = useState(false);
+  const { token } = useAuthStore();
+
+  const participants = conversation.participants?.filter(p => p._id !== myId) || [];
+  const isGroup = conversation.type === "group";
+
+  // Paso 1 → 2: elegir jugador y cargar materias
+  const handleSelectPlayer = async (user) => {
+    setTargetUser(user);
+    setLoadingSubjects(true);
+    setStep("selectSubject");
+    try {
+      const { data } = await api.get("/subjects");
+      setSubjects(data.data || []);
+    } catch {
+      toast.error("Error al cargar materias");
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  // Paso 2 → 3: elegir materia y cargar unidades
+  const handleSelectSubject = async (subject) => {
+    setSelectedSubject(subject);
+    setLoadingSubjects(true);
+    setStep("selectUnit");
+    try {
+      const { data } = await api.get(`/subjects/${subject.slug}`);
+      const availableUnits = (data.data.units || []).filter(u =>
+        u.lessons?.some(l => l.status !== "locked")
+      );
+      setUnits(availableUnits);
+    } catch {
+      toast.error("Error al cargar unidades");
+    } finally {
+      setLoadingSubjects(false);
+    }
+  };
+
+  // Paso 3: confirmar unidad → escoger lección aleatoria → enviar
+  const handleSelectUnit = async (unit) => {
+    setSelectedUnit(unit);
+    setSending(true);
+    setStep("sending");
+    try {
+      const availableLessons = unit.lessons?.filter(l => l.status !== "locked") || [];
+      if (availableLessons.length === 0) {
+        toast.error("Esta unidad no tiene lecciones disponibles");
+        setStep("selectUnit");
+        setSending(false);
+        return;
+      }
+      const randomLesson = availableLessons[Math.floor(Math.random() * availableLessons.length)];
+
+      const duelSocket = io(
+        import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000",
+        { auth: { token }, path: "/socket.io" }
+      );
+      duelSocket.on("connect", () => {
+        duelSocket.emit("duel:invite", {
+          friendId: targetUser._id,
+          lessonId: randomLesson._id,
+          conversationId: conversation._id,
+          isDuelMode: true, // flag para que el backend no compute progreso
+        });
+      });
+      duelSocket.once("duel:invite_sent", () => {
+        toast.success(`¡Desafío enviado a ${targetUser.displayName || targetUser.username}!`, { icon: "⚔️" });
+        duelSocket.disconnect();
+        onInviteSent();
+      });
+      duelSocket.once("duel:error", ({ message }) => {
+        toast.error(message);
+        duelSocket.disconnect();
+        setSending(false);
+        setStep("selectUnit");
+      });
+      // Fallback si el server no responde con el evento
+      setTimeout(() => {
+        if (sending) {
+          duelSocket.disconnect();
+          toast.success(`Desafío enviado a ${targetUser.displayName || targetUser.username}`, { icon: "⚔️" });
+          onInviteSent();
+        }
+      }, 3000);
+    } catch {
+      toast.error("Error al enviar el desafío");
+      setSending(false);
+      setStep("selectUnit");
+    }
+  };
+
+  const handleBack = () => {
+    if (step === "selectSubject") setStep("selectPlayer");
+    else if (step === "selectUnit") { setStep("selectSubject"); setSelectedSubject(null); }
+  };
+
+  const stepLabel = {
+    selectPlayer: "Elegir rival",
+    selectSubject: "Elegir materia",
+    selectUnit: `${selectedSubject?.name || "Unidad"}`,
+    sending: "Enviando desafío...",
+  };
+
+  return (
+    <div className="chat-modal-overlay" onClick={onClose}>
+      <div className="chat-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+
+        {/* Header con breadcrumb */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            {(step === "selectSubject" || step === "selectUnit") && (
+              <button
+                onClick={handleBack}
+                className="chat-icon-btn"
+                style={{ width: 28, height: 28, borderRadius: 8, marginRight: 4 }}
+              >
+                <ArrowLeft size={13} />
+              </button>
+            )}
+            <div>
+              <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase",
+                          letterSpacing: "0.14em", color: "var(--text-muted)", marginBottom: 1 }}>
+                {step === "sending" ? "Procesando" : `Paso ${
+                  step === "selectPlayer" ? "1/3" :
+                  step === "selectSubject" ? "2/3" : "3/3"
+                }`}
+              </p>
+              <p style={{ fontSize: 12, fontWeight: 900, textTransform: "uppercase",
+                          letterSpacing: "0.1em", color: "var(--text-primary)" }}>
+                {stepLabel[step]}
+              </p>
+            </div>
+          </div>
+          <button className="chat-icon-btn" onClick={onClose} style={{ width: 28, height: 28 }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Barra de progreso de pasos */}
+        {step !== "sending" && (
+          <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+            {["selectPlayer", "selectSubject", "selectUnit"].map((s, i) => (
+              <div key={s} style={{
+                flex: 1, height: 3, borderRadius: 99,
+                background: ["selectPlayer", "selectSubject", "selectUnit"].indexOf(step) >= i
+                  ? "var(--text-accent)" : "var(--glass-border)",
+                transition: "background 0.3s ease",
+              }} />
+            ))}
+          </div>
+        )}
+
+        {/* Step 1: Elegir jugador */}
+        {step === "selectPlayer" && (
+          <div>
+            {isGroup ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {participants.length === 0 && (
+                  <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 11 }}>
+                    No hay otros miembros
+                  </p>
+                )}
+                {participants.map(p => (
+                  <button key={p._id} onClick={() => handleSelectPlayer(p)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 12px", borderRadius: 12, cursor: "pointer",
+                      background: "var(--progress-track)", border: "2px solid var(--glass-border)",
+                      transition: "all 0.15s",
+                    }}>
+                    <Avatar src={p.avatar} name={p.displayName || p.username} size="sm" />
+                    <span style={{ fontWeight: 800, fontSize: 12, color: "var(--text-primary)" }}>
+                      {p.displayName || p.username}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (() => {
+              const opponent = participants[0];
+              return (
+                <div>
+                  <p style={{ textAlign: "center", fontSize: 10, color: "var(--text-muted)",
+                               fontWeight: 700, textTransform: "uppercase", marginBottom: 12 }}>
+                    Retarás a:
+                  </p>
+                  <div style={{
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    gap: 12, padding: 16, borderRadius: 14, marginBottom: 16,
+                    background: "color-mix(in srgb, var(--text-accent) 8%, transparent)",
+                    border: "2px solid color-mix(in srgb, var(--text-accent) 25%, transparent)",
+                  }}>
+                    <Avatar src={opponent?.avatar} name={opponent?.displayName || opponent?.username} size="md" />
+                    <span style={{ fontWeight: 900, fontSize: 14, color: "var(--text-primary)" }}>
+                      {opponent?.displayName || opponent?.username}
+                    </span>
+                  </div>
+                  <button onClick={() => handleSelectPlayer(opponent)}
+                    style={{
+                      width: "100%", padding: "12px", borderRadius: 12, cursor: "pointer",
+                      background: "var(--text-accent)", border: "none",
+                      color: "var(--btn-text)", fontFamily: "Nunito, sans-serif",
+                      fontWeight: 900, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.14em",
+                    }}>
+                    Continuar
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Step 2: Elegir materia */}
+        {step === "selectSubject" && (
+          <div>
+            {loadingSubjects ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
+                <Loader2 size={28} className="animate-spin" style={{ color: "var(--text-accent)" }} />
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto" }}>
+                {subjects.length === 0 && (
+                  <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 11 }}>
+                    Sin materias disponibles
+                  </p>
+                )}
+                {subjects.map(s => (
+                  <button key={s._id} onClick={() => handleSelectSubject(s)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+                      background: "var(--progress-track)", border: "2px solid var(--glass-border)",
+                      transition: "all 0.15s",
+                    }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: "color-mix(in srgb, var(--text-accent) 15%, transparent)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 18,
+                    }}>
+                      {s.icon || "📚"}
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 900, fontSize: 12, color: "var(--text-primary)", margin: 0 }}>
+                        {s.name}
+                      </p>
+                      {s.description && (
+                        <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, margin: 0, marginTop: 1 }}>
+                          {s.description.slice(0, 45)}{s.description.length > 45 ? "…" : ""}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 3: Elegir unidad */}
+        {step === "selectUnit" && (
+          <div>
+            {loadingSubjects ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
+                <Loader2 size={28} className="animate-spin" style={{ color: "var(--text-accent)" }} />
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto" }}>
+                {units.length === 0 && (
+                  <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 11, padding: "20px 0" }}>
+                    No hay unidades desbloqueadas en esta materia
+                  </p>
+                )}
+                {units.map((u, i) => {
+                  const lessonCount = u.lessons?.filter(l => l.status !== "locked").length || 0;
+                  return (
+                    <button key={u._id} onClick={() => handleSelectUnit(u)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "12px 14px", borderRadius: 12, cursor: "pointer", textAlign: "left",
+                        background: "var(--progress-track)", border: "2px solid var(--glass-border)",
+                        transition: "all 0.15s",
+                      }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                        background: "color-mix(in srgb, var(--text-accent) 15%, transparent)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 900, fontSize: 11, color: "var(--text-accent)",
+                      }}>
+                        {i + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontWeight: 900, fontSize: 12, color: "var(--text-primary)", margin: 0 }}>
+                          {u.name}
+                        </p>
+                        <p style={{ fontSize: 10, color: "var(--text-muted)", fontWeight: 600, margin: 0, marginTop: 1 }}>
+                          {lessonCount} lección{lessonCount !== 1 ? "es" : ""} disponible{lessonCount !== 1 ? "s" : ""} · lección aleatoria
+                        </p>
+                      </div>
+                      <Zap size={14} style={{ color: "var(--text-accent)", flexShrink: 0 }} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step: Enviando */}
+        {step === "sending" && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center",
+                        padding: "32px 0", gap: 14 }}>
+            <Loader2 size={36} className="animate-spin" style={{ color: "var(--text-accent)" }} />
+            <p style={{ fontWeight: 900, fontSize: 11, textTransform: "uppercase",
+                        letterSpacing: "0.14em", color: "var(--text-muted)" }}>
+              Enviando desafío a {targetUser?.displayName || targetUser?.username}…
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────────────────────────────────────
    GroupModal
 ───────────────────────────────────────────── */
@@ -452,6 +802,33 @@ function TypingIndicator({ names }) {
 function MessageBubble({ msg, isMe, showAvatar, onDelete }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const deleted = !!msg.deletedAt;
+  const isDuelResult = msg.type === "duel_result";
+
+   if (isDuelResult) {
+    const duel = msg.duelData?.resultSummary;
+    return (
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
+        <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-3 w-full max-w-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Trophy size={18} className="text-yellow-400" />
+            <span className="text-xs font-black uppercase tracking-wider text-white">Duelo finalizado</span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-black">
+            <span className="text-emerald-400">{duel?.winnerName}</span>
+            <span className="text-muted text-[10px]">vs</span>
+            <span className="text-rose-400">{duel?.loserName}</span>
+          </div>
+          <div className="flex justify-between text-[10px] font-bold mt-1">
+            <span>{duel?.winnerCorrect}/{duel?.totalQuestions} aciertos</span>
+            <span>{duel?.loserCorrect}/{duel?.totalQuestions} aciertos</span>
+          </div>
+          <div className="flex items-center justify-center gap-1 mt-2 text-[9px] text-muted">
+            <Clock size={10} /> Duración: {duel?.duration}s
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -520,7 +897,7 @@ function MessageBubble({ msg, isMe, showAvatar, onDelete }) {
           <button
             onClick={() => { onDelete(msg._id); setMenuOpen(false); }}
             style={{
-              position: "absolute", top: -10, left: -36,
+              position: "absolute", top: -10, left: -35,
               background: "var(--card-bg)", border: "2px solid var(--glass-border)",
               borderRadius: 10, padding: "4px 6px", cursor: "pointer",
               display: "flex", alignItems: "center",
@@ -657,7 +1034,7 @@ function ChatWindow({ conv, myId, onBack }) {
     openConversation, loadMoreMessages,
     sendMessage, sendImage, emitTyping, deleteMessage, refreshMessages,
   } = useChatStore();
-
+  const [showDuelModal, setShowDuelModal] = useState(false);
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
@@ -738,36 +1115,38 @@ function ChatWindow({ conv, myId, onBack }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Header */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: 10,
-        padding: "12px 14px",
-        borderBottom: "2px solid var(--glass-border)",
-        background: "var(--progress-track)",
-        flexShrink: 0,
-      }}>
-        {/* Back (mobile) */}
-        <button
-          onClick={onBack}
-          className="chat-icon-btn lg:hidden"
-          style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0 }}
-        >
+      {/* Header con botón de reto */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "2px solid var(--glass-border)", background: "var(--progress-track)", flexShrink: 0 }}>
+        <button onClick={onBack} className="chat-icon-btn lg:hidden" style={{ width: 36, height: 36, borderRadius: 10 }}>
           <ArrowLeft size={16} />
         </button>
-
         <Avatar src={avatarSrc} name={name} size="sm" />
-
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 900, fontSize: 13, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {name}
           </p>
-          {isGroup && (
-            <p style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-              {conv.participants?.length} participantes
-            </p>
-          )}
+          {isGroup && <p style={{ fontSize: 9, fontWeight: 700, color: "var(--text-muted)" }}>{conv.participants?.length} participantes</p>}
         </div>
+        {/* Botón de reto */}
+        <button
+          className="chat-icon-btn"
+          onClick={() => setShowDuelModal(true)}
+          title="Retar a duelo"
+          style={{ width: 36, height: 36, borderRadius: 10 }}
+        >
+          <Swords size={16} style={{ color: "var(--text-accent)" }} />
+        </button>
       </div>
+
+      {/* Modal de invitación a duelo */}
+      {showDuelModal && (
+        <DuelInviteModal
+          conversation={conv}
+          myId={myId}
+          onClose={() => setShowDuelModal(false)}
+          onInviteSent={() => setShowDuelModal(false)}
+        />
+      )}
 
       {/* Messages */}
       <div className="messages-scroll">
@@ -954,7 +1333,7 @@ export default function Chat() {
       <style>{CHAT_CSS}</style>
       <Navbar />
 
-      <div style={{ padding: "0 12px 0", paddingTop: 4 }}>
+      <div className="chat-body">
         <div className="chat-shell">
 
           {/* Sidebar */}
