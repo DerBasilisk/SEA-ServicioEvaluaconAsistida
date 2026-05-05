@@ -159,12 +159,15 @@ const generateWithAI = async (req, res) => {
       subjectContext: subject.aiPromptContext || "",           // ← parche aplicado
       count: Number(count),
       allowedTypes: allowedTypes || [                          // ← parche aplicado (más tipos permitidos)
-        "multiple_choice",
-        "true_false",
-        "fill_blank",
-        "match_pairs",
-        "sentence_builder",
-        "order_items"
+              "multiple_choice",
+              "true_false",
+              "fill_blank",
+              "order_items",
+              "match_pairs",
+              "sentence_builder",
+              "free_text",
+              "typing",
+              "code_python",
       ]
     });
 

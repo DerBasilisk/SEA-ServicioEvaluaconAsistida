@@ -1,0 +1,710 @@
+[
+  {
+    "id": "69e6a4ae018a29ae20f9fb40",
+    "type": "sentence_builder",
+    "prompt": "Ordena las palabras para formar una oración coherente sobre Lobotomy Corporation",
+    "issues": [
+      "prompt no contiene \"___\" para los espacios",
+      "wordBank insuficiente (0); rescatado desde campo alternativo"
+    ]
+  },
+  {
+    "id": "69e7d14db94ca7bf62d3e545",
+    "type": "sentence_builder",
+    "prompt": "Ordena las palabras para formar una frase que describa a Zoey en Left 4 Dead.",
+    "issues": [
+      "prompt no contiene \"___\" para los espacios",
+      "wordBank insuficiente (0); rescatado desde campo alternativo"
+    ]
+  },
+  {
+    "id": "69e7d1c4b94ca7bf62d3e695",
+    "type": "sentence_builder",
+    "prompt": "Ordena las palabras para formar una oración sobre el Boomer.",
+    "issues": [
+      "prompt no contiene \"___\" para los espacios",
+      "wordBank insuficiente (0); rescatado desde campo alternativo"
+    ]
+  },
+  {
+    "id": "69e7dd4acfe299b014d2b123",
+    "type": "sentence_builder",
+    "prompt": "El Spitter puede crear un puddle de ácido que causa daño a los supervivientes. ¿",
+    "issues": [
+      "prompt no contiene \"___\" para los espacios",
+      "wordBank insuficiente (0); rescatado desde campo alternativo"
+    ]
+  },
+  {
+    "id": "69ea83db4b34cf5180edd44a",
+    "type": "sentence_builder",
+    "prompt": "La idea principal de un texto es la idea ___ ___ ___ __ que se desarrolla a lo l",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69ea83dc4b34cf5180edd460",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ ___ ___ del texto es la ___ ___ ___ ___ ___ que se desarrolla a t",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69f915ed39957ce6b66bcdc8",
+    "type": "sentence_builder",
+    "prompt": "La expresión ___ * ___ + ___ es igual a ___ cuando ___ es igual a ___ y ___ es i",
+    "issues": [
+      "wordBank (7 palabras) < huecos en prompt (8)"
+    ]
+  },
+  {
+    "id": "69f917c039957ce6b66bcfb0",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ _ es una medida de tendencia central que se utiliza para resumir ",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69f9180839957ce6b66bd005",
+    "type": "free_text",
+    "prompt": "¿Cuál es el resultado de la integral de (2x + 1) dx?",
+    "issues": [
+      "[INFO] evaluationCriteria ausente (recomendado para mejor evaluación IA)"
+    ]
+  },
+  {
+    "id": "69f9185d39957ce6b66bd05c",
+    "type": "sentence_builder",
+    "prompt": "El lector puede ___ ___ ___ ___ conclusiones lógicas a partir de la información ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69f9188939957ce6b66bd095",
+    "type": "sentence_builder",
+    "prompt": "Complete la siguiente oración con las palabras correctas: 'La ___ ___ _ de la pe",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (8)"
+    ]
+  },
+  {
+    "id": "69f9189139957ce6b66bd0a2",
+    "type": "sentence_builder",
+    "prompt": "La deducción del significado de palabras desconocidas por contexto es un proceso",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69f918a539957ce6b66bd0b0",
+    "type": "sentence_builder",
+    "prompt": "La comprensión lectora implica ___ ___ ___ __ el texto, ___ ___ ___ __ conexione",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69f918b239957ce6b66bd0bc",
+    "type": "sentence_builder",
+    "prompt": "Completa la oración con las palabras adecuadas para describir el proceso de comp",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f918b239957ce6b66bd0bd",
+    "type": "free_text",
+    "prompt": "Explica brevemente la importancia de la comprensión lectora en la unidad de Chec",
+    "issues": [
+      "[INFO] evaluationCriteria ausente (recomendado para mejor evaluación IA)"
+    ]
+  },
+  {
+    "id": "69f918da39957ce6b66bd0e7",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ _ (1) come ___ ___ _ (2) en ___ ___ _ (3)",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f9192a39957ce6b66bd147",
+    "type": "sentence_builder",
+    "prompt": "Completa la oración con las palabras correctas: 'Los ___ ___ ___ ___ ___ (1) ___",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69f9196839957ce6b66bd16c",
+    "type": "sentence_builder",
+    "prompt": "Un párrafo bien estructurado tiene una oración ___ ___ ___ __ que introduce el t",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69f9197239957ce6b66bd17a",
+    "type": "sentence_builder",
+    "prompt": "Un párrafo bien estructurado tiene una oración ___ ___ _ que presenta el tema, u",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f9197f39957ce6b66bd187",
+    "type": "sentence_builder",
+    "prompt": "Completa la oración con las palabras adecuadas: La introducción de un texto argu",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f9199e39957ce6b66bd1ab",
+    "type": "sentence_builder",
+    "prompt": "Un texto expositivo debe comenzar con una ___ ___ _ que atraiga al lector, segui",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f919cb39957ce6b66bd1d7",
+    "type": "free_text",
+    "prompt": "Describe brevemente la importancia de la revisión en el proceso de escritura.",
+    "issues": [
+      "[INFO] evaluationCriteria ausente (recomendado para mejor evaluación IA)"
+    ]
+  },
+  {
+    "id": "69f919d639957ce6b66bd1e4",
+    "type": "sentence_builder",
+    "prompt": "Complete la oración con las palabras adecuadas: 'Un ___ ___ _ es un tipo de text",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f919e639957ce6b66bd1f2",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ es un género literario que se enfoca en la expresión de ___ __",
+    "issues": [
+      "wordBank (7 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69f919ed39957ce6b66bd1ff",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ es un género literario que se centra en la ___ ___ ___ __ de _",
+    "issues": [
+      "wordBank (8 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69f919fa39957ce6b66bd20d",
+    "type": "sentence_builder",
+    "prompt": "La estructura de un cuento incluye un ___ 1 ___ , un ___ 2 ___ y un ___ 3 ___ .",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f91a1c39957ce6b66bd229",
+    "type": "sentence_builder",
+    "prompt": "La poesía utiliza la metáfora para ___ ___ ___ __ ideas y el símil para ___ ___ ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69f91a2639957ce6b66bd236",
+    "type": "sentence_builder",
+    "prompt": "La poesía utiliza la ___ ___ ___ ___ ___ para comparar implícitamente dos concep",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69f91a3439957ce6b66bd245",
+    "type": "sentence_builder",
+    "prompt": "El teatro ___ ___ _ se caracterizaba por la utilización de máscaras y ___ ___ _ ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (8)"
+    ]
+  },
+  {
+    "id": "69f91a3f39957ce6b66bd252",
+    "type": "sentence_builder",
+    "prompt": "El teatro del siglo XX se caracteriza por la ___ ___ _ de las convenciones tradi",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f91a4c39957ce6b66bd260",
+    "type": "sentence_builder",
+    "prompt": "El realismo mágico es un estilo literario que presenta la ___ ___ _ de manera ob",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f91a9039957ce6b66bd2b4",
+    "type": "sentence_builder",
+    "prompt": "Las células ___ ___ _ (1) tienen un ___ ___ _ (2) definido, mientras que las cél",
+    "issues": [
+      "wordBank (7 palabras) < huecos en prompt (8)"
+    ]
+  },
+  {
+    "id": "69f91a9e39957ce6b66bd2c0",
+    "type": "sentence_builder",
+    "prompt": "Las células ___ ___ _ tienen un núcleo definido y ___ ___ _ membranosos, mientra",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69f91aae39957ce6b66bd2cf",
+    "type": "sentence_builder",
+    "prompt": "La mitosis es un proceso de división celular que consta de varias fases, incluye",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69f91ab739957ce6b66bd2dc",
+    "type": "sentence_builder",
+    "prompt": "La meiosis consta de dos divisiones celulares, la ___ ___ ___ ___ ___ y la ___ _",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69f91b4439957ce6b66bd308",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ __ es el órgano que secreta jugos gástricos para ___ ___ ___ __ l",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa275015d9b4371aba5bea",
+    "type": "sentence_builder",
+    "prompt": "La digestión de los alimentos comienza en la ___ ___ ___ __ , donde los ___ ___ ",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa276415d9b4371aba5c05",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ ___ ___ es un órgano muscular que ___ ___ ___ ___ ___ sangre haci",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa277115d9b4371aba5c13",
+    "type": "sentence_builder",
+    "prompt": "El sistema respiratorio incluye la ___ ___ ___ __ que transporta aire desde la _",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa27b715d9b4371aba5c56",
+    "type": "sentence_builder",
+    "prompt": "Los huesos se unen en las ___ ___ _ para permitir el ___ ___ _ y la ___ ___ _.",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69fa27d815d9b4371aba5c82",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ ___ ___ de los genes durante la meiosis es el principio fundament",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa27fa15d9b4371aba5cab",
+    "type": "sentence_builder",
+    "prompt": "La síntesis de proteínas implica la ___ ___ ___ ___ ___ _ de aminoácidos en una ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa282d15d9b4371aba5cc9",
+    "type": "sentence_builder",
+    "prompt": "La secuencia de ADN se compone de cuatro nucleótidos: ___ 1 ___ , ___ 2 ___ , __",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (8)"
+    ]
+  },
+  {
+    "id": "69fa283e15d9b4371aba5cd7",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ es el proceso por el cual las ___ ___ ___ __ cambian a lo larg",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa285715d9b4371aba5cf3",
+    "type": "sentence_builder",
+    "prompt": "El proceso de ___ ___ _ implica la ___ ___ _ de una secuencia de ADN en ___ ___ ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (10)"
+    ]
+  },
+  {
+    "id": "69fa287315d9b4371aba5d10",
+    "type": "sentence_builder",
+    "prompt": "El ecosistema de la ___ ___ ___ __ está caracterizado por la presencia de ___ __",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa287d15d9b4371aba5d1a",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ _ es un ecosistema terrestre que se caracteriza por su ___ ___ _ y __",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69fa288e15d9b4371aba5d28",
+    "type": "sentence_builder",
+    "prompt": "En una cadena trófica, los ___ ___ ___ __ se alimentan de los ___ ___ ___ __, y ",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa289815d9b4371aba5d35",
+    "type": "sentence_builder",
+    "prompt": "En una cadena trófica, los ___ ___ ___ ___ producen su propio alimento, los ___ ",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa28b915d9b4371aba5d42",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ __ es el proceso por el cual el dióxido de carbono se convierte e",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69fa28c315d9b4371aba5d51",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ __ del agua es el proceso por el cual el ___ ___ ___ __ se mueve ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa28d415d9b4371aba5d5f",
+    "type": "sentence_builder",
+    "prompt": "La biodiversidad se refiere a la variedad de ___ ___ ___ __ y ___ ___ ___ __ que",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa28df15d9b4371aba5d6c",
+    "type": "sentence_builder",
+    "prompt": "La biodiversidad se mide mediante la variedad de ___ ___ ___ ___ ___ y ___ ___ _",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (10)"
+    ]
+  },
+  {
+    "id": "69fa28ef15d9b4371aba5d7b",
+    "type": "sentence_builder",
+    "prompt": "Los ___ ___ ___ ___ __ son seres vivos que se alimentan de otros organismos, mie",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa28fc15d9b4371aba5d88",
+    "type": "sentence_builder",
+    "prompt": "La ecología es el estudio de las ___ ___ ___ ___ ___ entre los organismos y su _",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa290d15d9b4371aba5d95",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ __ de los ríos ___ ___ ___ __ y ___ ___ ___ __ permitió el desarr",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa291415d9b4371aba5da3",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ de la Gran Pirámide de Giza se atribuye al faraón ___ ___ ___ ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa295815d9b4371aba5dcc",
+    "type": "sentence_builder",
+    "prompt": "El Imperio Romano se caracterizó por su ___ ___ _ (1) ___ ___ _ (2) y su ___ ___",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (10)"
+    ]
+  },
+  {
+    "id": "69fa297615d9b4371aba5de6",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ china se caracterizó por su ___ ___ ___ __ y ___ ___ ___ __ du",
+    "issues": [
+      "wordBank (8 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa298515d9b4371aba5df4",
+    "type": "sentence_builder",
+    "prompt": "La civilización china se desarrolló en el valle del ___ ___ ___ __ , donde el __",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa299815d9b4371aba5e02",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ ___ ___ de la sociedad egipcia estaba dividida en ___ ___ ___ ___",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (20)"
+    ]
+  },
+  {
+    "id": "69fa29a215d9b4371aba5e0f",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ ___ ___ de la civilización egipcia se debió a la ___ ___ ___ ___ ",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa29b215d9b4371aba5e1c",
+    "type": "sentence_builder",
+    "prompt": "El sistema feudal se basaba en la relación entre ___ y ___ , donde los ___ ofrec",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (7)"
+    ]
+  },
+  {
+    "id": "69fa29ce15d9b4371aba5e39",
+    "type": "sentence_builder",
+    "prompt": "La expansión del ___ ___ ___ _ permitió la ___ ___ ___ _ de culturas y la ___ __",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa29d515d9b4371aba5e46",
+    "type": "sentence_builder",
+    "prompt": "La expansión del califato árabe se caracterizó por la ___ (1) ___ de los árabes,",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69fa29e715d9b4371aba5e54",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ _ de los lugares sagrados en Tierra Santa fue el objetivo princip",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa29f215d9b4371aba5e61",
+    "type": "sentence_builder",
+    "prompt": "Las Cruzadas fueron una serie de campañas militares lideradas por los ___ ___ __",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa2a0015d9b4371aba5e70",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ __ durante el Renacimiento permitió la creación de ___ ___ ___ __",
+    "issues": [
+      "wordBank (8 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa2a0815d9b4371aba5e7c",
+    "type": "sentence_builder",
+    "prompt": "El Renacimiento ___ ___ ___ _ el ___ ___ ___ _ de la sociedad ___ ___ ___ _ la e",
+    "issues": [
+      "wordBank (8 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa2a1515d9b4371aba5e8a",
+    "type": "sentence_builder",
+    "prompt": "La Edad Media fue un período de ___ ___ ___ __ cultural y ___ ___ ___ __ científ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa2a1d15d9b4371aba5e97",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ del Imperio Romano condujo a la ___ ___ ___ __ de nuevas entid",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa2a2a15d9b4371aba5ea6",
+    "type": "sentence_builder",
+    "prompt": "La Revolución Francesa comenzó con la convocatoria de los ___ ___ ___ __ en 1789",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa2a3115d9b4371aba5eb2",
+    "type": "sentence_builder",
+    "prompt": "La Revolución Francesa se caracterizó por la lucha por la ___ ___ ___ _, la ___ ",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa2a3f15d9b4371aba5ec1",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ ___ ___ de la electricidad ___ ___ ___ ___ ___ la mecanización de",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa2a4615d9b4371aba5ece",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ ___ ___ y la ___ ___ ___ ___ ___ fueron dos de las principales fu",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (20)"
+    ]
+  },
+  {
+    "id": "69fa2a5415d9b4371aba5edc",
+    "type": "sentence_builder",
+    "prompt": "El imperialismo europeo en África y Asia en el siglo XIX se caracterizó por la e",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (10)"
+    ]
+  },
+  {
+    "id": "69fa2a5b15d9b4371aba5eea",
+    "type": "sentence_builder",
+    "prompt": "El imperialismo europeo en África y Asia se caracterizó por la ___ ___ ___ ___ _",
+    "issues": [
+      "wordBank (4 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa2a8215d9b4371aba5f15",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ _ de Alemania en 1939 llevó a la ___ ___ _ de la Segunda Guerra Mundi",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69fa2a8a15d9b4371aba5f23",
+    "type": "sentence_builder",
+    "prompt": "La ___ ___ ___ __ de Alemania, liderada por ___ ___ ___ __, desencadenó la ___ _",
+    "issues": [
+      "wordBank (7 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa2a9f15d9b4371aba5f3e",
+    "type": "sentence_builder",
+    "prompt": "La Revolución ___ ___ ___ ___ ___ en ___ ___ ___ ___ ___ condujo a la ___ ___ __",
+    "issues": [
+      "wordBank (8 palabras) < huecos en prompt (20)"
+    ]
+  },
+  {
+    "id": "69fa2aac15d9b4371aba5f4d",
+    "type": "sentence_builder",
+    "prompt": "La Guerra Fría se caracterizó por la ___ ___ ___ ___ ___ de armas nucleares y la",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (10)"
+    ]
+  },
+  {
+    "id": "69fa2ac115d9b4371aba5f68",
+    "type": "sentence_builder",
+    "prompt": "El movimiento de independencia en África y Asia en el siglo XX se caracterizó po",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (8)"
+    ]
+  },
+  {
+    "id": "69fa2add15d9b4371aba5f92",
+    "type": "sentence_builder",
+    "prompt": "La globalización ___ ___ ___ __ a la expansión de las empresas ___ ___ ___ __ y ",
+    "issues": [
+      "wordBank (8 palabras) < huecos en prompt (9)"
+    ]
+  },
+  {
+    "id": "69fa2aeb15d9b4371aba5fa0",
+    "type": "sentence_builder",
+    "prompt": "La Guerra Fría se caracterizó por la ___ ___ ___ ___ ___ entre Estados Unidos y ",
+    "issues": [
+      "wordBank (6 palabras) < huecos en prompt (15)"
+    ]
+  },
+  {
+    "id": "69fa2aeb15d9b4371aba5fa1",
+    "type": "free_text",
+    "prompt": "Describe las consecuencias de la caída del Muro de Berlín en la política global.",
+    "issues": [
+      "[INFO] evaluationCriteria ausente (recomendado para mejor evaluación IA)"
+    ]
+  },
+  {
+    "id": "69fa2bb715d9b4371aba607e",
+    "type": "sentence_builder",
+    "prompt": "I need to go to the ___ ___ _ to pick up my ___ ___ _ and then go to the ___ ___",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (6)"
+    ]
+  },
+  {
+    "id": "69fa37952e29e5d4eb2d2a25",
+    "type": "sentence_builder",
+    "prompt": "El ___ ___ ___ ___ __ (1) es el órgano que ___ ___ ___ ___ __ (2) el aire ___ __",
+    "issues": [
+      "wordBank (7 palabras) < huecos en prompt (12)"
+    ]
+  },
+  {
+    "id": "69fa47742e29e5d4eb2d2b42",
+    "type": "sentence_builder",
+    "prompt": "Los supervivientes deben ___ ___ ___ ___ _ (1) a los infectados y ___ ___ ___ __",
+    "issues": [
+      "wordBank (5 palabras) < huecos en prompt (12)"
+    ]
+  }
+]
