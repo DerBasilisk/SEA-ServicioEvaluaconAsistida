@@ -1,3 +1,4 @@
+// models/duel.js
 const mongoose = require("mongoose");
 
 /**
@@ -41,6 +42,13 @@ const duelPlayerSchema = new mongoose.Schema(
  */
 const duelSchema = new mongoose.Schema(
   {
+    // UUID del duelo (mismo que en Redis)
+    duelId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
     // Relación con el chat (si el duelo se originó o notificó en una conversación)
     conversation: {
       type: mongoose.Schema.Types.ObjectId,

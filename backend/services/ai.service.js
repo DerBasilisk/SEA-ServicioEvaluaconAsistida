@@ -212,23 +212,23 @@ async function callGeminiRaw(prompt, temperature) {
 // ✅ Después — el pool maneja su propio estado
 async function callAI(prompt, { temperature } = {}) {
   return enqueueRequest(async () => {
-    if (!geminiBreaker.isOpen) {
-      try {
-        return await withExponentialBackoff(
-          () => callGeminiRaw(prompt, temperature),
-          { maxRetries: 2, baseDelayMs: 1500, label: 'Gemini' }
-        );
-      } catch (err) {
-        console.warn('⚠️ Gemini falló definitivamente → usando Groq como fallback');
-      }
-    } else {
-      console.warn('⚡ Gemini circuit breaker abierto → usando Groq directamente');
+    try {
+      return await withExponentialBackoff(
+        () => callGroqRaw(prompt, temperature ?? 0.75),
+        { maxRetries: 2, baseDelayMs: 1000, label: 'Groq' }
+      );
+    } catch (err) {
+      console.warn('⚠️ Groq falló definitivamente → usando Gemini como fallback');
     }
 
-    // Sin groqBreaker — getNextGroqClient() ya lanza error si todos están abiertos
+    if (geminiBreaker.isOpen) {
+      console.warn('⚡ Gemini circuit breaker abierto → no se puede hacer fallback');
+      throw new Error('Groq falló y Gemini no está disponible');
+    }
+
     return await withExponentialBackoff(
-      () => callGroqRaw(prompt, temperature ?? 0.75),
-      { maxRetries: 2, baseDelayMs: 1000, label: 'Groq' }
+      () => callGeminiRaw(prompt, temperature),
+      { maxRetries: 2, baseDelayMs: 1500, label: 'Gemini' }
     );
   });
 }

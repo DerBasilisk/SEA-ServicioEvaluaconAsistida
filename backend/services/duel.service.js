@@ -48,7 +48,7 @@ async function deleteInvite(inviteId) {
 async function createDuelInMongo(data) {
   // Si ya viene un duelId (el mismo que en Redis), lo usamos como _id
   const duelData = {
-    _id: data.duelId || undefined,         // permite usar el mismo ID de Redis como _id de Mongo
+    duelId: data.duelId || undefined,         // permite usar el mismo ID de Redis como _id de Mongo
     lesson: data.lessonId,
     creator: data.creatorId,
     players: data.players.map(p => ({
@@ -78,11 +78,11 @@ async function createDuelInMongo(data) {
  */
 async function finishDuelInMongo(duelId, finalStats) {
   // Primero obtenemos el duelo de MongoDB
-  let duel = await Duel.findById(duelId);
+  let duel = await Duel.findOne({ duelId });
   if (!duel) {
     // Si no existe, puede ser que solo tengamos el ID de Redis y no se haya persistido aún.
     // En ese caso, creamos un documento a partir de los datos de Redis.
-    const redisDuel = await getDuel(duelId);
+    const redisDuel = await getDuel({ duelId });
     if (!redisDuel) throw new Error(`Duelo ${duelId} no encontrado en Redis`);
     duel = await createDuelInMongo({
       duelId,
@@ -140,7 +140,7 @@ async function finishDuelInMongo(duelId, finalStats) {
  * Marca un duelo como abandonado en MongoDB.
  */
 async function abandonDuelInMongo(duelId, userId) {
-  const duel = await Duel.findById(duelId);
+  const duel = await Duel.findOne({ duelId });
   if (!duel) return null;
   const player = duel.players.find(p => p.user.toString() === userId);
   if (player) player.abandoned = true;
@@ -154,7 +154,7 @@ async function abandonDuelInMongo(duelId, userId) {
  * Obtiene un duelo desde MongoDB (historial)
  */
 async function getDuelFromMongo(duelId) {
-  return await Duel.findById(duelId).populate("players.user lesson questions");
+  return await Duel.findOne({ duelId }).populate("players.user lesson questions");
 }
 
 // ──────────────── Exportaciones ────────────────

@@ -1,8 +1,11 @@
+// components/DuelInviteToast.jsx
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import { Swords, X, Loader2, BookOpen, Layers } from "lucide-react";
 import useAuthStore from "../store/authStore";
+import { getSocket } from "../api/socket";
+import { getDuelSocket, disconnectDuelSocket } from "../api/duelSocket";
 
 const TOAST_CSS = `
   .duel-toast-container {
@@ -46,17 +49,13 @@ export default function DuelInviteToast() {
 
   useEffect(() => {
     if (!token) return;
-
-    const socket = io(
-      import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000",
-      { auth: { token }, path: "/socket.io" }
-    );
+    const socket = getDuelSocket(token);
     socketRef.current = socket;
 
     socket.on("duel:invited", (data) => {
+      console.log("[Toast] duel:invited recibido:", data);
       setInvite(data);
       setAccepting(false);
-      // Auto-rechazar después de 15s si no responde
       clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
         socketRef.current?.emit("duel:reject", { inviteId: data.inviteId });
@@ -65,15 +64,18 @@ export default function DuelInviteToast() {
     });
 
     socket.on("duel:start", ({ duelId }) => {
+      console.log("[Toast] duel:start recibido, navegando a:", duelId);
       clearTimeout(timerRef.current);
       setInvite(null);
       setAccepting(false);
       navigate(`/duel/${duelId}`);
     });
 
+    // NO desconectar en cleanup — el singleton debe vivir toda la sesión
     return () => {
+      socket.off("duel:invited");
+      socket.off("duel:start");
       clearTimeout(timerRef.current);
-      socket.disconnect();
     };
   }, [token, navigate]);
 
@@ -81,6 +83,11 @@ export default function DuelInviteToast() {
     if (accepting) return;
     setAccepting(true);
     clearTimeout(timerRef.current);
+    
+    console.log("[Toast] Emitiendo duel:accept, inviteId:", invite.inviteId);
+    console.log("[Toast] Socket conectado:", socketRef.current?.connected);
+    console.log("[Toast] Socket id:", socketRef.current?.id);
+    
     socketRef.current?.emit("duel:accept", { inviteId: invite.inviteId });
   };
 

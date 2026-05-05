@@ -1,3 +1,4 @@
+// pages/Duel.jsx
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
@@ -5,6 +6,8 @@ import toast, { Toaster } from "react-hot-toast"; // <-- Importamos Toast
 import { ShieldAlert, Zap, Ghost, Trophy, X, Swords } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import api from "../api/axios";
+import { getSocket } from "../api/socket";
+import { getDuelSocket } from "../api/duelSocket";
 
 import MultipleChoice from "../components/lesson/MultipleChoice";
 import TrueFalse from "../components/lesson/TrueFalse";
@@ -48,37 +51,25 @@ export default function Duel() {
   const [myCorrect, setMyCorrect] = useState(0);
 
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000", {
-      auth: { token },
-      path: "/socket.io",
-    });
+    const socket = getDuelSocket(token); // ← singleton, no crea socket nuevo
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("[Duel] Socket conectado, emitiendo join:", duelId);
-      // Pequeño delay para asegurar que el middleware de auth procesó el socket
-      setTimeout(() => {
-        socket.emit("duel:join", { duelId });
-      }, 100);
-    });
-
-    socket.on("duel:start", (data) => {
+    const onStart = (data) => {
+      console.log("[Duel] duel:start recibido:", data?.duelId);
       const { questions: qs, opponentId: oppId } = data;
-      console.log("[Duel] duel:start recibido:", data);
-      toast.success("¡Duelo Iniciado! Prepárate.", { icon: '⚔️' });
-      setQuestions(qs);
-      setOpponentId(oppId);
-      setPhase("playing");
-    });
+      if (qs?.length) {
+        setQuestions(qs);
+        setOpponentId(oppId);
+        setPhase("playing");
+      }
+    };
 
-    socket.on("duel:state", (duel) => {
-      console.log("[Duel] duel:state recibido:", duel);
-      if (!duel || !duel.questions) return;
+    const onState = (duel) => {
+      console.log("[Duel] duel:state recibido, questions:", duel?.questions?.length);
+      if (!duel?.questions?.length) return;
       setQuestions(duel.questions);
-      // Encontrar el opponentId
-      const oppId = Object.keys(duel.players).find((id) => id !== user?._id);
+      const oppId = Object.keys(duel.players).find(id => id !== user?._id);
       setOpponentId(oppId);
-      // Restaurar progreso propio si reconectó
       const me = duel.players[user?._id];
       if (me) {
         setCurrentIndex(me.currentIndex);
@@ -88,34 +79,52 @@ export default function Duel() {
       const opp = duel.players[oppId];
       if (opp) setOpponentProgress({ currentIndex: opp.currentIndex, score: opp.score, correct: opp.correct });
       setPhase("playing");
-    });
+    };
 
-    socket.on("duel:modifier_received", ({ modifier }) => {
-      // Notificación de ataque recibido
-      toast.error(`¡ATAQUE! El oponente usó: ${modifier.label}`, {
-        duration: 4000,
-        icon: '⚠️',
-        style: { background: '#7f1d1d', color: '#fca5a5', border: '1px solid #ef4444' }
-      });
-
+    const onModifier  = ({ modifier }) => {
+      toast.error(`¡ATAQUE! El oponente usó: ${modifier.label}`, { duration: 4000, icon: '⚠️' });
       if (modifier.id === "blackout") {
         setBlackout(true);
         setTimeout(() => setBlackout(false), 3000);
       }
-    });
+    };
 
-    socket.on("duel:opponent_abandoned", () => {
-      toast("El oponente se ha retirado de la batalla.", { icon: '🏳️' });
+    const onAbandoned = () => {
+      toast("El oponente se ha retirado.", { icon: '🏳️' });
       setResult({ abandoned: true });
       setPhase("result");
-    });
+    };
 
-    socket.on("duel:error", ({ message }) => {
+    const onError = ({ message }) => {
       toast.error(message);
       navigate("/friends");
-    });
+    };
 
-    return () => socket.disconnect();
+    socket.on("duel:start",             onStart);
+    socket.on("duel:state",             onState);
+    socket.on("duel:modifier_received", onModifier);
+    socket.on("duel:opponent_abandoned",onAbandoned);
+    socket.on("duel:error",             onError);
+
+    // Emitir join — el socket ya está conectado (singleton)
+    if (socket.connected) {
+      console.log("[Duel] Socket ya conectado, emitiendo join:", duelId);
+      socket.emit("duel:join", { duelId });
+    } else {
+      socket.once("connect", () => {
+        console.log("[Duel] Socket conectado, emitiendo join:", duelId);
+        socket.emit("duel:join", { duelId });
+      });
+    }
+
+    return () => {
+      // Solo quitar listeners, NO desconectar el singleton
+      socket.off("duel:start",              onStart);
+      socket.off("duel:state",              onState);
+      socket.off("duel:modifier_received",  onModifier);
+      socket.off("duel:opponent_abandoned", onAbandoned);
+      socket.off("duel:error",              onError);
+    };
   }, [duelId, token]);
 
   const handleUseModifier = (modifierId) => {
@@ -133,28 +142,28 @@ export default function Duel() {
   };
 
   const handleAnswer = useCallback((answer) => {
+    const socket = socketRef.current;
     const question = questions[currentIndex];
-    socketRef.current?.emit("duel:answer", {
-      duelId,
-      questionId: question._id,
-      answer,
-    });
+    
+    socket?.emit("duel:answer", { duelId, questionId: question._id, answer });
 
-    socketRef.current?.once("duel:answer_result", (data) => {
+    socket?.once("duel:answer_result", (data) => {
       if (data.isCorrect) {
-        setMyScore((s) => s + 2);
-        setMyCorrect((c) => c + 1);
+        setMyScore(s => s + 2);
+        setMyCorrect(c => c + 1);
       }
       setFeedback(data);
       setPhase("feedback");
+      resolve(data); 
     });
 
-    socketRef.current?.once("duel:finished", (data) => {
+    socket?.once("duel:finished", (data) => {
       setResult(data);
       setPhase("result");
+      resolve({ isCorrect: false });
     });
 
-    socketRef.current?.once("duel:opponent_progress", (data) => {
+    socket?.once("duel:opponent_progress", (data) => {
       setOpponentProgress(data);
     });
   }, [duelId, currentIndex, questions]);

@@ -99,6 +99,22 @@ const getSubjectBySlug = async (req, res) => {
       })
     );
 
+    const totalLessons     = unitsWithProgress.reduce((s, u) => s + u.totalLessons, 0);
+    const completedLessons = unitsWithProgress.reduce((s, u) => s + u.completedLessons, 0);
+
+    res.json({
+      ok: true,
+      data: {
+        ...subject.toJSON(),
+        units: unitsWithProgress,
+        totalLessons,                          // ✅ ahora en raíz
+        completedLessons,                      // ✅ ahora en raíz
+        progressPercent: totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : 0,
+      },
+    });
+
     res.json({
       ok: true,
       data: { ...subject.toJSON(), units: unitsWithProgress },

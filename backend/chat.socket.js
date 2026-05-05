@@ -1,3 +1,4 @@
+// chat.socket.js
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const {
@@ -197,5 +198,6 @@ function setupChatSocket(io) {
 
   return chat;
 }
+
 
 module.exports = { setupChatSocket };

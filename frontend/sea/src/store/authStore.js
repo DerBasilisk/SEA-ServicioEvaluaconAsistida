@@ -1,6 +1,7 @@
 // frontend/sea/src/store/authStore.js
 import { create } from "zustand";
 import api from "../api/axios";
+import { disconnectDuelSocket } from "../api/duelSocket";
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -56,7 +57,7 @@ const useAuthStore = create((set, get) => ({
         error: err.response?.data?.message || "Error al iniciar sesión",
         user: null 
       });
-      return { ok: false, message: errorMsg };
+      return { ok: false, message: err.response?.data?.message || "Error al iniciar sesión" };
     }
   },
 
@@ -101,6 +102,7 @@ const useAuthStore = create((set, get) => ({
   logout: () => {
     localStorage.removeItem("sea_token");
     delete api.defaults.headers.common["Authorization"];
+    disconnectDuelSocket();
     set({ user: null, token: null, error: null });
   },
 

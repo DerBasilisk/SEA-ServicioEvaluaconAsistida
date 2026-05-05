@@ -1,9 +1,11 @@
+//duel.socket.js
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 const { createDuel, getDuel, updateDuel, deleteDuel, createInvite, getInvite, deleteInvite, redis, createDuelInMongo, finishDuelInMongo, abandonDuelInMongo } = require("./services/duel.service");
 const { Question, Lesson } = require("./models");
 const { getAdaptiveConfig, selectQuestions } = require("./services/adaptive.service");
+const { sendDuelResultMessage } = require("./services/chat.service");
 
 const MODIFIERS = {
   extra_questions: { id: "extra_questions", label: "Preguntas extra",  icon: "➕", description: "+3 preguntas al oponente"         },
@@ -55,35 +57,49 @@ function setupDuelSocket(httpServer) {
     // ── INVITACIÓN ─────────────────────────────────────────────
 
     socket.on("duel:invite", async ({ friendId, lessonId, conversationId }) => {
-    try {
-      const inviteId = uuidv4();
-      const invite = {
-        inviteId,
-        lessonId,
-        requesterId: socket.userId,
-        recipientId: friendId,
-        conversationId, // ← guardar para usarlo después
-        createdAt: Date.now(),
-      };
-      await createInvite(inviteId, invite);
-      io.to(`user:${friendId}`).emit("duel:invited", { inviteId, lessonId, requesterId: socket.userId, conversationId });
-      socket.emit("duel:invite_sent", { inviteId });
-    } catch (err) {
-      socket.emit("duel:error", { message: err.message });
-    }
-  });
+      try {
+        console.log("[Invite] Recibido:", { friendId, lessonId, conversationId, from: socket.userId });
+        
+        const inviteId = uuidv4();
+        const invite = { inviteId, lessonId, requesterId: socket.userId, recipientId: friendId, conversationId, createdAt: Date.now() };
+        
+        await createInvite(inviteId, invite);
+        console.log("[Invite] Guardado en Redis:", inviteId);
+
+        const recipientSockets = await io.in(`user:${friendId}`).fetchSockets();
+        console.log("[Invite] Sockets del destinatario:", recipientSockets.length);
+
+        io.to(`user:${friendId}`).emit("duel:invited", { inviteId, lessonId, requesterId: socket.userId, conversationId });
+        console.log("[Invite] duel:invited emitido a:", `user:${friendId}`);
+        
+        socket.emit("duel:invite_sent", { inviteId });
+        console.log("[Invite] duel:invite_sent emitido al retador");
+      } catch (err) {
+        console.error("[Invite] ERROR:", err);
+        socket.emit("duel:error", { message: err.message });
+      }
+    });
 
     socket.on("duel:accept", async ({ inviteId }) => {
+      console.log("[Duel] duel:accept recibido, inviteId:", inviteId, "userId:", socket.userId);
       try {
-         const invite = await getInvite(inviteId);
+        const invite = await getInvite(inviteId);
+        console.log("[Duel] invite encontrado en Redis:", invite ? "sí" : "NO — ya expiró o no existe");
         if (!invite) return;
         await deleteInvite(inviteId);
 
         const duelId = uuidv4();
         const lesson = await Lesson.findById(invite.lessonId).populate({ path: "unit", populate: { path: "subject" } });
+        console.log("[Duel] Lección encontrada:", lesson?.name);
+
+        let questions = await Question.find({ lesson: lesson._id, isActive: true });
+        console.log("[Duel] Preguntas encontradas (isActive+isReviewed):", questions.length);
+
+        // Prueba sin filtros para confirmar
+        const allQuestions = await Question.find({ lesson: lesson._id });
+        console.log("[Duel] Preguntas totales en esa lección:", allQuestions.length);
         if (!lesson) return socket.emit("duel:error", { message: "Lección no encontrada" });
 
-        let questions = await Question.find({ lesson: lesson._id, isActive: true, isReviewed: true });
         const adaptiveConfig = await getAdaptiveConfig(invite.requesterId, lesson);
         questions = selectQuestions(questions, adaptiveConfig.questionCount, adaptiveConfig.easyRatio, adaptiveConfig.hardRatio);
 
@@ -145,9 +161,12 @@ function setupDuelSocket(httpServer) {
         };
 
         socket.join(`duel:${duelId}`);
+        socket.emit("duel:accepted", { duelId });
+        console.log("[Duel] Emitiendo duel:start al aceptante:", socket.userId);
         socket.emit("duel:start", { ...startPayload, opponentId: invite.requesterId });
 
         const requesterSockets = await io.in(`user:${invite.requesterId}`).fetchSockets();
+        console.log("[Duel] Sockets del retador encontrados:", requesterSockets.length);
         if (requesterSockets.length > 0) {
           requesterSockets.forEach((s) => s.join(`duel:${duelId}`));
           io.to(`user:${invite.requesterId}`).emit("duel:start", { ...startPayload, opponentId: socket.userId });
@@ -178,11 +197,11 @@ function setupDuelSocket(httpServer) {
     // ── DURANTE EL DUELO ───────────────────────────────────────
 
     socket.on("duel:join", async ({ duelId }) => {
-      console.log("[Duel] join recibido, duelId:", duelId, "userId:", socket.userId);
       socket.join(`duel:${duelId}`);
       const duel = await getDuel(duelId);
+      console.log("[Duel] questions en Redis:", duel?.questions?.length ?? "undefined");
+      console.log("[Duel] players en Redis:", Object.keys(duel?.players || {}).length);
       if (duel) socket.emit("duel:state", duel);
-      console.log("[Duel] getDuel resultado:", duel ? "encontrado" : "null");
     });
 
     socket.on("duel:answer", async ({ duelId, questionId, answer }) => {
@@ -311,41 +330,39 @@ async function endDuel(duelId, duel, io) {
   }
 
   if (duel.conversationId) {
-    const winnerData = players.find(p => p.userId === winner.userId);
-    const loserData = players.find(p => p.userId !== winner.userId);
-    const winnerName = winnerData.userName || "Ganador";
-    const loserName = loserData.userName || "Perdedor";
+    try {
+      const { saveMessage } = require("./services/chat.service");
+      const winnerData  = players.find(p => p.userId === winner.userId);
+      const loserData   = players.find(p => p.userId !== winner.userId);
 
-    const message = await sendDuelResultMessage({
-      conversationId: duel.conversationId,
-      duelId: duelId,
-      winner: {
-        userId: winner.userId,
-        userName: winnerName,
-        correct: winnerData.correct,
-      },
-      loser: {
-        userId: loserData.userId,
-        userName: loserName,
-        correct: loserData.correct,
-      },
-      totalQuestions: duel.questions.length,
-      duration: Math.round((Date.now() - duel.startedAt) / 1000),
-    });
+      const message = await saveMessage({
+        conversationId: duel.conversationId,
+        senderId: winner.userId,       // el ganador "firma" el mensaje
+        type: "duel_result",           // tipo especial para renderizarlo distinto en el chat
+        content: `⚔️ Duelo finalizado — Ganador: ${winnerData.correct}✓ vs ${loserData.correct}✓`,
+        duelData: {
+          duelId,
+          winner:         winner.userId,
+          winnerCorrect:  winnerData.correct,
+          loserCorrect:   loserData.correct,
+          totalQuestions: duel.questions.length,
+        },
+      });
 
-    if (message) {
       io.of("/chat").to(`conv:${duel.conversationId}`).emit("chat:message", {
         conversationId: duel.conversationId,
         message: {
-          _id: message._id,
-          type: message.type,
-          content: message.content,
-          sender: message.sender,
-          readBy: message.readBy,
+          _id:       message._id,
+          type:      message.type,
+          content:   message.content,
+          sender:    message.sender,
+          readBy:    message.readBy,
           createdAt: message.createdAt,
-          duelData: message.duelData,
+          duelData:  message.duelData,
         },
       });
+    } catch (err) {
+      console.error("[Duel] Error enviando resultado al chat:", err.message);
     }
   }
 

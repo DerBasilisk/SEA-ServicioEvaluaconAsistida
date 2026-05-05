@@ -13,6 +13,7 @@ import useAuthStore from "../store/authStore";
 import useChatStore from "../store/chatStore";
 import api from "../api/axios";
 import toast from "react-hot-toast";
+import { getDuelSocket } from "../api/duelSocket";
 
 /* ─────────────────────────────────────────────
    CSS
@@ -382,51 +383,73 @@ function DuelInviteModal({ conversation, myId, onClose, onInviteSent }) {
     setSelectedUnit(unit);
     setSending(true);
     setStep("sending");
-    try {
-      const availableLessons = unit.lessons?.filter(l => l.status !== "locked") || [];
-      if (availableLessons.length === 0) {
-        toast.error("Esta unidad no tiene lecciones disponibles");
-        setStep("selectUnit");
-        setSending(false);
-        return;
-      }
-      const randomLesson = availableLessons[Math.floor(Math.random() * availableLessons.length)];
 
-      const duelSocket = io(
-        import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000",
-        { auth: { token }, path: "/socket.io" }
-      );
-      duelSocket.on("connect", () => {
-        duelSocket.emit("duel:invite", {
-          friendId: targetUser._id,
-          lessonId: randomLesson._id,
-          conversationId: conversation._id,
-          isDuelMode: true, // flag para que el backend no compute progreso
-        });
-      });
-      duelSocket.once("duel:invite_sent", () => {
-        toast.success(`¡Desafío enviado a ${targetUser.displayName || targetUser.username}!`, { icon: "⚔️" });
-        duelSocket.disconnect();
-        onInviteSent();
-      });
-      duelSocket.once("duel:error", ({ message }) => {
-        toast.error(message);
-        duelSocket.disconnect();
-        setSending(false);
-        setStep("selectUnit");
-      });
-      // Fallback si el server no responde con el evento
-      setTimeout(() => {
-        if (sending) {
-          duelSocket.disconnect();
-          toast.success(`Desafío enviado a ${targetUser.displayName || targetUser.username}`, { icon: "⚔️" });
-          onInviteSent();
-        }
-      }, 3000);
-    } catch {
-      toast.error("Error al enviar el desafío");
+    const availableLessons = unit.lessons?.filter(l => l.status !== "locked") || [];
+    if (availableLessons.length === 0) {
+      toast.error("Esta unidad no tiene lecciones disponibles");
+      setStep("selectUnit");
+      setSending(false);
+      return;
+    }
+
+    const randomLesson = availableLessons[Math.floor(Math.random() * availableLessons.length)];
+    const socket = getDuelSocket(token);
+
+    const cleanup = () => {
+      socket.off("duel:invite_sent", onSent);
+      socket.off("duel:error", onError);
+      clearTimeout(timeoutId);
+    };
+
+    const onSent = ({ inviteId }) => {
+      console.log("[DuelInvite] invite_sent:", inviteId);
+      cleanup();
+      toast.success(`¡Desafío enviado a ${targetUser.displayName || targetUser.username}!`, { icon: "⚔️" });
+      onInviteSent();
+    };
+
+    const onError = ({ message }) => {
+      console.error("[DuelInvite] error:", message);
+      cleanup();
+      toast.error(message);
       setSending(false);
       setStep("selectUnit");
+    };
+
+    const timeoutId = setTimeout(() => {
+      console.warn("[DuelInvite] Timeout — sin respuesta del servidor");
+      cleanup();
+      toast.error("Sin respuesta del servidor. Intenta de nuevo.");
+      setSending(false);
+      setStep("selectUnit");
+    }, 8000);
+
+    const emit = () => {
+      console.log("[DuelInvite] Emitiendo duel:invite", {
+        friendId: targetUser._id,
+        lessonId: randomLesson._id,
+        conversationId: conversation._id,
+      });
+      socket.on("duel:invite_sent", onSent);
+      socket.on("duel:error", onError);
+      socket.emit("duel:invite", {
+        friendId: targetUser._id,
+        lessonId: randomLesson._id,
+        conversationId: conversation._id,
+      });
+    };
+
+    if (socket.connected) {
+      emit();
+    } else {
+      socket.once("connect", emit);
+      socket.once("connect_error", (err) => {
+        console.error("[DuelInvite] connect_error:", err.message);
+        cleanup();
+        toast.error("Error de conexión");
+        setSending(false);
+        setStep("selectUnit");
+      });
     }
   };
 

@@ -39,14 +39,18 @@ export default function MultipleChoice({ question, onAnswer }) {
 
   const handleConfirm = async () => {
     if (!selected || submitted) return;
-
     setSubmitted(true);
+    
     try {
       const result = await onAnswer(selected);
-      setIsCorrect(result.isCorrect);
+      // En modo lección, onAnswer retorna { isCorrect }
+      // En modo duelo, onAnswer no retorna nada — está bien
+      if (result !== undefined) {
+        setIsCorrect(result.isCorrect);
+      }
     } catch (err) {
       console.error("Error al validar respuesta:", err);
-      setIsCorrect(false); 
+      setIsCorrect(false);
     }
   };
 

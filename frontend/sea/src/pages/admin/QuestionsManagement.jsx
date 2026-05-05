@@ -40,7 +40,7 @@ const QUESTIONS_CSS = `
   .qm-search-icon { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
   .qm-search-input {
     width: 100%; padding-left: 2.75rem;
-    background: var(--glass-bg-small); border: 1.5px solid var(--glass-border);
+    background: var(--card-bg); border: 1.5px solid var(--glass-border);
     border-radius: 1rem; padding-top: 0.75rem; padding-right: 1rem; padding-bottom: 0.75rem; padding-left: 2.75rem;
     color: var(--text-primary); font-family: 'Nunito', sans-serif;
     font-weight: 600; font-size: 0.875rem; outline: none; transition: border-color 0.2s;
@@ -216,6 +216,9 @@ export default function QuestionsManagement() {
   const [generating, setGenerating] = useState(false);
   const [showReportedOnly, setShowReportedOnly] = useState(false);
 
+  const [selType,       setSelType]       = useState("");
+  const [selDifficulty, setSelDifficulty] = useState("");
+
   useEffect(() => {
     api.get("/admin/subjects").then(res => setSubjects(res.data.data || []));
   }, []);
@@ -248,7 +251,9 @@ export default function QuestionsManagement() {
         subjectId: selSubject || undefined,
         unitId: selUnit || undefined,
         lessonId: selLesson || undefined,
-        reported: showReportedOnly ? "true" : undefined
+        reported: showReportedOnly ? "true" : undefined,
+        type:       selType       || undefined,
+        difficulty: selDifficulty || undefined,
       };
       const { data } = await api.get("/admin/questions", { params });
       setQuestions(data.data.questions || []);
@@ -260,7 +265,7 @@ export default function QuestionsManagement() {
     }
   };
 
-  useEffect(() => { fetchQuestions(); }, [page, filterStatus, search, selSubject, selUnit, selLesson, showReportedOnly]);
+  useEffect(() => { fetchQuestions(); }, [page, filterStatus, search, selSubject, selUnit, selLesson, showReportedOnly, selType, selDifficulty]);
 
   const handleClearReports = async (questionId) => {
     if (!confirm("¿Eliminar todos los reportes de esta pregunta?")) return;
@@ -293,6 +298,7 @@ export default function QuestionsManagement() {
   const resetFilters = () => {
     setSearch(""); setFilterStatus("all");
     setSelSubject(""); setSelUnit(""); setSelLesson("");
+    setSelType(""); setSelDifficulty("");
     setPage(1);
   };
 
@@ -408,13 +414,47 @@ export default function QuestionsManagement() {
           </div>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
-          <div className="qm-search-wrap">
+        <div className="grid grid-cols-6 gap-4">
+
+          <div className="qm-search-wrap col-start-1 col-end-3">
             <Search className="qm-search-icon" size={16} />
             <input className="qm-search-input" type="text"
               placeholder="Buscar en el enunciado…"
               value={search} onChange={e => setSearch(e.target.value)} />
           </div>
+
+          <CustomSelect
+            value={selType}
+            onChange={setSelType}
+            options={[
+              { value: "",                 label: "Todos los tipos"   },
+              { value: "multiple_choice",  label: "Multiple Choice"   },
+              { value: "true_false",       label: "True / False"      },
+              { value: "fill_blank",       label: "Fill Blank"        },
+              { value: "order_items",      label: "Order Items"       },
+              { value: "match_pairs",      label: "Match Pairs"       },
+              { value: "sentence_builder", label: "Sentence Builder"  },
+              { value: "free_text",        label: "Free Text"         },
+              { value: "typing",           label: "Typing"            },
+              { value: "code_python",      label: "Code Python"       },
+            ]}
+            getOptionValue={opt => opt.value}
+            getOptionLabel={opt => opt.label}
+          />
+
+          <CustomSelect
+            value={selDifficulty}
+            onChange={setSelDifficulty}
+            options={[
+              { value: "",       label: "Todas las dificultades" },
+              { value: "easy",   label: "Fácil" },
+              { value: "medium", label: "Media" },
+              { value: "hard",   label: "Difícil" },
+            ]}
+            getOptionValue={opt => opt.value}
+            getOptionLabel={opt => opt.label}
+          />
+
           <CustomSelect
             value={filterStatus}
             onChange={setFilterStatus}
@@ -426,6 +466,7 @@ export default function QuestionsManagement() {
             getOptionValue={opt => opt.value}
             getOptionLabel={opt => opt.label}
           />
+
           <button
             className={`qm-btn-reported ${showReportedOnly ? "on" : "off"}`}
             onClick={() => setShowReportedOnly(!showReportedOnly)}
@@ -433,6 +474,7 @@ export default function QuestionsManagement() {
             <ShieldAlert size={16} />
             {showReportedOnly ? "Reportadas: ON" : "Reportadas: OFF"}
           </button>
+
         </div>
       </div>
 

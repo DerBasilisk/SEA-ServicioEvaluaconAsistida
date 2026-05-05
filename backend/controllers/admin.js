@@ -259,6 +259,8 @@ const getQuestions = async (req, res) => {
       reviewed, 
       search, 
       reported,
+      type,
+      difficulty,
       page = 1, 
       limit = 15 
     } = req.query;
@@ -293,10 +295,12 @@ const getQuestions = async (req, res) => {
       query.reports = { $exists: true, $ne: [] };   // solo preguntas que tengan reportes
     }
 
+    if (type)       query.type       = type;
+    if (difficulty) query.difficulty = difficulty;
+
     // Nuevo: Filtro para preguntas reportadas
     const sort = {};
     if (req.query.reported === "true") {
-      query.reports = { $exists: true, $ne: [] };
       sort["reports.0.reportedAt"] = -1;   // más recientes primero
     } else {
       sort.createdAt = -1;

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Avatar from "../components/Avatar";
 import toast from "react-hot-toast";
+import { getDuelSocket } from "../api/duelSocket";
 
 const FRIENDS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -154,18 +155,17 @@ export default function Friends() {
 
   /* Socket */
   useEffect(() => {
-    const socket = io(
-      import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000",
-      { auth: { token }, path: "/socket.io" }
-    );
+    const socket = getDuelSocket(token);
     socketRef.current = socket;
+
     socket.on("duel:rejected", () =>
-      toast.error("El oponente ha declinado el desafío", {
-        icon: "🛡️",
-        style: { background: "#FEF2F2", color: "#991B1B", border: "1px solid #F87171" },
-      })
+      toast.error("El oponente ha declinado el desafío", { icon: "🛡️" })
     );
-    return () => socket.disconnect();
+
+    return () => {
+      socket.off("duel:rejected");
+      // NO desconectar
+    };
   }, [token]);
 
   useEffect(() => { fetchAll(); }, []);
