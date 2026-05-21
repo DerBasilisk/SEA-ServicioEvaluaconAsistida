@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const Streak = require("../models/streak");
+const crypto = require("crypto");
+const { sendVerificationEmail } = require("../services/email.service");
 
 const generateToken = (id) =>
   jwt.sign({ _id: id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -13,7 +15,6 @@ const getActiveStreak = (streak) => {
   return diff <= 1 ? streak.current : 0;
 };
 
-// POST /api/users/register
 const register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -23,22 +24,37 @@ const register = async (req, res) => {
       return res.status(400).json({ ok: false, message: "El email o username ya está en uso" });
     }
 
-    const user = await User.create({ username, email, password });
-    const token = generateToken(user._id);
+    // 🔐 Generar token de verificación (expira 24h)
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+    const user = await User.create({
+      username,
+      email,
+      password,
+      emailVerified: false,
+      verificationToken,
+      verificationExpires,
+    });
+
+    // 📧 Enviar email de verificación (ignorar error si falla)
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailErr) {
+      console.error("Error enviando email de verificación:", emailErr);
+    }
+
+    // ⚠️ IMPORTANTE: No devolvemos token, el usuario debe verificar su email primero
     res.status(201).json({
       ok: true,
+      message: "Usuario registrado. Revisa tu correo para verificar la cuenta.",
       data: {
         _id: user._id,
         username: user.username,
         email: user.email,
         role: user.role,
-        xp: user.xp,
-        level: user.level,
-        hearts: user.hearts,
-        gems: user.gems,
-      },
-      token,
+        // Sin token
+      }
     });
   } catch (err) {
     res.status(400).json({ ok: false, message: err.message });
@@ -49,7 +65,6 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // ✅ Fetch user first
     const user = await User.findOne({ email })
       .select("+password")
       .populate("achievements")
@@ -59,7 +74,10 @@ const login = async (req, res) => {
       return res.status(401).json({ ok: false, message: "Email o contraseña incorrectos" });
     }
 
-    // ✅ Now safe to call methods on user
+    if (!user.emailVerified) {
+      return res.status(403).json({ ok: false, message: "Cuenta no verificada. Revisa tu correo o solicita reenvío." });
+    }
+
     const changed = user.checkHeartRefill();
     if (changed) await user.save();
 
@@ -216,5 +234,68 @@ try {
   }
 };
 
+// GET /api/users/verify-email?token=...
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.redirect(`${process.env.FRONTEND_URL}/verify-email?error=missing_token`);
+    }
 
-module.exports = { register, login, getMe, checkUsername, changeUsername, changeDisplayName, toggleFavoriteSubject, };
+    const user = await User.findOne({
+      verificationToken: token,
+      verificationExpires: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.redirect(`${process.env.FRONTEND_URL}/verify-email?error=invalid_or_expired`);
+    }
+
+    user.emailVerified = true;
+    user.verificationToken = undefined;
+    user.verificationExpires = undefined;
+    await user.save();
+
+    // Redirige al login con mensaje de éxito
+    res.redirect(`${process.env.FRONTEND_URL}/login?verified=true`);
+  } catch (err) {
+    console.error(err);
+    res.redirect(`${process.env.FRONTEND_URL}/verify-email?error=server_error`);
+  }
+};
+
+// POST /api/users/resend-verification
+const resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ ok: false, message: "Email requerido" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+    }
+    if (user.emailVerified) {
+      return res.status(400).json({ ok: false, message: "La cuenta ya está verificada" });
+    }
+
+    // Generar nuevo token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    user.verificationToken = verificationToken;
+    user.verificationExpires = verificationExpires;
+    await user.save();
+
+    await sendVerificationEmail(email, verificationToken);
+
+    res.json({ ok: true, message: "Correo de verificación reenviado" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+
+module.exports = { register, login, getMe, checkUsername, changeUsername, changeDisplayName, toggleFavoriteSubject, verifyEmail, resendVerification};

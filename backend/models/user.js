@@ -56,6 +56,11 @@ const userSchema = new mongoose.Schema(
       default: "bronze",
     },
 
+    // -- Verificacion
+    emailVerified: { type: Boolean, default: false },
+    verificationToken: String,
+    verificationExpires: Date,
+
     // ── Gamificación ──────────────────────────────────────────
     xp: {
       type: Number,

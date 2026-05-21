@@ -11,7 +11,7 @@ import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 // Layout Admin
 import AdminLayout from "./components/admin/AdminLayout";
 
-// Pages normales
+// Sistema
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
@@ -21,6 +21,10 @@ import Profile from "./pages/Profile";
 import AuthCallback from "./pages/AuthCallback";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerificationPending from './pages/VerificationPending';
+import VerifyEmail from './pages/VerifyEmail';
+
+// Aplicacion
 import Friends from "./pages/Friends";
 import PublicProfile from "./pages/PublicProfile";
 import Duel from "./pages/Duel";
@@ -69,6 +73,8 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verification-pending" element={<VerificationPending />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Rutas Protegidas para usuarios normales */}
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />

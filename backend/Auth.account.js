@@ -52,6 +52,7 @@ passport.use(
           email: userEmail,
           password: Math.random().toString(36).slice(-10), // Password random más corto
           avatar: profile.photos?.[0]?.value?.replace("=s96-c", "=s400-c") || null,
+          emailVerified: true,
         });
 
         return done(null, newUser);
@@ -99,6 +100,7 @@ passport.use(
           email: profile.email,
           password: Math.random().toString(36).slice(-10),
           avatar,
+          emailVerified: true,
         });
 
         return done(null, newUser);

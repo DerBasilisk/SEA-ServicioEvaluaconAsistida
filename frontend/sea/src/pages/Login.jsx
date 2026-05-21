@@ -51,11 +51,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, error, clearError, fetchMe } = useAuthStore();
-
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
-
   const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
 
 
@@ -102,6 +101,16 @@ export default function Login() {
     }
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("verified") === "true") {
+      setSuccessMessage("¡Cuenta verificada! Ya puedes iniciar sesión.");
+      // Limpiar el parámetro de la URL sin recargar
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, [location]);
+
   return (
     <>
       <style>{LOGIN_CSS}</style>
@@ -140,6 +149,12 @@ export default function Login() {
             {error && (
               <div className="mb-5 px-4 py-3 rounded-2xl text-[11px] font-bold text-rose-600 text-center bg-rose-500/10 border border-rose-500/20">
                 {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mb-5 px-4 py-3 rounded-2xl text-xs font-bold text-green-600 text-center bg-green-500/10 border border-green-500/20">
+                {successMessage}
               </div>
             )}
 

@@ -59,4 +59,31 @@ async function sendPasswordResetEmail(toEmail, resetToken) {
   });
 }
 
-module.exports = { sendPasswordResetEmail };
+async function sendVerificationEmail(toEmail, verificationToken) {
+  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+
+  await transporter.sendMail({
+    from: `"SEA - Simulador de Examen" <${process.env.EMAIL_USER}>`,
+    to: toEmail,
+    subject: "Verifica tu cuenta - SEA",
+    html: `
+      <div style="font-family: 'Nunito', Arial, sans-serif; max-width: 500px; margin: 0 auto; background: #ffffff; padding: 40px 32px; border-radius: 24px;">
+        <div style="text-align: center; margin-bottom: 32px;">
+          <div style="display: inline-block; background: #7c3aed; padding: 12px 20px; border-radius: 16px; transform: rotate(-3deg);">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">🎓 SEA</h1>
+          </div>
+        </div>
+        <h2 style="text-align: center; color: #0f172a;">¡Bienvenido a SEA!</h2>
+        <p style="color: #475569; text-align: center;">Para empezar a entrenar, solo necesitas confirmar tu dirección de correo.</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${verifyUrl}" style="background: #7c3aed; color: white; padding: 14px 28px; border-radius: 14px; text-decoration: none; font-weight: bold;">Verificar cuenta →</a>
+        </div>
+        <p style="color: #94a3b8; font-size: 12px; text-align: center;">El enlace expira en 24 horas.</p>
+        <hr style="border-top: 1px solid #f1f5f9; margin: 24px 0;">
+        <p style="color: #cbd5e1; font-size: 10px; text-align: center;">Si no creaste esta cuenta, ignora este mensaje.</p>
+      </div>
+    `,
+  });
+}
+
+module.exports = { sendPasswordResetEmail, sendVerificationEmail  };

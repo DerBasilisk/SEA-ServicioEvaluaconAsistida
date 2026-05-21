@@ -1,6 +1,6 @@
 const router = require("express").Router();
 const { verificarToken } = require("../middlewares/auth.middleware");
-const { register, login, getMe, checkUsername, changeUsername, changeDisplayName, toggleFavoriteSubject } = require("../controllers/user");
+const { register, login, getMe, checkUsername, changeUsername, changeDisplayName, toggleFavoriteSubject, verifyEmail, resendVerification } = require("../controllers/user");
 
 router.post("/register", register);
 router.post("/login", login);
@@ -9,5 +9,7 @@ router.get("/check-username/:username", checkUsername);
 router.put("/username", verificarToken, changeUsername);
 router.put("/display-name", verificarToken, changeDisplayName);
 router.post("/toggle-favorite", verificarToken, toggleFavoriteSubject);
+router.get("/verify-email", verifyEmail);
+router.post("/resend-verification", resendVerification);
 
 module.exports = router;

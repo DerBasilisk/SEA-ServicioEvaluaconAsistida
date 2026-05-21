@@ -63,7 +63,12 @@ export default function Register() {
     setSubmitting(true);
     try {
       const res = await register(form.username, form.email, form.password);
-      if (res?.ok) navigate("/");
+      if (res?.ok) {
+        // Redirige a la página de "verificación pendiente" con el email
+        navigate("/verification-pending", { state: { email: form.email } });
+      } else {
+        setLocalError(res?.message || "Error al registrarse");
+      }
     } finally {
       setSubmitting(false);
     }
