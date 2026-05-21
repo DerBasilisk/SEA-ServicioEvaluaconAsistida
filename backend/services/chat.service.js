@@ -126,6 +126,7 @@ async function saveMessage({ conversationId, senderId, type = "text", content })
     type,
     content,
     readBy: [senderId], // el remitente ya lo "leyó"
+    ...(duelData && { duelData }),
   });
 
   // Actualizar preview de la conversación

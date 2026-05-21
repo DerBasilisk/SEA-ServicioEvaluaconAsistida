@@ -133,6 +133,8 @@ const FRIENDS_CSS = `
 
   .lesson-list::-webkit-scrollbar { width: 4px; }
   .lesson-list::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 99px; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
 `;
 
 /* ────────────────────────────────────────────── */
@@ -207,27 +209,41 @@ export default function Friends() {
     const available = unit.lessons?.filter(l => l.status !== "locked") || [];
     if (available.length === 0) { toast.error("Sin lecciones disponibles"); return; }
     const randomLesson = available[Math.floor(Math.random() * available.length)];
-    socketRef.current.emit("duel:invite", {
-      friendId: duelModal.friendId,
-      lessonId: randomLesson._id,
-      isDuelMode: true,
-    });
-    toast.success(`¡Desafío enviado a ${duelModal.friendName}!`, { icon: "⚔️", duration: 4000 });
-    setDuelModal(null);
-  };
+    const friendName   = duelModal.friendName;
+    const friendId     = duelModal.friendId;
 
-  const handleSendDuelInvite = (lessonId) => {
-    if (!socketRef.current || !duelModal) return;
-    socketRef.current.emit("duel:invite", { friendId: duelModal.friendId, lessonId });
-    toast.success(`Desafío enviado a ${duelModal.friendName}`, {
-      icon: "⚔️", duration: 4000,
-      style: {
-        background: "#0F2547", color: "#fff", borderRadius: "1.5rem",
-        fontSize: "12px", fontWeight: "900", textTransform: "uppercase",
-        letterSpacing: "0.1em", border: "2px solid #2B7FE8",
-      },
-    });
-    setDuelModal(null);
+    // Mostrar estado "enviando" y esperar confirmación del socket
+    setDuelModal(m => ({ ...m, step: "sending" }));
+
+    const socket = socketRef.current;
+
+    const cleanup = () => {
+      socket.off("duel:invite_sent", onSent);
+      socket.off("duel:error",       onError);
+      clearTimeout(timeoutId);
+    };
+
+    const onSent = () => {
+      cleanup();
+      toast.success(`¡Desafío enviado a ${friendName}!`, { icon: "⚔️", duration: 4000 });
+      setDuelModal(null);
+    };
+
+    const onError = ({ message }) => {
+      cleanup();
+      toast.error(message || "Error al enviar el desafío");
+      setDuelModal(m => ({ ...m, step: "selectUnit" }));
+    };
+
+    const timeoutId = setTimeout(() => {
+      cleanup();
+      toast.error("Sin respuesta del servidor. Intenta de nuevo.");
+      setDuelModal(m => ({ ...m, step: "selectUnit" }));
+    }, 8000);
+
+    socket.on("duel:invite_sent", onSent);
+    socket.on("duel:error",       onError);
+    socket.emit("duel:invite", { friendId, lessonId: randomLesson._id });
   };
 
   const handleSearch = async (q) => {
@@ -413,29 +429,137 @@ export default function Friends() {
         <div className="duel-modal-overlay" onClick={() => setDuelModal(null)}>
           <div className="duel-modal" onClick={e => e.stopPropagation()}>
             <div className="sea-glass-card rounded-[2.5rem] p-6 sm:p-8">
-              <h3 className="text-xl sm:text-2xl font-black italic text-[var(--text-primary)] uppercase mb-1">
-                Duelo de Habilidades
-              </h3>
-              <p className="text-[var(--text-secondary)] text-[10px] font-extrabold uppercase tracking-widest mb-6">
-                VS {duelModal.friendName}
-              </p>
 
-              <div className="lesson-list space-y-2 max-h-[50vh] overflow-y-auto pr-1">
-                {lessons.map(l => (
-                  <button key={l._id} className="lesson-btn" onClick={() => handleSendDuelInvite(l._id)}>
-                    <p className="lesson-name font-black text-sm text-[var(--text-primary)]">{l.name}</p>
-                    <p className="lesson-sub text-[9px] text-[var(--text-muted)] font-extrabold uppercase mt-0.5">
-                      {l.subjectName}
+              {/* Header */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 6 }}>
+                <div>
+                  {duelModal.step !== "sending" && (
+                    <p style={{ fontSize: 9, fontWeight: 800, textTransform: "uppercase",
+                                letterSpacing: "0.15em", color: "var(--text-muted)", marginBottom: 2 }}>
+                      {duelModal.step === "selectSubject" ? "Paso 1 / 2" : "Paso 2 / 2"}
                     </p>
+                  )}
+                  <h3 style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic",
+                                color: "var(--text-primary)", textTransform: "uppercase", margin: 0 }}>
+                    {duelModal.step === "selectSubject" && "Elige materia"}
+                    {duelModal.step === "selectUnit"    && "Elige unidad"}
+                    {duelModal.step === "sending"       && "Enviando desafío…"}
+                  </h3>
+                  <p style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase",
+                              letterSpacing: "0.14em", color: "var(--text-muted)", marginTop: 2 }}>
+                    VS {duelModal.friendName}
+                  </p>
+                </div>
+                {duelModal.step !== "sending" && (
+                  <button onClick={() => setDuelModal(null)}
+                    style={{ background: "var(--card-bg)", border: "2px solid var(--glass-border)",
+                             borderRadius: 12, padding: "6px 8px", cursor: "pointer",
+                             display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <X size={14} style={{ color: "var(--text-muted)" }} />
                   </button>
-                ))}
+                )}
               </div>
 
-              <button onClick={() => setDuelModal(null)}
-                className="w-full mt-5 py-3 text-[var(--text-muted)] hover:text-rose-500
-                           font-black text-[10px] uppercase tracking-widest transition-colors">
-                Abortar Misión
-              </button>
+              {/* Barra de progreso */}
+              {duelModal.step !== "sending" && (
+                <div style={{ display: "flex", gap: 4, margin: "12px 0 16px" }}>
+                  {["selectSubject", "selectUnit"].map((s, i) => (
+                    <div key={s} style={{
+                      flex: 1, height: 3, borderRadius: 99,
+                      background: ["selectSubject", "selectUnit"].indexOf(duelModal.step) >= i
+                        ? "#2B7FE8" : "var(--glass-border)",
+                      transition: "background 0.3s ease",
+                    }} />
+                  ))}
+                </div>
+              )}
+
+              {/* Step 1: Materias */}
+              {duelModal.step === "selectSubject" && (
+                <div className="lesson-list space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                  {duelModal.loading ? (
+                    <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
+                      <div style={{ width: 28, height: 28, border: "3px solid #2B7FE8",
+                                    borderTopColor: "transparent", borderRadius: "50%",
+                                    animation: "spin 0.8s linear infinite" }} />
+                    </div>
+                  ) : duelModal.subjects.length === 0 ? (
+                    <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 11, padding: "20px 0" }}>
+                      Sin materias disponibles
+                    </p>
+                  ) : duelModal.subjects.map(s => (
+                    <button key={s._id} className="lesson-btn" onClick={() => handleSelectSubject(s)}>
+                      <p className="lesson-name" style={{ fontWeight: 900, fontSize: 13,
+                                                           color: "var(--text-primary)", margin: 0 }}>
+                        {s.icon ? `${s.icon} ` : ""}{s.name}
+                      </p>
+                      {s.description && (
+                        <p className="lesson-sub" style={{ fontSize: 10, color: "var(--text-muted)",
+                                                            fontWeight: 700, textTransform: "uppercase",
+                                                            letterSpacing: "0.08em", marginTop: 2 }}>
+                          {s.description.slice(0, 50)}{s.description.length > 50 ? "…" : ""}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Step 2: Unidades */}
+              {duelModal.step === "selectUnit" && (
+                <>
+                  <button onClick={() => setDuelModal(m => ({ ...m, step: "selectSubject", selectedSubject: null }))}
+                    style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 12,
+                             background: "none", border: "none", cursor: "pointer",
+                             fontSize: 10, fontWeight: 800, textTransform: "uppercase",
+                             letterSpacing: "0.1em", color: "var(--text-muted)" }}>
+                    ← Volver
+                  </button>
+                  <div className="lesson-list space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                    {duelModal.loading ? (
+                      <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
+                        <div style={{ width: 28, height: 28, border: "3px solid #2B7FE8",
+                                      borderTopColor: "transparent", borderRadius: "50%",
+                                      animation: "spin 0.8s linear infinite" }} />
+                      </div>
+                    ) : duelModal.units.length === 0 ? (
+                      <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: 11, padding: "20px 0" }}>
+                        No hay unidades desbloqueadas en esta materia
+                      </p>
+                    ) : duelModal.units.map((u, i) => {
+                      const count = u.lessons?.filter(l => l.status !== "locked").length || 0;
+                      return (
+                        <button key={u._id} className="lesson-btn" onClick={() => handleSelectUnit(u)}>
+                          <p className="lesson-name" style={{ fontWeight: 900, fontSize: 13,
+                                                               color: "var(--text-primary)", margin: 0 }}>
+                            {i + 1}. {u.name}
+                          </p>
+                          <p className="lesson-sub" style={{ fontSize: 10, color: "var(--text-muted)",
+                                                              fontWeight: 700, textTransform: "uppercase",
+                                                              letterSpacing: "0.08em", marginTop: 2 }}>
+                            {count} lección{count !== 1 ? "es" : ""} disponible{count !== 1 ? "s" : ""} · aleatoria
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {/* Step: Enviando */}
+              {duelModal.step === "sending" && (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center",
+                              padding: "32px 0", gap: 14 }}>
+                  <div style={{ width: 36, height: 36, border: "4px solid #2B7FE8",
+                                borderTopColor: "transparent", borderRadius: "50%",
+                                animation: "spin 0.8s linear infinite" }} />
+                  <p style={{ fontWeight: 900, fontSize: 11, textTransform: "uppercase",
+                              letterSpacing: "0.14em", color: "var(--text-muted)" }}>
+                    Esperando al servidor…
+                  </p>
+                </div>
+              )}
+
             </div>
           </div>
         </div>

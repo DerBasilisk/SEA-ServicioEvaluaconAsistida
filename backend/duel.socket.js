@@ -6,6 +6,7 @@ const { createDuel, getDuel, updateDuel, deleteDuel, createInvite, getInvite, de
 const { Question, Lesson } = require("./models");
 const { getAdaptiveConfig, selectQuestions } = require("./services/adaptive.service");
 const { sendDuelResultMessage } = require("./services/chat.service");
+const User = require("./models/user");
 
 const MODIFIERS = {
   extra_questions: { id: "extra_questions", label: "Preguntas extra",  icon: "➕", description: "+3 preguntas al oponente"         },
@@ -309,6 +310,9 @@ async function endDuel(duelId, duel, io) {
     return (a.finishedAt || Infinity) - (b.finishedAt || Infinity);
   });
   const winner = players[0];
+  const winnerData = players.find(p => p.userId === winner.userId);
+  const loserData = players.find(p => p.userId !== winner.userId);
+  
   duel.status = "finished";
   duel.winner = winner.userId;
   await updateDuel(duelId, duel);
@@ -332,21 +336,28 @@ async function endDuel(duelId, duel, io) {
   if (duel.conversationId) {
     try {
       const { saveMessage } = require("./services/chat.service");
-      const winnerData  = players.find(p => p.userId === winner.userId);
-      const loserData   = players.find(p => p.userId !== winner.userId);
+      const winnerUser  = await User.findById(winner.userId).select("username");
+      const loserUser   = await User.findById(loserData.userId).select("username");
+      const durationSec = Math.floor((Date.now() - duel.startedAt) / 1000);
 
-      const message = await saveMessage({
-        conversationId: duel.conversationId,
-        senderId: winner.userId,       // el ganador "firma" el mensaje
-        type: "duel_result",           // tipo especial para renderizarlo distinto en el chat
-        content: `⚔️ Duelo finalizado — Ganador: ${winnerData.correct}✓ vs ${loserData.correct}✓`,
-        duelData: {
-          duelId,
-          winner:         winner.userId,
+      const duelData = {
+        duelId,
+        resultSummary: {
+          winnerName:     winnerUser?.username  || "Jugador",
+          loserName:      loserUser?.username   || "Rival",
           winnerCorrect:  winnerData.correct,
           loserCorrect:   loserData.correct,
           totalQuestions: duel.questions.length,
+          duration:       durationSec,
         },
+      };
+
+      const message = await saveMessage({
+        conversationId: duel.conversationId,
+        senderId:       winner.userId,
+        type:           "duel_result",
+        content:        `⚔️ Duelo finalizado — Ganador: ${winnerData.correct}✓ vs ${loserData.correct}✓`,
+        duelData,
       });
 
       io.of("/chat").to(`conv:${duel.conversationId}`).emit("chat:message", {
@@ -358,7 +369,7 @@ async function endDuel(duelId, duel, io) {
           sender:    message.sender,
           readBy:    message.readBy,
           createdAt: message.createdAt,
-          duelData:  message.duelData,
+          duelData,
         },
       });
     } catch (err) {

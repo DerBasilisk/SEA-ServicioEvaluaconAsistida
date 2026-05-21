@@ -142,29 +142,32 @@ export default function Duel() {
   };
 
   const handleAnswer = useCallback((answer) => {
-    const socket = socketRef.current;
-    const question = questions[currentIndex];
-    
-    socket?.emit("duel:answer", { duelId, questionId: question._id, answer });
-
-    socket?.once("duel:answer_result", (data) => {
-      if (data.isCorrect) {
-        setMyScore(s => s + 2);
-        setMyCorrect(c => c + 1);
-      }
-      setFeedback(data);
-      setPhase("feedback");
-      resolve(data); 
-    });
-
-    socket?.once("duel:finished", (data) => {
-      setResult(data);
-      setPhase("result");
-      resolve({ isCorrect: false });
-    });
-
-    socket?.once("duel:opponent_progress", (data) => {
-      setOpponentProgress(data);
+    return new Promise((resolve, reject) => {
+      const socket = socketRef.current;
+      const question = questions[currentIndex];
+      
+      // Timeout por si el servidor no responde
+      const timeout = setTimeout(() => reject(new Error("Timeout")), 10000);
+      
+      socket?.emit("duel:answer", { duelId, questionId: question._id, answer });
+      
+      socket?.once("duel:answer_result", (data) => {
+        clearTimeout(timeout);
+        if (data.isCorrect) {
+          setMyScore(s => s + 2);
+          setMyCorrect(c => c + 1);
+        }
+        setFeedback(data);
+        setPhase("feedback");
+        resolve(data); // ✅ ahora resolve está definido
+      });
+      
+      socket?.once("duel:finished", (data) => {
+        clearTimeout(timeout);
+        setResult(data);
+        setPhase("result");
+        resolve({ isCorrect: false });
+      });
     });
   }, [duelId, currentIndex, questions]);
 

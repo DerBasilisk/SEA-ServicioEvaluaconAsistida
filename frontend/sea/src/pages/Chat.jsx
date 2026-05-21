@@ -827,27 +827,81 @@ function MessageBubble({ msg, isMe, showAvatar, onDelete }) {
   const deleted = !!msg.deletedAt;
   const isDuelResult = msg.type === "duel_result";
 
-   if (isDuelResult) {
-    const duel = msg.duelData?.resultSummary;
+  if (isDuelResult) {
+    // resultSummary está anidado dentro de duelData
+    const result = msg.duelData?.resultSummary ?? msg.duelData ?? {};
+    const { winnerName, loserName, winnerCorrect, loserCorrect, totalQuestions, duration } = result;
+
     return (
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-        <div className="bg-gradient-to-r from-purple-500/20 to-indigo-500/20 border border-purple-500/30 rounded-2xl p-3 w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <Trophy size={18} className="text-yellow-400" />
-            <span className="text-xs font-black uppercase tracking-wider text-white">Duelo finalizado</span>
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, padding: "0 4px" }}>
+        <div style={{
+          width: "100%", maxWidth: 360,
+          background: "color-mix(in srgb, var(--text-accent) 10%, var(--card-bg))",
+          border: "2px solid color-mix(in srgb, var(--text-accent) 35%, transparent)",
+          borderRadius: 18, padding: "12px 16px",
+        }}>
+          {/* Título */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+            <Trophy size={16} style={{ color: "#facc15", flexShrink: 0 }} />
+            <span style={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase",
+                           letterSpacing: "0.15em", color: "var(--text-primary)" }}>
+              Duelo finalizado
+            </span>
+            <span style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700,
+                           color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+              <Clock size={9} />
+              {duration != null ? `${duration}s` : "—"}
+            </span>
           </div>
-          <div className="flex justify-between items-center text-sm font-black">
-            <span className="text-emerald-400">{duel?.winnerName}</span>
-            <span className="text-muted text-[10px]">vs</span>
-            <span className="text-rose-400">{duel?.loserName}</span>
+
+          {/* Ganador vs Perdedor */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Ganador */}
+            <div style={{ flex: 1, textAlign: "center",
+                          background: "color-mix(in srgb, #10b981 15%, transparent)",
+                          border: "1.5px solid color-mix(in srgb, #10b981 40%, transparent)",
+                          borderRadius: 12, padding: "8px 6px" }}>
+              <p style={{ fontSize: 9, fontWeight: 800, color: "#10b981",
+                           textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>
+                🏆 Ganador
+              </p>
+              <p style={{ fontSize: 12, fontWeight: 900, color: "var(--text-primary)",
+                           wordBreak: "break-word", margin: 0 }}>
+                {winnerName ?? "—"}
+              </p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#10b981", marginTop: 2 }}>
+                {winnerCorrect ?? "?"}/{totalQuestions ?? "?"} ✓
+              </p>
+            </div>
+
+            {/* VS */}
+            <div style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)",
+                           textTransform: "uppercase", flexShrink: 0 }}>vs</div>
+
+            {/* Perdedor */}
+            <div style={{ flex: 1, textAlign: "center",
+                          background: "color-mix(in srgb, #ef4444 12%, transparent)",
+                          border: "1.5px solid color-mix(in srgb, #ef4444 30%, transparent)",
+                          borderRadius: 12, padding: "8px 6px" }}>
+              <p style={{ fontSize: 9, fontWeight: 800, color: "#ef4444",
+                           textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>
+                Perdedor
+              </p>
+              <p style={{ fontSize: 12, fontWeight: 900, color: "var(--text-primary)",
+                           wordBreak: "break-word", margin: 0 }}>
+                {loserName ?? "—"}
+              </p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginTop: 2 }}>
+                {loserCorrect ?? "?"}/{totalQuestions ?? "?"} ✓
+              </p>
+            </div>
           </div>
-          <div className="flex justify-between text-[10px] font-bold mt-1">
-            <span>{duel?.winnerCorrect}/{duel?.totalQuestions} aciertos</span>
-            <span>{duel?.loserCorrect}/{duel?.totalQuestions} aciertos</span>
-          </div>
-          <div className="flex items-center justify-center gap-1 mt-2 text-[9px] text-muted">
-            <Clock size={10} /> Duración: {duel?.duration}s
-          </div>
+
+          {/* Timestamp */}
+          <p style={{ fontSize: 9, fontWeight: 700, marginTop: 8, textAlign: "center",
+                       color: "var(--text-muted)" }}>
+            {formatTime(msg.createdAt)}
+          </p>
         </div>
       </div>
     );

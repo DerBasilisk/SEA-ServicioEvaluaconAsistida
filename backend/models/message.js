@@ -19,7 +19,7 @@ const messageSchema = new mongoose.Schema(
     },
     // Metadata del duelo (opcional)
     duelData: {
-      duelId: { type: mongoose.Schema.Types.ObjectId, ref: "Duel" },
+      duelId: { type: String },
       resultSummary: { type: mongoose.Schema.Types.Mixed }, // { winnerName, loserName, winnerScore, ... }
       inviteCode: { type: String },
       expiresAt: { type: Date }, // para invitaciones temporales
