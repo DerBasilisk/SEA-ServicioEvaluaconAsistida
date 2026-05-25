@@ -117,6 +117,21 @@ function setupChatSocket(io) {
       }
     });
 
+    socket.on("chat:edit", async ({ messageId, content }) => {
+      const msg = await Message.findOneAndUpdate(
+        { _id: messageId, sender: socket.userId, deletedAt: null },
+        { content: content.trim(), edited: true },
+        { new: true }
+      ).populate("sender", "username displayName avatar");
+
+      if (!msg) return socket.emit("chat:error", { message: "No se pudo editar" });
+
+      chat.to(`conv:${msg.conversation}`).emit("chat:message_edited", {
+        conversationId: msg.conversation,
+        message: { _id: msg._id, content: msg.content, edited: msg.edited },
+      });
+    });
+
     // ── Enviar imagen (el cliente sube a /api/chat/upload primero) ──
     // El cliente obtiene la URL de Cloudinary vía REST y luego la envía aquí
     socket.on("chat:send_image", async ({ conversationId, imageUrl }) => {

@@ -1,10 +1,11 @@
 // src/pages/Chat.jsx
 import { useEffect, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Send, Image, Users, MessageSquare, Plus,
   X, Check, ChevronDown, Trash2, UserCircle, Search,
-  Swords, Loader2, Trophy, Clock, Zap,
+  Swords, Loader2, Trophy, Clock, Zap, Pencil,
 } from "lucide-react";
 import { io } from "socket.io-client";
 import Navbar from "../components/Navbar";
@@ -820,18 +821,119 @@ function TypingIndicator({ names }) {
 }
 
 /* ─────────────────────────────────────────────
+   MessageContextMenu
+───────────────────────────────────────────── */
+function MessageContextMenu({ x, y, canEdit, onDelete, onEdit, onClose }) {
+  const ref = useRef(null);
+
+  // Cerrar al click/touch fuera
+  useEffect(() => {
+    const close = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
+  }, [onClose]);
+
+  // Evitar que el menú se salga de la pantalla
+  const W = 160, H = canEdit ? 92 : 48;
+  const ax = Math.min(x, window.innerWidth  - W - 10);
+  const ay = Math.min(y, window.innerHeight - H - 10);
+
+  const btnBase = {
+    display: "flex", alignItems: "center", gap: 10,
+    width: "100%", padding: "10px 14px",
+    background: "transparent", border: "none",
+    cursor: "pointer", fontFamily: "Nunito, sans-serif",
+    fontWeight: 700, fontSize: 12, textAlign: "left",
+    transition: "background 0.1s ease",
+  };
+
+  return createPortal(
+    <div
+      ref={ref}
+      style={{
+        position: "fixed", left: ax, top: ay, zIndex: 9999,
+        background: "var(--card-bg)",
+        border: "2px solid var(--glass-border)",
+        borderRadius: 14, overflow: "hidden",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.22)",
+        minWidth: W,
+        animation: "cf-pop 0.15s cubic-bezier(0.34,1.56,0.64,1) both",
+      }}
+    >
+      {canEdit && (
+        <button
+          style={{ ...btnBase, color: "var(--text-primary)" }}
+          onMouseEnter={e => e.currentTarget.style.background = "var(--progress-track)"}
+          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          onClick={() => { onEdit(); onClose(); }}
+        >
+          <Pencil size={13} style={{ color: "var(--text-accent)", flexShrink: 0 }} />
+          Editar
+        </button>
+      )}
+      <button
+        style={{
+          ...btnBase,
+          color: "#ef4444",
+          borderTop: canEdit ? "1px solid var(--glass-border)" : "none",
+        }}
+        onMouseEnter={e => e.currentTarget.style.background = "color-mix(in srgb,#ef4444 8%,transparent)"}
+        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+        onClick={() => { onDelete(); onClose(); }}
+      >
+        <Trash2 size={13} style={{ color: "#ef4444", flexShrink: 0 }} />
+        Eliminar
+      </button>
+    </div>,
+    document.body  // ← montado aquí, fuera del backdrop-filter
+  );
+}
+
+/* ─────────────────────────────────────────────
    MessageBubble
 ───────────────────────────────────────────── */
-function MessageBubble({ msg, isMe, showAvatar, onDelete }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+function MessageBubble({ msg, isMe, showAvatar, onDelete, onEdit }) {
+  const [ctxMenu, setCtxMenu] = useState(null); // { x, y }
+  const longPressTimer = useRef(null);
   const deleted = !!msg.deletedAt;
   const isDuelResult = msg.type === "duel_result";
+  const canAct = isMe && !deleted && !isDuelResult;
 
+  /* ── Abrir menú ── */
+  const openMenu = useCallback((x, y) => {
+    if (!canAct) return;
+    setCtxMenu({ x, y });
+  }, [canAct]);
+
+  /* ── Desktop: right-click ── */
+  const handleContextMenu = (e) => {
+    if (!canAct) return;
+    e.preventDefault();
+    openMenu(e.clientX, e.clientY);
+  };
+
+  /* ── Mobile: long-press ── */
+  const handleTouchStart = (e) => {
+    if (!canAct) return;
+    const t = e.touches[0];
+    longPressTimer.current = setTimeout(() => {
+      // Vibración haptica si está disponible
+      if (navigator.vibrate) navigator.vibrate(30);
+      openMenu(t.clientX, t.clientY);
+    }, 480);
+  };
+  const cancelLongPress = () => clearTimeout(longPressTimer.current);
+
+  /* ── Duel result bubble (sin cambios) ── */
   if (isDuelResult) {
-    // resultSummary está anidado dentro de duelData
     const result = msg.duelData?.resultSummary ?? msg.duelData ?? {};
     const { winnerName, loserName, winnerCorrect, loserCorrect, totalQuestions, duration } = result;
-
     return (
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, padding: "0 4px" }}>
         <div style={{
@@ -840,66 +942,29 @@ function MessageBubble({ msg, isMe, showAvatar, onDelete }) {
           border: "2px solid color-mix(in srgb, var(--text-accent) 35%, transparent)",
           borderRadius: 18, padding: "12px 16px",
         }}>
-          {/* Título */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
             <Trophy size={16} style={{ color: "#facc15", flexShrink: 0 }} />
-            <span style={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase",
-                           letterSpacing: "0.15em", color: "var(--text-primary)" }}>
+            <span style={{ fontSize: 10, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--text-primary)" }}>
               Duelo finalizado
             </span>
-            <span style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700,
-                           color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-              <Clock size={9} />
-              {duration != null ? `${duration}s` : "—"}
+            <span style={{ marginLeft: "auto", fontSize: 9, fontWeight: 700, color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
+              <Clock size={9} />{duration != null ? `${duration}s` : "—"}
             </span>
           </div>
-
-          {/* Ganador vs Perdedor */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {/* Ganador */}
-            <div style={{ flex: 1, textAlign: "center",
-                          background: "color-mix(in srgb, #10b981 15%, transparent)",
-                          border: "1.5px solid color-mix(in srgb, #10b981 40%, transparent)",
-                          borderRadius: 12, padding: "8px 6px" }}>
-              <p style={{ fontSize: 9, fontWeight: 800, color: "#10b981",
-                           textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>
-                🏆 Ganador
-              </p>
-              <p style={{ fontSize: 12, fontWeight: 900, color: "var(--text-primary)",
-                           wordBreak: "break-word", margin: 0 }}>
-                {winnerName ?? "—"}
-              </p>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#10b981", marginTop: 2 }}>
-                {winnerCorrect ?? "?"}/{totalQuestions ?? "?"} ✓
-              </p>
+            <div style={{ flex: 1, textAlign: "center", background: "color-mix(in srgb,#10b981 15%,transparent)", border: "1.5px solid color-mix(in srgb,#10b981 40%,transparent)", borderRadius: 12, padding: "8px 6px" }}>
+              <p style={{ fontSize: 9, fontWeight: 800, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>🏆 Ganador</p>
+              <p style={{ fontSize: 12, fontWeight: 900, color: "var(--text-primary)", wordBreak: "break-word", margin: 0 }}>{winnerName ?? "—"}</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#10b981", marginTop: 2 }}>{winnerCorrect ?? "?"}/{totalQuestions ?? "?"} ✓</p>
             </div>
-
-            {/* VS */}
-            <div style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)",
-                           textTransform: "uppercase", flexShrink: 0 }}>vs</div>
-
-            {/* Perdedor */}
-            <div style={{ flex: 1, textAlign: "center",
-                          background: "color-mix(in srgb, #ef4444 12%, transparent)",
-                          border: "1.5px solid color-mix(in srgb, #ef4444 30%, transparent)",
-                          borderRadius: 12, padding: "8px 6px" }}>
-              <p style={{ fontSize: 9, fontWeight: 800, color: "#ef4444",
-                           textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>
-                Perdedor
-              </p>
-              <p style={{ fontSize: 12, fontWeight: 900, color: "var(--text-primary)",
-                           wordBreak: "break-word", margin: 0 }}>
-                {loserName ?? "—"}
-              </p>
-              <p style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginTop: 2 }}>
-                {loserCorrect ?? "?"}/{totalQuestions ?? "?"} ✓
-              </p>
+            <div style={{ fontSize: 9, fontWeight: 900, color: "var(--text-muted)", textTransform: "uppercase", flexShrink: 0 }}>vs</div>
+            <div style={{ flex: 1, textAlign: "center", background: "color-mix(in srgb,#ef4444 12%,transparent)", border: "1.5px solid color-mix(in srgb,#ef4444 30%,transparent)", borderRadius: 12, padding: "8px 6px" }}>
+              <p style={{ fontSize: 9, fontWeight: 800, color: "#ef4444", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Perdedor</p>
+              <p style={{ fontSize: 12, fontWeight: 900, color: "var(--text-primary)", wordBreak: "break-word", margin: 0 }}>{loserName ?? "—"}</p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", marginTop: 2 }}>{loserCorrect ?? "?"}/{totalQuestions ?? "?"} ✓</p>
             </div>
           </div>
-
-          {/* Timestamp */}
-          <p style={{ fontSize: 9, fontWeight: 700, marginTop: 8, textAlign: "center",
-                       color: "var(--text-muted)" }}>
+          <p style={{ fontSize: 9, fontWeight: 700, marginTop: 8, textAlign: "center", color: "var(--text-muted)" }}>
             {formatTime(msg.createdAt)}
           </p>
         </div>
@@ -908,83 +973,78 @@ function MessageBubble({ msg, isMe, showAvatar, onDelete }) {
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: isMe ? "row-reverse" : "row",
-        alignItems: "flex-end",
-        gap: 6,
-        marginBottom: 2,
-      }}
-    >
-      {/* Avatar (solo para mensajes del otro en grupos) */}
-      {!isMe && showAvatar && (
-        <div style={{ flexShrink: 0, marginBottom: 2 }}>
-          <Avatar
-            src={msg.sender?.avatar}
-            name={msg.sender?.displayName || msg.sender?.username}
-            size="xs"
-          />
-        </div>
+    <>
+      {ctxMenu && (
+        <MessageContextMenu
+          x={ctxMenu.x} y={ctxMenu.y}
+          canEdit={msg.type === "text"}
+          onDelete={() => onDelete(msg._id)}
+          onEdit={() => onEdit(msg)}
+          onClose={() => setCtxMenu(null)}
+        />
       )}
-      {!isMe && !showAvatar && <div style={{ width: 28, flexShrink: 0 }} />}
 
-      {/* Burbuja */}
       <div
-        className={`${isMe ? "bubble-mine" : "bubble-other"}${deleted ? " bubble-deleted" : ""}`}
-        style={{ padding: deleted ? "8px 14px" : msg.type === "image" ? "6px" : "9px 14px", position: "relative" }}
-        onMouseEnter={() => isMe && !deleted && setMenuOpen(true)}
-        onMouseLeave={() => setMenuOpen(false)}
+        style={{
+          display: "flex",
+          flexDirection: isMe ? "row-reverse" : "row",
+          alignItems: "flex-end",
+          gap: 6, marginBottom: 2,
+          // Feedback visual en long-press mobile
+          WebkitUserSelect: "none", userSelect: "none",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={cancelLongPress}
+        onTouchMove={cancelLongPress}
+        onTouchCancel={cancelLongPress}
       >
-        {/* Nombre en grupos */}
+        {/* Avatar */}
         {!isMe && showAvatar && (
-          <p style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-accent)", marginBottom: 3 }}>
-            {msg.sender?.displayName || msg.sender?.username}
-          </p>
+          <div style={{ flexShrink: 0, marginBottom: 2 }}>
+            <Avatar src={msg.sender?.avatar} name={msg.sender?.displayName || msg.sender?.username} size="xs" />
+          </div>
         )}
+        {!isMe && !showAvatar && <div style={{ width: 28, flexShrink: 0 }} />}
 
-        {deleted ? (
-          <span style={{ fontSize: 12 }}>Mensaje eliminado</span>
-        ) : msg.type === "image" ? (
-          <img
-            src={msg.content}
-            alt="imagen"
-            style={{ maxWidth: 260, maxHeight: 300, borderRadius: 12, display: "block", cursor: "pointer" }}
-            onClick={() => window.open(msg.content, "_blank")}
-          />
-        ) : (
-          <p style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.45, wordBreak: "break-word", margin: 0 }}>
-            {msg.content}
-          </p>
-        )}
+        {/* Burbuja */}
+        <div
+          className={`${isMe ? "bubble-mine" : "bubble-other"}${deleted ? " bubble-deleted" : ""}`}
+          style={{ padding: deleted ? "8px 14px" : msg.type === "image" ? "6px" : "9px 14px" }}
+          onContextMenu={handleContextMenu}
+        >
+          {!isMe && showAvatar && (
+            <p style={{ fontSize: 9, fontWeight: 900, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--text-accent)", marginBottom: 3 }}>
+              {msg.sender?.displayName || msg.sender?.username}
+            </p>
+          )}
 
-        {/* Hora */}
-        {!deleted && (
-          <p style={{
-            fontSize: 9, fontWeight: 700, marginTop: 3, lineHeight: 1,
-            textAlign: isMe ? "right" : "left",
-            color: isMe ? "color-mix(in srgb, var(--btn-text) 60%, transparent)" : "var(--text-muted)",
-          }}>
-            {formatTime(msg.createdAt)}
-          </p>
-        )}
+          {deleted ? (
+            <span style={{ fontSize: 12 }}>Mensaje eliminado</span>
+          ) : msg.type === "image" ? (
+            <img
+              src={msg.content} alt="imagen"
+              style={{ maxWidth: 260, maxHeight: 300, borderRadius: 12, display: "block", cursor: "pointer" }}
+              onClick={() => window.open(msg.content, "_blank")}
+            />
+          ) : (
+            <p style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.45, wordBreak: "break-word", margin: 0 }}>
+              {msg.content}
+            </p>
+          )}
 
-        {/* Menú borrar (solo propios) */}
-        {isMe && menuOpen && !deleted && (
-          <button
-            onClick={() => { onDelete(msg._id); setMenuOpen(false); }}
-            style={{
-              position: "absolute", top: -10, left: -35,
-              background: "var(--card-bg)", border: "2px solid var(--glass-border)",
-              borderRadius: 10, padding: "4px 6px", cursor: "pointer",
-              display: "flex", alignItems: "center",
-            }}
-          >
-            <Trash2 size={12} style={{ color: "#ef4444" }} />
-          </button>
-        )}
+          {!deleted && (
+            <p style={{
+              fontSize: 9, fontWeight: 700, marginTop: 3, lineHeight: 1,
+              textAlign: isMe ? "right" : "left",
+              color: isMe ? "color-mix(in srgb,var(--btn-text) 60%,transparent)" : "var(--text-muted)",
+            }}>
+              {msg.edited && <span style={{ marginRight: 4, opacity: 0.7 }}>editado ·</span>}
+              {formatTime(msg.createdAt)}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -1113,9 +1173,11 @@ function ChatWindow({ conv, myId, onBack }) {
   } = useChatStore();
   const [showDuelModal, setShowDuelModal] = useState(false);
   const [text, setText] = useState("");
+  const [editingMsg, setEditingMsg] = useState(null);
   const [uploading, setUploading] = useState(false);
   const bottomRef = useRef(null);
   const fileRef = useRef(null);
+  const textareaRef = useRef(null);
   const msgs = messages[conv._id] || [];
   const typingUsers = (typing[conv._id] || [])
     .filter((id) => id !== myId)
@@ -1143,21 +1205,34 @@ function ChatWindow({ conv, myId, onBack }) {
 
   const handleSend = () => {
     if (!text.trim()) return;
-    sendMessage(conv._id, text);
+    if (editingMsg) {
+      // Editar mensaje existente
+      editMessage(editingMsg._id, conv._id, text.trim());
+      setEditingMsg(null);
+    } else {
+      sendMessage(conv._id, text);
+    }
     setText("");
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+    if (e.key === "Escape" && editingMsg)  { setEditingMsg(null); setText(""); }
+  };
+
+  const handleEdit = (msg) => {
+    setEditingMsg(msg);
+    setText(msg.content);
+    // Enfocar el textarea después del render
+    setTimeout(() => textareaRef.current?.focus(), 50);
   };
 
   const handleTextChange = (e) => {
     setText(e.target.value);
     emitTyping(conv._id);
   };
+
+  const cancelEdit = () => { setEditingMsg(null); setText(""); };
 
   const handleImagePick = () => fileRef.current?.click();
 
@@ -1263,6 +1338,7 @@ function ChatWindow({ conv, myId, onBack }) {
               isMe={isMe}
               showAvatar={showAvatar}
               onDelete={handleDelete}
+              onEdit={handleEdit}
             />,
           ];
         })}
@@ -1270,6 +1346,31 @@ function ChatWindow({ conv, myId, onBack }) {
         <TypingIndicator names={typingUsers} />
         <div ref={bottomRef} />
       </div>
+
+      {/* Banner: modo edición */}
+      {editingMsg && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "6px 14px",
+          background: "color-mix(in srgb, var(--text-accent) 10%, var(--progress-track))",
+          borderTop: "2px solid color-mix(in srgb, var(--text-accent) 30%, transparent)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Pencil size={11} style={{ color: "var(--text-accent)", flexShrink: 0 }} />
+            <span style={{ fontSize: 10, fontWeight: 800, color: "var(--text-accent)",
+                           textTransform: "uppercase", letterSpacing: "0.1em" }}>
+              Editando mensaje
+            </span>
+          </div>
+          <button
+            onClick={cancelEdit}
+            style={{ background: "none", border: "none", cursor: "pointer",
+                     color: "var(--text-muted)", display: "flex" }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Input */}
       <div className="chat-input-bar">
@@ -1293,6 +1394,7 @@ function ChatWindow({ conv, myId, onBack }) {
         </button>
 
         <textarea
+          ref={textareaRef}
           className="chat-textarea"
           rows={1}
           value={text}

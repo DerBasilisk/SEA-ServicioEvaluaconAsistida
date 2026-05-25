@@ -219,6 +219,12 @@ const useChatStore = create((set, get) => ({
     socket.emit("chat:send", { conversationId: convId, content: content.trim() });
   },
 
+  editMessage: async (msgId, convId, newContent) => {
+    // Actualización optimista
+    get().updateMessageLocally(convId, msgId, { content: newContent, edited: true });
+    get().socket?.emit("chat:edit", { messageId: msgId, content: newContent });
+  },
+
   sendImage: async (convId, file) => {
     const formData = new FormData();
     formData.append("image", file);

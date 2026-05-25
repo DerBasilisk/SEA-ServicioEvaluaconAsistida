@@ -113,7 +113,7 @@ async function removeParticipant(conversationId, userId) {
 /**
  * Guarda un mensaje nuevo y actualiza lastMessage / lastActivity en la conversación.
  */
-async function saveMessage({ conversationId, senderId, type = "text", content }) {
+async function saveMessage({ conversationId, senderId, type = "text", content, duelData = null }) {
   const conversation = await Conversation.findOne({
     _id: conversationId,
     participants: senderId,
