@@ -3,7 +3,10 @@ const User = require("../models/user");
 // GET /api/profile
 const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.usuario._id).populate("achievements");
+    const user = await User.findById(req.usuario._id)
+    .populate("achievements")
+    .populate("activeFrame")
+    .populate("activeBackground")
     res.json({ ok: true, data: user });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });

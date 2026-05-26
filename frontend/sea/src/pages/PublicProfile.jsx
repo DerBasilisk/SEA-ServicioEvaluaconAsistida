@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useActiveTheme } from "../hooks/useActiveTheme";
+import { resolveBackground, resolveSvgPattern } from "../hooks/shopItem";
 import { useParams, useNavigate } from "react-router-dom";
 import { 
   Zap, Flame, Diamond, Trophy, ArrowLeft, 
@@ -35,7 +37,6 @@ const PUBLIC_PROFILE_CSS = `
     opacity: 0.8;
   }
 
-  /* Efecto de desvanecimiento inferior para el banner */
   .banner-overlay {
     position: absolute;
     inset: 0;
@@ -58,6 +59,7 @@ const LEAGUE_CONFIG = {
 export default function PublicProfile() {
   const { username } = useParams();
   const navigate = useNavigate();
+  const theme = useActiveTheme();        // ✅ Hook movido al inicio (sin condiciones)
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -72,8 +74,6 @@ export default function PublicProfile() {
     } catch { navigate("/friends"); }
     finally { setLoading(false); }
   };
-
-  
 
   const handleSendRequest = async () => {
     setActionLoading(true);
@@ -94,6 +94,7 @@ export default function PublicProfile() {
     } finally { setActionLoading(false); }
   };
 
+  // ✅ Retornos condicionales DESPUÉS de todos los hooks
   if (loading) return (
     <div className="min-h-screen bg-[var(--bg-gradient)] flex items-center justify-center">
       <div className="animate-pulse text-[var(--text-primary)] font-black italic tracking-widest uppercase">Accediendo al Expediente...</div>
@@ -102,14 +103,21 @@ export default function PublicProfile() {
 
   if (!profile) return null;
 
-  const league = LEAGUE_CONFIG[profile.league || "bronze"];
+  // ✅ Valores derivados (pueden ir después porque no son hooks)
+  const bgStyle = resolveBackground(profile?.activeBackground, theme);
+  const pattern = resolveSvgPattern(profile?.activeBackground, theme);
+  const league  = LEAGUE_CONFIG[profile.league || "bronze"];
   const displayName = profile.displayName || profile.username;
-  console.log("profile.banner:", profile.banner);
-  
+
   return (
-    <div className="min-h-screen sea-public pb-20 relative overflow-hidden" 
-         style={{ background: "var(--bg-gradient)" }}>
+    <div className="min-h-screen sea-public pb-20 relative overflow-hidden"
+         style={{ background: bgStyle || "var(--bg-gradient)" }}>
       <style>{PUBLIC_PROFILE_CSS}</style>
+
+      {pattern && (
+        <div className="fixed inset-0 pointer-events-none z-0" style={pattern} />
+      )}
+
       <Navbar />
       
       <div className="max-w-2xl mx-auto px-6 pt-8 relative z-10">
@@ -121,10 +129,9 @@ export default function PublicProfile() {
         {/* TARJETA MAESTRA CON BANNER INTEGRADO */}
         <div className="sea-glass rounded-[3rem] overflow-hidden shadow-2xl mb-8">
           
-          {/* SECCIÓN DEL BANNER (Igual que el perfil regular) */}
+          {/* BANNER */}
           <div className="banner-container bg-[#2B7FE8]/10">
             {profile.banner ? (
-              
               <img src={profile.banner} alt="User Banner" className="banner-img" />
             ) : (
               <div className="w-full h-full bg-gradient-to-r from-blue-600/20 to-cyan-500/20" />
@@ -134,8 +141,15 @@ export default function PublicProfile() {
 
           {/* CONTENIDO DEL PERFIL */}
           <div className="px-10 pb-10 text-center -mt-16 relative">
-            <div className="inline-block backdrop-blur-md rounded-2xl shadow-xl mb-4 relative">
-              <Avatar src={profile.avatar} name={displayName} size="xl" className="border-2 border-white rounded-2xl" />
+            <div className={`inline-block backdrop-blur-md rounded-2xl shadow-xl mb-4 relative
+                            ${profile?.activeFrame ? "" : "border-2 border-white"}`}>
+              <Avatar
+                src={profile.avatar}
+                name={displayName}
+                size="xl"
+                frameCss={profile?.activeFrame?.cssValue}
+                className="rounded-2xl"
+              />
             </div>
 
             <div className="flex flex-col items-center">
@@ -157,7 +171,7 @@ export default function PublicProfile() {
               )}
             </div>
 
-            {/* BOTONES DE ACCIÓN DINÁMICOS */}
+            {/* BOTONES DE ACCIÓN */}
             <div className="max-w-xs mx-auto">
               {profile.friendStatus === "accepted" ? (
                 <button onClick={handleRemove} disabled={actionLoading}
@@ -193,7 +207,7 @@ export default function PublicProfile() {
           ))}
         </div>
 
-        {/* LOGROS / CONDECORACIONES */}
+        {/* LOGROS */}
         {profile.achievements?.length > 0 && (
           <div className="sea-glass rounded-[2.5rem] p-8">
             <h2 className="text-[--text-primary] font-black italic uppercase text-[11px] tracking-[0.3em] mb-8 flex items-center gap-3">

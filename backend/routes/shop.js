@@ -1,10 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const shopController = require("../controllers/shop");
-const { verifyToken } = require("../middlewares/auth.middleware");
+const { verificarToken } = require("../middlewares/auth.middleware");
 
 // Todas las rutas de tienda requieren autenticación
-router.use(verifyToken);
+router.use(verificarToken);
 
 // Tienda pública (con info de "owned" por usuario)
 router.get("/items", shopController.getItems);

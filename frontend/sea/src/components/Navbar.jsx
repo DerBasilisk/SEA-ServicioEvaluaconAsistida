@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   User, Settings, LogOut, Heart, Zap, Trophy,
-  Users, Eye, Sun, Moon, Home, BarChart2, X,
+  Users, Eye, Sun, Moon, Home, BarChart2, X, ShoppingCart
 } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import useThemeStore from "../store/themeStore";
@@ -458,6 +458,7 @@ function DesktopNav({ user, theme, cycleTheme, onLogout, onRefill, refilling }) 
           <div className="nb-sep" style={{ marginLeft: 8 }} />
           <Link to="/league"  className="nb-navlink"><Trophy size={24} className="text-yellow-500" /><span className="lbl">Liga</span></Link>
           <Link to="/friends" className="nb-navlink"><Users  size={24} className="text-blue-500"   /><span className="lbl">Social</span></Link>
+          <Link to="/shop" className="nb-navlink"><ShoppingCart size={24} className="text-green-500" /><span className="lbl">Tienda</span></Link>
         </div>
 
         {/* Right: stats + controls */}
@@ -600,8 +601,11 @@ function MobileNav({ user, theme, cycleTheme, onLogout, onRefill, refilling }) {
               <ThemeIcon theme={theme} size={20} />
               {themeLabel}
             </button>
+            <Link to="/shop" className="nb-action-btn" onClick={closePanel}>
+              <ShoppingCart size={20} />
+            </Link>
             <Link to="/settings" className="nb-action-btn" onClick={closePanel}>
-              <Settings size={20} /> Ajustes
+              <Settings size={20} />
             </Link>
             <button
               className="nb-action-btn"

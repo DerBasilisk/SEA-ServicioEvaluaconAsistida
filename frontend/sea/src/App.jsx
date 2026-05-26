@@ -33,6 +33,7 @@ import Settings from "./pages/Settings";
 import Frontal from "./pages/Frontal";
 import SubjectCatalog from "./pages/SubjectCatalog";
 import Chat from "./pages/Chat";
+import Shop from "./pages/Shop";
 
 // Pages del Admin
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -84,6 +85,7 @@ function App() {
         } />
 
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+        <Route path="/shop" element={<ProtectedRoute><Shop /></ProtectedRoute>} />
         <Route path="/subject-catalog" element={<ProtectedRoute><SubjectCatalog /></ProtectedRoute>} />
         <Route path="/subject/:slug" element={<ProtectedRoute><SubjectMap /></ProtectedRoute>} />
         <Route path="/lesson/:id" element={<ProtectedRoute><Lesson /></ProtectedRoute>} />

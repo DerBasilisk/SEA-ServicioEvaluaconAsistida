@@ -6,7 +6,7 @@ const User = require("../models/user");
 // Devuelve todos los items activos, marcando cuáles ya compró el usuario
 exports.getItems = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.usuario.id;
 
     const [items, owned] = await Promise.all([
       ShopItem.find({ isActive: true }).sort({ price: 1 }),
@@ -31,7 +31,7 @@ exports.getItems = async (req, res) => {
 // Devuelve el inventario completo del usuario con detalle de cada item
 exports.getInventory = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.usuario.id;
 
     const inventory = await UserInventory.find({ userId })
       .populate("itemId")
@@ -48,7 +48,7 @@ exports.getInventory = async (req, res) => {
 // Compra un item: verifica gemas, descuenta y agrega al inventario
 exports.buyItem = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.usuario.id;
     const { itemId } = req.params;
 
     const [item, user] = await Promise.all([
@@ -89,7 +89,7 @@ exports.buyItem = async (req, res) => {
 // Equipa un item (desequipa el anterior del mismo tipo automáticamente)
 exports.equipItem = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.usuario.id;
     const { itemId } = req.params;
 
     const entry = await UserInventory.findOne({ userId, itemId }).populate("itemId");
@@ -136,7 +136,7 @@ exports.equipItem = async (req, res) => {
 // Desequipa el item activo de un tipo ("frame" | "background")
 exports.unequipItem = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.usuario.id;
     const { type } = req.params;
 
     if (!["frame", "background"].includes(type)) {

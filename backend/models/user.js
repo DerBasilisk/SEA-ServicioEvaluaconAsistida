@@ -73,11 +73,17 @@ const userSchema = new mongoose.Schema(
       min: 1,
     },
     gems: {
-      // moneda para comprar vidas extras, etc.
+      // moneda para comprar vidas extras, marcos y fondos.
       type: Number,
       default: 0,
       min: 0,
     },
+    // marco activo
+    activeFrame: { type: mongoose.Schema.Types.ObjectId, ref: "ShopItem", default: null },
+
+    // fondo activo
+    activeBackground: { type: mongoose.Schema.Types.ObjectId, ref: "ShopItem", default: null },
+
     hearts: {
       // vidas (0-5)
       current: { type: Number, default: 5, min: 0, max: 5 },

@@ -1,4 +1,4 @@
-export default function Avatar({ src, name, size = "md", className = "" }) {
+export default function Avatar({ src, name, size = "md", className = "", frameCss = "" }) {
   const sizes = {
     xs:  "w-7 h-7 text-xs",
     sm:  "w-9 h-9 text-sm",
@@ -9,16 +9,22 @@ export default function Avatar({ src, name, size = "md", className = "" }) {
   };
 
   const initial = name?.trim()?.[0]?.toUpperCase() || "?";
-  const shape = className.includes("rounded") ? "" : "rounded-2xl"; // ← usa la del className si viene, si no usa cuadrado
+  const shape = className.includes("rounded") ? "" : "rounded-2xl";
+
+  const containerClasses = `${sizes[size]} ${shape} overflow-hidden flex-shrink-0 ${className}`;
+  const inlineStyle = frameCss ? parseStyle(frameCss) : {};
 
   return (
-    <div className={`${sizes[size]} ${shape} overflow-hidden flex-shrink-0 ${className}`}>
+    <div className={containerClasses} style={inlineStyle}>
       {src ? (
         <img
           src={src}
           alt={name || "avatar"}
           className="w-full h-full object-cover"
-          onError={(e) => { e.target.style.display = "none"; e.target.nextSibling.style.display = "flex"; }}
+          onError={(e) => {
+            e.target.style.display = "none";
+            if (e.target.nextSibling) e.target.nextSibling.style.display = "flex";
+          }}
         />
       ) : null}
       <div
@@ -29,4 +35,18 @@ export default function Avatar({ src, name, size = "md", className = "" }) {
       </div>
     </div>
   );
+}
+
+// Función auxiliar para convertir string CSS a objeto de estilo (básica)
+function parseStyle(cssString) {
+  if (!cssString) return {};
+  const style = {};
+  cssString.split(";").forEach((rule) => {
+    const [prop, val] = rule.split(":");
+    if (prop && val) {
+      const camelProp = prop.trim().replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+      style[camelProp] = val.trim();
+    }
+  });
+  return style;
 }

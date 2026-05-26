@@ -49,7 +49,8 @@ app.use("/api/friends", require("./routes/friends"));
 app.use("/api/upload", require("./routes/upload"));
 app.use("/api/leagues", require("./routes/league"));
 app.use("/api/admin", adminRoutes);
-app.use("/api/chat", require("./routes/chat")); // ← NUEVO
+app.use("/api/chat", require("./routes/chat"));
+app.use("/api/shop", require("./routes/shop"));
 setupCronJobs();
 
 // ── Health check ───────────────────────────────────────────────

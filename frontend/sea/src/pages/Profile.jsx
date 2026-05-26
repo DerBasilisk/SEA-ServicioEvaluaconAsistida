@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useActiveTheme } from "../hooks/useActiveTheme";
+import { resolveBackground, resolveSvgPattern } from "../hooks/shopItem";
 import { useNavigate, Link } from "react-router-dom";
 import {
   Zap, Flame, Diamond, Heart, Trophy,
@@ -160,6 +162,9 @@ const LEAGUE_CONFIG = {
 export default function Profile() {
   const navigate = useNavigate();
   const { user, logout, fetchMe } = useAuthStore();
+  const theme   = useActiveTheme();
+  const bgStyle = resolveBackground(user?.activeBackground, theme);
+  const pattern = resolveSvgPattern(user?.activeBackground, theme);
 
   const [displayName,  setDisplayName]  = useState(user?.displayName || "");
   const [newUsername,  setNewUsername]  = useState(user?.username    || "");
@@ -208,8 +213,13 @@ export default function Profile() {
 
   return (
     <div className="sea-profile min-h-screen pb-24 relative overflow-hidden"
-         style={{ background: "var(--bg-gradient)" }}>
+      style={{ background: bgStyle || "var(--bg-gradient)" }}>
       <style>{PROFILE_CSS}</style>
+
+      {/* Overlay SVG — solo cuando el fondo activo es de tipo patrón */}
+      {pattern && (
+        <div className="fixed inset-0 pointer-events-none z-0" style={pattern} />
+      )}
 
       {/* Blobs */}
       <div className="fixed inset-0 pointer-events-none">
@@ -246,7 +256,7 @@ export default function Profile() {
 
             {/* Avatar flotante sobre el banner */}
             <div className="profile-avatar-ring">
-              <AvatarUpload currentAvatar={user.avatar} username={user.displayName} size="lg" />
+              <AvatarUpload currentAvatar={user.avatar} username={user.displayName} size="lg" frameCss={user?.activeFrame?.cssValue} />
             </div>
 
             {/* Info del usuario */}

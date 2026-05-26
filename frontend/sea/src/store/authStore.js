@@ -19,7 +19,7 @@ const useAuthStore = create((set, get) => ({
     }
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     try {
-      const { data } = await api.get("/users/me");
+      const { data } = await api.get("/profile");
       set({ user: data.data || data, loading: false });
     } catch (err) {
       console.error("fetchMe failed", err);
@@ -87,7 +87,7 @@ const useAuthStore = create((set, get) => ({
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     set({ token });
     try {
-      const { data } = await api.get("/users/me");
+      const { data } = await api.get("/profile");
       set({ user: data.data || data });
       return { ok: true, isAdmin: ["admin", "superadmin"].includes((data.data || data).role) };
     } catch (err) {

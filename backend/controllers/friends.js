@@ -210,7 +210,10 @@ const getFriendsLeaderboard = async (req, res) => {
 const getPublicProfile = async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username })
-    .select("username displayName banner avatar level xp gems streak achievements league");
+    .select("username displayName banner avatar level xp gems streak achievements league")
+    .populate("achievements")
+    .populate("activeFrame")
+    .populate("activeBackground");
 
     if (!user) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
 
