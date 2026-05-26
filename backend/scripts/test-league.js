@@ -1,8 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { processWeeklyLeagues } = require('./services/league.service'); // Ajusta el nombre
-const LeagueRoom = require("./models/leagueRoom");
-const User = require("./models/user");
+const { processWeeklyLeagues } = require('../services/league.service'); // Ajusta el nombre
+const LeagueRoom = require("../models/leagueRoom");
+const User = require("../models/user");
 
 async function test() {
   try {

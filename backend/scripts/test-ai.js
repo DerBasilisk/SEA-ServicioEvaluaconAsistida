@@ -1,6 +1,6 @@
 // backend/test-ai.js
 require('dotenv').config();
-const { generateQuestions } = require('./services/ai.service');
+const { generateQuestions } = require('../services/ai.service');
 
 async function test() {
   try {

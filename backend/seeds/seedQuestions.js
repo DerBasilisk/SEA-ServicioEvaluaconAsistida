@@ -28,11 +28,11 @@ const mongoose = require('mongoose');
 const path     = require('path');
 
 // ── Ajusta estas rutas a tu estructura de proyecto ──────────────────────────
-const Question          = require('./models/Question');       // ← tu modelo
-const Lesson            = require('./models/Lesson');         // ← tu modelo
-const Unit              = require('./models/Unit');           // ← tu modelo
-const Subject           = require('./models/Subject');        // ← tu modelo
-const { generateQuestions } = require('./services/ai.service');
+const Question          = require('../models/Question');       // ← tu modelo
+const Lesson            = require('../models/Lesson');         // ← tu modelo
+const Unit              = require('../models/Unit');           // ← tu modelo
+const Subject           = require('../models/Subject');        // ← tu modelo
+const { generateQuestions } = require('../services/ai.service');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURACIÓN — ajusta estos valores según tus límites de API

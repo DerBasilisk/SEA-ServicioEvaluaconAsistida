@@ -9,6 +9,8 @@ const Achievement = require("./achievement");
 const Leaderboard = require("./leaderboard");
 const Conversation = require("./conversation"); // ← NUEVO
 const Message = require("./message");           // ← NUEVO
+const ShopItem = require("./shopItem");
+const UserInventory = require("./userInventory");
 
 module.exports = {
   User,
@@ -20,6 +22,8 @@ module.exports = {
   Streak,
   Achievement,
   Leaderboard,
-  Conversation, // ← NUEVO
-  Message,      // ← NUEVO
+  Conversation,
+  Message,
+  ShopItem,
+  UserInventory,
 };

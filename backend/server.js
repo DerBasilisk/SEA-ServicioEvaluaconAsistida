@@ -18,7 +18,7 @@ const adminRoutes = require("./routes/admin");
 
 const http = require("http");
 const { setupDuelSocket } = require("./duel.socket");
-const { setupChatSocket } = require("./chat.socket"); // ← NUEVO
+const { setupChatSocket } = require("./chat.socket");
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -27,6 +27,7 @@ const httpServer = http.createServer(app);
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || "http://localhost:5173",
+    process.env.CLIENT_URL_WWW || "http://localhost:5173",
     /https:\/\/sea-frontend.*\.vercel\.app$/
   ],
   credentials: true,
