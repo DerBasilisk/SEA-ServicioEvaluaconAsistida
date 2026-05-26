@@ -1,5 +1,14 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.sealearn.online" }],
+      "destination": "https://sealearn.online/:path*",
+      "permanent": true
+    }
   ]
 }
