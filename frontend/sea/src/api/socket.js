@@ -8,7 +8,7 @@ export function getSocket() {
   const token = useAuthStore.getState().token;
   if (!_socket || _socket.disconnected) {
     _socket = io(
-      import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000",
+      import.meta.env.VITE_SOCKET_URL || "http://localhost:3000",
       { auth: { token }, path: "/socket.io" }
     );
   }
