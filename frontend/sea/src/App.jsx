@@ -77,7 +77,12 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Rutas Protegidas para usuarios normales */}
-        <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/" element={
+          token 
+            ? <ProtectedRoute><Home /></ProtectedRoute>
+            : <Navigate to="/home" replace />
+        } />
+
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/subject-catalog" element={<ProtectedRoute><SubjectCatalog /></ProtectedRoute>} />
         <Route path="/subject/:slug" element={<ProtectedRoute><SubjectMap /></ProtectedRoute>} />
