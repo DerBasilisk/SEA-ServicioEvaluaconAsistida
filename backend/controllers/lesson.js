@@ -107,36 +107,65 @@ const startLesson = async (req, res) => {
 
       if (allQuestions.length < adaptiveConfig.questionCount) {
         const needed = adaptiveConfig.questionCount - allQuestions.length;
+
         try {
+          console.log(`🔄 Generando ${needed} preguntas adicionales...`);
+
           const aiQuestions = await generateQuestions({
             subjectName: lesson.unit.subject.name,
             unitName: lesson.unit.name,
             lessonName: lesson.name,
             topicHint: lesson.aiTopicHint || lesson.name,
             difficulty: adaptiveConfig.difficulty,
-            subjectContext: lesson.unit.subject.aiPromptContext || "",   // ← parche aplicado
+            subjectContext: lesson.unit.subject.aiPromptContext || "",
             count: needed,
             allowedTypes: ["multiple_choice", "true_false", "fill_blank", "match_pairs", "sentence_builder", "order_items"]
           });
 
+          // ✅ FILTRADO MUY ESTRICTO antes de guardar
           const validAiQuestions = aiQuestions.filter(q => {
+            if (!q.type || typeof q.type !== 'string') {
+              console.warn('⚠️ Pregunta descartada: sin campo "type"');
+              return false;
+            }
             if (q.type === 'sentence_builder') {
               return Array.isArray(q.wordBank) && q.wordBank.length >= 2;
             }
+            if (q.type === 'order_items') {
+              return Array.isArray(q.items) && q.items.length >= 2;
+            }
+            if (q.type === 'match_pairs') {
+              return Array.isArray(q.pairs) && q.pairs.length >= 2;
+            }
             return true;
           });
+
           if (validAiQuestions.length > 0) {
             const saved = await Question.insertMany(
-              validAiQuestions.map((q) => ({ ...q, lesson: lesson._id, isReviewed: true, isActive: true }))
+              validAiQuestions.map((q) => ({ 
+                ...q, 
+                lesson: lesson._id, 
+                isReviewed: true, 
+                isActive: true 
+              }))
             );
             allQuestions = [...allQuestions, ...saved];
+            console.log(`✅ ${saved.length} preguntas adicionales guardadas`);
           }
         } catch (err) {
-          console.error("Error generando preguntas adicionales:", err.message);
+          console.error("❌ Error generando preguntas adicionales:", err.message);
+          // NO propagamos el error, continuamos con las preguntas existentes
         }
       }
 
       questions = selectQuestions(allQuestions, adaptiveConfig.questionCount, adaptiveConfig.easyRatio, adaptiveConfig.hardRatio);
+
+      if (questions.length === 0) {
+        return res.status(400).json({ 
+          ok: false, 
+          message: "Esta lección no tiene preguntas disponibles en este momento. Intenta más tarde." 
+        });
+      }
     }
 
     if (questions.length === 0) {

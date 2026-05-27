@@ -2,6 +2,8 @@ const User = require("../models/user");
 const Friendship = require("../models/friendship");
 const LeagueRoom = require("../models/leagueRoom");
 
+console.log('✅ Controlador friends.js cargado');
+
 // GET /api/friends — lista de amigos aceptados
 const getFriends = async (req, res) => {
   try {
@@ -38,13 +40,30 @@ const getPendingRequests = async (req, res) => {
 
 // POST /api/friends/request — enviar solicitud por username
 const sendRequest = async (req, res) => {
+  console.log('📩 POST /friends/request recibido', req.body);
+
   try {
     const { username } = req.body;
-    if (!username) return res.status(400).json({ ok: false, message: "Username requerido" });
 
-    const recipient = await User.findOne({ username: username.toLowerCase() });
-    if (!recipient) return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+    if (!username) {
+      console.log('❌ Username no proporcionado');
+      return res.status(400).json({ ok: false, message: "Username requerido" });
+    }
+
+    // Búsqueda más robusta (case insensitive)
+    const recipient = await User.findOne({ 
+      username: { $regex: new RegExp(`^${username}$`, 'i') } 
+    });
+
+    console.log('👤 Usuario encontrado:', recipient ? recipient.username : null);
+
+    if (!recipient) {
+      console.log('❌ Usuario no encontrado:', username);
+      return res.status(404).json({ ok: false, message: "Usuario no encontrado" });
+    }
+
     if (recipient._id.toString() === req.usuario._id.toString()) {
+      console.log('❌ Intento de auto-solicitud');
       return res.status(400).json({ ok: false, message: "No podés agregarte a vos mismo" });
     }
 
@@ -57,8 +76,12 @@ const sendRequest = async (req, res) => {
     });
 
     if (existing) {
-      if (existing.status === "accepted") return res.status(400).json({ ok: false, message: "Ya son amigos" });
-      if (existing.status === "pending") return res.status(400).json({ ok: false, message: "Solicitud ya enviada" });
+      if (existing.status === "accepted") {
+        return res.status(400).json({ ok: false, message: "Ya son amigos" });
+      }
+      if (existing.status === "pending") {
+        return res.status(400).json({ ok: false, message: "Solicitud ya enviada" });
+      }
       if (existing.status === "rejected") {
         existing.status = "pending";
         existing.requester = req.usuario._id;
@@ -68,10 +91,26 @@ const sendRequest = async (req, res) => {
       }
     }
 
-    await Friendship.create({ requester: req.usuario._id, recipient: recipient._id });
-    res.json({ ok: true, message: `Solicitud enviada a @${recipient.username}` });
+    // Crear nueva solicitud
+    const newFriendship = await Friendship.create({ 
+      requester: req.usuario._id, 
+      recipient: recipient._id 
+    });
+
+    console.log('✅ Solicitud creada exitosamente');
+    res.json({ 
+      ok: true, 
+      message: `Solicitud enviada a @${recipient.username}`,
+      data: newFriendship 
+    });
+
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error('💥 ERROR en sendRequest:', err);
+    res.status(500).json({ 
+      ok: false, 
+      message: "Error interno del servidor",
+      error: err.message 
+    });
   }
 };
 

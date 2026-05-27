@@ -71,7 +71,6 @@ const getSubjectBySlug = async (req, res) => {
 
         const lessonsWithStatus = lessons.map((lesson, index) => {
           const progress = progressMap[lesson._id.toString()];
-          // Si no hay progreso y es la primera lección de la unidad → available
           const defaultStatus = index === 0 ? "available" : "locked";
           return {
             ...lesson.toJSON(),
@@ -102,25 +101,27 @@ const getSubjectBySlug = async (req, res) => {
     const totalLessons     = unitsWithProgress.reduce((s, u) => s + u.totalLessons, 0);
     const completedLessons = unitsWithProgress.reduce((s, u) => s + u.completedLessons, 0);
 
+    // ✅ Respuesta única y limpia
     res.json({
       ok: true,
       data: {
         ...subject.toJSON(),
         units: unitsWithProgress,
-        totalLessons,                          // ✅ ahora en raíz
-        completedLessons,                      // ✅ ahora en raíz
+        totalLessons,
+        completedLessons,
         progressPercent: totalLessons > 0
           ? Math.round((completedLessons / totalLessons) * 100)
           : 0,
       },
     });
 
-    res.json({
-      ok: true,
-      data: { ...subject.toJSON(), units: unitsWithProgress },
-    });
   } catch (err) {
-    res.status(500).json({ ok: false, message: err.message });
+    console.error("❌ Error en getSubjectBySlug:", err);
+    res.status(500).json({ 
+      ok: false, 
+      message: "Error al cargar la materia",
+      error: err.message 
+    });
   }
 };
 

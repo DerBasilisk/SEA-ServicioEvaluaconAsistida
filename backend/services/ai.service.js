@@ -381,50 +381,57 @@ async function generateQuestions({
 
   const prompt = `Eres un profesor experto creando preguntas para un simulador de exámenes.
 
-Materia: ${subjectName}
-Unidad: ${unitName}
-Lección: ${lessonName}
-Tema específico: ${topicHint}
-Dificultad: ${difficulty}
-${subjectRulesBlock}
+  Materia: ${subjectName}
+  Unidad: ${unitName}
+  Lección: ${lessonName}
+  Tema específico: ${topicHint}
+  Dificultad: ${difficulty}
+  ${subjectRulesBlock}
 
-Genera exactamente ${count} preguntas VARIADAS usando solo estos tipos: ${allowedTypes.join(', ')}.
+  Genera exactamente ${count} preguntas VARIADAS usando solo estos tipos: ${allowedTypes.join(', ')}.
 
-══════════════════════════════════════════
-REGLAS GLOBALES (obligatorias en TODAS las preguntas):
-══════════════════════════════════════════
+  ══════════════════════════════════════════
+  REGLAS OBLIGATORIAS POR TIPO DE PREGUNTA (MUY IMPORTANTES)
+  ══════════════════════════════════════════
 
-1. UNICIDAD DE PREGUNTAS
-   - Cada pregunta debe cubrir un ASPECTO DIFERENTE del tema.
-   - Está PROHIBIDO repetir el mismo concepto con diferente redacción.
+  - **multiple_choice**: 
+    - Exactamente 4 opciones.
+    - SOLO UNA opción con isCorrect: true.
+    - Todas las opciones deben tener texto distinto.
 
-2. TILDES Y ORTOGRAFÍA
-   - Las tildes NO son parte de la respuesta esperada.
-   - En fill_blank: correctAnswers debe incluir versión con tilde Y sin tilde.
-     Ejemplo: ["ecuación", "ecuacion", "Ecuación", "Ecuacion"]
+  - **true_false**: 
+    - Debe incluir "correctBoolean": true o false.
 
-3. MATCH_PAIRS — COLUMNA DERECHA ÚNICA
-   - Todos los valores de "right" DEBEN SER DISTINTOS entre sí.
+  - **fill_blank**: 
+    - "correctAnswers": array con al menos 1 respuesta (mejor 2-3 variantes).
 
-4. MULTIPLE_CHOICE — OPCIONES ÚNICAS
-   - Exactamente UNA opción debe tener isCorrect: true.
+  - **order_items** (CRÍTICO): 
+    - "items": array con **al menos 3 ítems** (recomendado 4-6).
+    - Los ítems deben tener sentido lógico para ordenarlos (pasos de un proceso, secuencia cronológica, etc.).
 
-5. CAMPOS OBLIGATORIOS en cada pregunta:
-   - type, prompt, difficulty, xpValue, explanation, hint, conceptExplanation, tags
-   - xpValue: 2=easy, 3=medium, 5=hard
-   - hint: máximo 15 palabras, pista estratégica (NO revela la respuesta)
+  - **match_pairs**: 
+    - "pairs": mínimo 3 pares.
+    - Todos los valores de "right" deben ser **únicos** (sin duplicados).
 
-6. REGLAS POR TIPO:
-   - multiple_choice → exactamente 4 opciones: [{text, isCorrect, explanation}]
-   - true_false → correctBoolean (true o false)
-   - fill_blank → correctAnswers: array con variantes (con tilde, sin tilde, mayúscula, minúscula)
-   - match_pairs → pairs: [{left, right}] con todos los "right" ÚNICOS
-   - sentence_builder → { "prompt": "oración con ___ para cada hueco (mín 2 huecos)", "wordBank": ["palabra1", "palabra2", "palabra3", "palabra_extra_distractor"], "correctOrder": [0, 1, 2] }
-   -   OBLIGATORIO: wordBank debe tener MÍNIMO 4 palabras (las correctas + al menos 1 distractor).
-   -   correctOrder es el array de índices de wordBank en el orden correcto.
-   - typing → "prompt": instrucción al usuario, "typingText": texto corto a transcribir (máx 150 caracteres)
+  - **sentence_builder**: 
+    - "wordBank": mínimo 5 palabras (correctas + distractores).
+    - "correctOrder": array de índices que forman la oración correcta.
 
-Responde SOLO con el array JSON. Sin texto antes ni después.`;
+  - **typing**: 
+    - "typingText": texto corto (máx 120 caracteres), preferiblemente código o palabras relacionadas con el tema.
+
+  - **free_text**: 
+    - Incluir "evaluationCriteria" con instrucciones claras para evaluar la respuesta.
+
+  REGLAS GLOBALES (obligatorias):
+  1. Cada pregunta debe cubrir un aspecto **diferente** del tema.
+  2. NO repetir conceptos.
+  3. Para "order_items" y "match_pairs" sé especialmente cuidadoso con la cantidad mínima.
+  4. Usa lenguaje claro y educativo.
+  5. Incluye siempre: prompt, explanation, hint, conceptExplanation, difficulty, xpValue, tags.
+
+  Responde **SOLO** con un array JSON válido. Sin texto adicional, sin \`\`\`json.`;
+
 
   console.log(`📤 Generando ${count} preguntas | Materia: "${subjectName}" | Tema: "${topicHint}" | Dificultad: ${difficulty}`);
 
@@ -479,7 +486,37 @@ Responde SOLO con el array JSON. Sin texto antes ni después.`;
     throw new Error('No se pudieron generar preguntas válidas después de varios intentos');
   }
 
-  questions = enrichCorrectAnswers(questions);
+  if (!Array.isArray(questions) || questions.length === 0) {
+  throw new Error('No se pudieron generar preguntas válidas después de varios intentos');
+}
+
+// ✅ NUEVA VALIDACIÓN ROBUSTA POR TIPO
+questions = questions.filter(q => {
+  if (q.type === 'order_items') {
+    const itemCount = Array.isArray(q.items) ? q.items.length : 0;
+    if (itemCount < 2) {
+      console.warn(`⚠️ order_items descartada: solo tenía ${itemCount} ítems`);
+      return false;   // ← DESCARTAR en vez de romper todo
+    }
+    return true;
+  }
+
+  if (q.type === 'sentence_builder') {
+    const ok = Array.isArray(q.wordBank) && q.wordBank.length >= 2;
+    if (!ok) console.warn('⚠️ sentence_builder descartada por wordBank insuficiente');
+    return ok;
+  }
+
+  if (q.type === 'match_pairs') {
+    return Array.isArray(q.pairs) && q.pairs.length >= 2;
+  }
+
+  return true;
+});
+
+if (questions.length === 0) {
+  throw new Error('La IA no generó ninguna pregunta válida');
+}
 
   return questions.map((q) => ({
     ...q,
