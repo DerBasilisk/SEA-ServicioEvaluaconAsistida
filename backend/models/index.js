@@ -6,7 +6,6 @@ const Question = require("./question");
 const UserProgress = require("./userProgress");
 const Streak = require("./streak");
 const Achievement = require("./achievement");
-const Leaderboard = require("./leaderboard");
 const Conversation = require("./conversation"); // ← NUEVO
 const Message = require("./message");           // ← NUEVO
 const ShopItem = require("./shopItem");
@@ -21,7 +20,6 @@ module.exports = {
   UserProgress,
   Streak,
   Achievement,
-  Leaderboard,
   Conversation,
   Message,
   ShopItem,

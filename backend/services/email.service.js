@@ -1,18 +1,12 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function sendPasswordResetEmail(toEmail, resetToken) {
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-  await transporter.sendMail({
-    from: `"SEA - Simulador de Examen" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: process.env.RESEND_FROM,
     to: toEmail,
     subject: "Recuperación de contraseña - SEA",
     html: `
@@ -62,8 +56,8 @@ async function sendPasswordResetEmail(toEmail, resetToken) {
 async function sendVerificationEmail(toEmail, verificationToken) {
   const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-  await transporter.sendMail({
-    from: `"SEA - Simulador de Examen" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: process.env.RESEND_FROM,
     to: toEmail,
     subject: "Verifica tu cuenta - SEA",
     html: `
@@ -86,4 +80,4 @@ async function sendVerificationEmail(toEmail, verificationToken) {
   });
 }
 
-module.exports = { sendPasswordResetEmail, sendVerificationEmail  };
+module.exports = { sendPasswordResetEmail, sendVerificationEmail };
