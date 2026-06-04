@@ -7,6 +7,7 @@
 :root {
   --bg-gradient: linear-gradient(145deg, #C8E6FF 0%, #A8D4FF 45%, #B8CBFF 100%);
   --alt-gradient: linear-gradient(145deg, #0a3e8d 0%, #306ac7 100%);
+  --doodle-bg: #6f80e493;
   --glass-bg: #ffffff66;
   --glass-bg-small: #ffffff0d;
   --glass-border: #ffffffb3;
@@ -15,6 +16,7 @@
   --sidebar-border: #ffffffe6;
   --card-bg: #f3f3f3fd;
   --card-border: #E2E8F0;
+  --text-hover: #0F2547;
   --text-primary: #0F2547;
   --text-secondary: #7A9CC5;
   --text-thirdary: #ffffff;
@@ -57,6 +59,7 @@
 [data-theme="dark"] {
   --bg-gradient: linear-gradient(145deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
   --alt-gradient: linear-gradient(145deg, #030c1a 0%, #041229 100%);
+  --doodle-bg: #8a59fc7e;
   --glass-bg: #0f172ab3;
   --glass-bg-small: #0f172a0d;
   --glass-border: #94a3b81a; 
@@ -65,6 +68,7 @@
   --sidebar-border: #ffffff0d;
   --card-bg: #1e293bfd;
   --card-border: #33415580;
+  --text-hover: #000000;
   --text-primary: #f8fafc;    /* Casi blanco */
   --text-secondary: #cbd5e1;  /* Gris azulado claro */
   --text-thirdary: #ffffff;
@@ -105,6 +109,7 @@
 [data-theme="high-contrast"] {
   --bg-gradient: #000000;
   --alt-gradient: #000000;
+  --doodle-bg: #ffffff67;
   --glass-bg: #000000;
   --glass-bg-small: #000000;
   --glass-border: #FFFFFF; 

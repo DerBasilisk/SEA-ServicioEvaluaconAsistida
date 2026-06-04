@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Eye, EyeOff, ShieldAlert, ShieldCheck, KeyRound, Loader2, ArrowLeft } from "lucide-react";
 import api from "../api/axios";
 import SEA_AUTH_CSS from "./auth-shared.css?inline";
+import BackgroundAnimations from "../components/BackgroundAnimations";
+import LogoMark from "../components/LogoMark";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -28,7 +30,7 @@ export default function ResetPassword() {
     setLoading(true);
     setError(null);
     try {
-      await api.post("/users/reset-password", { token, password });
+      await api.post("/password/reset", { token, password });
       setSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
@@ -46,12 +48,14 @@ export default function ResetPassword() {
         <style>{SEA_AUTH_CSS}</style>
         <div className="sea-auth sea-auth-wrapper">
           <div className="sea-auth-left">
+            <BackgroundAnimations />
             <div className="sea-logo-badge">
               <div className="sea-logo-inner">
-                <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+                <LogoMark />
               </div>
-              <span className="sea-logo-label">Plataforma educativa</span>
+              <span className="sea-logo-label"></span>
             </div>
+            {/* Tagline y pasos para recuperar contraseña 
             <div className="sea-auth-tagline-block">
               <h1 className="sea-auth-tagline">Seguridad<br />ante todo</h1>
               <p className="sea-auth-tagline-sub">Módulo de seguridad SEA</p>
@@ -64,7 +68,7 @@ export default function ResetPassword() {
                   <p className="sea-auth-info-desc">Solicita uno nuevo si el tuyo expiró</p>
                 </div>
               </div>
-            </div>
+            </div>*/}
           </div>
           <div className="sea-auth-right">
             <div className="sea-auth-right-inner" style={{ textAlign: "center" }}>
@@ -97,11 +101,12 @@ export default function ResetPassword() {
         <style>{SEA_AUTH_CSS}</style>
         <div className="sea-auth sea-auth-wrapper">
           <div className="sea-auth-left">
+            <BackgroundAnimations />
             <div className="sea-logo-badge">
               <div className="sea-logo-inner">
-                <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+                <LogoMark />
               </div>
-              <span className="sea-logo-label">Plataforma educativa</span>
+              <span className="sea-logo-label"></span>
             </div>
             <div className="sea-auth-tagline-block">
               <h1 className="sea-auth-tagline">¡Listo!<br />Ya puedes<br />ingresar</h1>

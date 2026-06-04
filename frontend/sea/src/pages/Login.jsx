@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Eye, EyeOff, Brain, TrendingUp, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import useAuthStore from "../store/authStore";
+import useThemeStore from "../store/themeStore";
 
-// ─── Estilos (Two-Column Split Layout) ──────────────────────────────────────
+// ─── Estilos (Two-Column Split Layout + Animaciones) ─────────────────────────
 const LOGIN_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
@@ -21,43 +22,129 @@ const LOGIN_CSS = `
     background: var(--bg-gradient, #EFF5FC);
   }
 
-  /* ── Panel izquierdo (branding) ── */
+  /* ── Panel izquierdo (branding + animaciones) ── */
   .sea-login-left {
     flex: 1;
-    background: #1A5FB4;
+    background: var(--bg-gradient);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     padding: 3rem;
     position: relative;
     overflow: hidden;
-  }
-  .sea-login-left::before {
-    content: '';
-    position: absolute;
-    top: -100px; right: -100px;
-    width: 320px; height: 320px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.07);
-    pointer-events: none;
-  }
-  .sea-login-left::after {
-    content: '';
-    position: absolute;
-    bottom: -80px; left: -80px;
-    width: 260px; height: 260px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.05);
-    pointer-events: none;
+    isolation: isolate;
   }
 
-  /* Logo badge */
+  /* Capa animada de fondo (SVG y patrones) */
+  .sea-bg-animations {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Elementos individuales animados */
+  .sea-bg-shape {
+    position: absolute;
+    opacity: 0.3;
+    will-change: transform;
+  }
+
+  /* Rotación continua */
+  .rotate-slow {
+    animation: rotateShape 30s linear infinite;
+  }
+  .rotate-medium {
+    animation: rotateShape 18s linear infinite;
+  }
+  .rotate-fast {
+    animation: rotateShape 12s linear infinite;
+  }
+  .rotate-reverse {
+    animation: rotateReverse 22s linear infinite;
+  }
+
+  @keyframes rotateShape {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes rotateReverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  /* Flotación y movimiento */
+  .float-1 {
+    animation: floatMove 14s ease-in-out infinite;
+  }
+  .float-2 {
+    animation: floatMove 19s ease-in-out infinite reverse;
+  }
+  .float-3 {
+    animation: floatMove 11s ease-in-out infinite alternate;
+  }
+
+  @keyframes floatMove {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    50% { transform: translate(20px, -30px) rotate(5deg); }
+    100% { transform: translate(-10px, 20px) rotate(-3deg); }
+  }
+
+  /* Patrón de ondas en movimiento */
+  .wave-pattern {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 200px;
+    background: repeating-linear-gradient(
+      95deg,
+      var(--doodle-bg) 0px,
+      var(--doodle-bg) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+    background-size: 200% 100%;
+    animation: slideWave 100s linear infinite;
+  }
+
+  @keyframes slideWave {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+  }
+
+  /* Partículas de puntos móviles (patrón animado) */
+  .dots-pattern {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80%;
+    height: 80%;
+    background-image: radial-gradient(circle at 2px 2px, var(--doodle-bg) 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    animation: shiftDots 25s linear infinite;
+    opacity: 0.4;
+  }
+
+  @keyframes shiftDots {
+    0% { background-position: 0 0; }
+    100% { background-position: 48px 48px; }
+  }
+
+  /* Logo y textos se mantienen por encima de las animaciones */
+  .sea-logo-badge, .sea-tagline-block, .sea-features {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Mantén el resto de estilos originales (inputs, botones, etc.) */
+  /* ... (desde aquí todo igual que tu código original) ... */
+
   .sea-logo-badge {
     display: inline-flex;
     align-items: center;
     gap: 10px;
     width: fit-content;
-    z-index: 1;
   }
   .sea-logo-inner {
   }
@@ -69,7 +156,6 @@ const LOGIN_CSS = `
     text-transform: uppercase;
   }
 
-  /* Tagline central */
   .sea-tagline-block { z-index: 1; }
   .sea-tagline {
     color: #fff;
@@ -90,7 +176,6 @@ const LOGIN_CSS = `
     margin: 0;
   }
 
-  /* Pills de features */
   .sea-features {
     display: flex;
     flex-direction: column;
@@ -118,10 +203,10 @@ const LOGIN_CSS = `
     flex-shrink: 0;
   }
 
-  /* ── Panel derecho (formulario) ── */
+  /* ── Panel derecho (formulario) - sin cambios ── */
   .sea-login-right {
     width: 420px;
-    background: var(--card-bg, #fff);
+    background: var(--glass-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -146,7 +231,6 @@ const LOGIN_CSS = `
     margin: 0 0 2rem;
   }
 
-  /* Inputs */
   .sea-field { margin-bottom: 18px; }
   .sea-field-label {
     display: block;
@@ -186,7 +270,6 @@ const LOGIN_CSS = `
   }
   .sea-input-icon-right:hover { color: #2B7FE8; }
 
-  /* Botón submit */
   .sea-submit-btn {
     width: 100%;
     background: #2B7FE8;
@@ -208,7 +291,6 @@ const LOGIN_CSS = `
   .sea-submit-btn:active:not(:disabled) { transform: scale(.98); }
   .sea-submit-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-  /* Divisor */
   .sea-divider {
     display: flex; align-items: center; gap: 10px;
     margin: 22px 0 16px;
@@ -220,11 +302,10 @@ const LOGIN_CSS = `
     color: #AAC0D8;
   }
 
-  /* Botón social */
   .sea-social-btn {
     width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    background: var(--card-bg, #F5F8FC);
+    background: var(--card-bg);
     border: 1.5px solid var(--glass-border, #D4E3F5);
     border-radius: 12px;
     padding: 12px;
@@ -233,12 +314,10 @@ const LOGIN_CSS = `
     font-family: 'Nunito', sans-serif;
     letter-spacing: .06em;
     text-decoration: none;
-    color: var(--text-primary);
     transition: background .15s, transform .15s;
   }
   .sea-social-btn:hover { background: rgba(255,255,255,.95); transform: translateY(-1px); }
 
-  /* Pie */
   .sea-footer-text {
     text-align: center;
     font-size: 10px; font-weight: 800;
@@ -249,7 +328,6 @@ const LOGIN_CSS = `
   .sea-footer-text a { color: #2B7FE8; text-decoration: none; }
   .sea-footer-text a:hover { text-decoration: underline; }
 
-  /* Alertas */
   .sea-alert-error {
     margin-bottom: 18px;
     padding: 10px 16px;
@@ -271,7 +349,6 @@ const LOGIN_CSS = `
     border: 1px solid rgba(47,133,90,0.18);
   }
 
-  /* Responsive: colapsar en móvil */
   @media (max-width: 768px) {
     .sea-login-left { display: none; }
     .sea-login-right { width: 100%; padding: 2.5rem 1.5rem; }
@@ -332,72 +409,146 @@ export default function Login() {
     }
   };
 
+  function LogoMark() {
+    const { theme } = useThemeStore();
+
+    const getLogoSrc = (theme) => {
+      switch (theme) {
+        case 'light':        return '/logos/LogoBlue.svg';
+        case 'dark':         return '/logos/LogoWhite.svg';
+        case 'high-contrast': return '/logos/LogoCyan.svg';
+        default:             return '/logos/LogoWhite.svg';
+      }
+    };
+
+    return (
+      <Link 
+        to="/" 
+        style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: 8, 
+          textDecoration: "none", 
+          flexShrink: 0 
+        }}
+      >
+        <img 
+          src={getLogoSrc(theme)}
+          width={130} 
+          alt="SEA" 
+          style={{ 
+            display: "block",
+            transition: "opacity 0.4s ease, transform 0.3s ease"
+          }} 
+        />
+      </Link>
+    );
+  }
+
   return (
     <>
       <style>{LOGIN_CSS}</style>
 
       <div className="sea-login sea-login-wrapper">
-
-        {/* ── Panel izquierdo: Branding ── */}
+        {/* ── Panel izquierdo: Branding + Animaciones ── */}
         <div className="sea-login-left">
+          {/* Capa de animaciones SVG y patrones */}
+          <div className="sea-bg-animations">
+            {/* Patrón de puntos en movimiento */}
+            <div className="dots-pattern"></div>
+            
+            {/* Onda deslizante inferior */}
+            <div className="wave-pattern"></div>
 
-          {/* Logo superior */}
+            {/* SVG 1 - Anillo rotatorio lento */}
+            <svg
+              className="sea-bg-shape rotate-slow float-1"
+              width="280"
+              height="280"
+              viewBox="0 0 100 100"
+              style={{ top: '5%', left: '-5%' }}
+            >
+              <circle cx="50" cy="50" r="40" fill="none" stroke="var(--doodle-bg)" strokeWidth="2" strokeDasharray="6 6" />
+              <circle cx="50" cy="50" r="25" fill="none" stroke="var(--doodle-bg)" strokeWidth="1.5" />
+            </svg>
+
+            {/* SVG 2 - Triángulo que flota y gira */}
+            <svg
+              className="sea-bg-shape rotate-medium float-2"
+              width="180"
+              height="180"
+              viewBox="0 0 100 100"
+              style={{ bottom: '15%', right: '-8%' }}
+            >
+              <polygon points="50,10 90,85 10,85" fill="none" stroke="var(--doodle-bg)" strokeWidth="2.5" />
+              <polygon points="50,30 70,70 30,70" fill="var(--doodle-bg)" stroke="var(--doodle-bg)" strokeWidth="1" />
+            </svg>
+
+            {/* SVG 3 - Estrella / hexágono giratorio rápido */}
+            <svg
+              className="sea-bg-shape rotate-fast float-3"
+              width="140"
+              height="140"
+              viewBox="0 0 100 100"
+              style={{ top: '40%', left: '20%' }}
+            >
+              <polygon
+                points="50,5 61,35 95,35 68,55 79,85 50,65 21,85 32,55 5,35 39,35"
+                fill="none"
+                stroke="var(--doodle-bg)"
+                strokeWidth="1.8"
+              />
+            </svg>
+
+            {/* SVG 4 - Anillos concéntricos rotación reversa */}
+            <svg
+              className="sea-bg-shape rotate-reverse"
+              width="220"
+              height="220"
+              viewBox="0 0 100 100"
+              style={{ bottom: '30%', left: '-15%' }}
+            >
+              <circle cx="50" cy="50" r="30" fill="none" stroke="var(--doodle-bg)" strokeWidth="1.5" />
+              <circle cx="50" cy="50" r="18" fill="none" stroke="var(--doodle-bg)" strokeWidth="1" strokeDasharray="4 4" />
+            </svg>
+
+            {/* SVG 5 - Cruz / aspas en movimiento */}
+            <svg
+              className="sea-bg-shape float-1"
+              width="100"
+              height="100"
+              viewBox="0 0 100 100"
+              style={{ top: '65%', right: '10%' }}
+            >
+              <line x1="20" y1="20" x2="80" y2="80" stroke="var(--doodle-bg)" strokeWidth="2" />
+              <line x1="80" y1="20" x2="20" y2="80" stroke="var(--doodle-bg)" strokeWidth="2" />
+              <circle cx="50" cy="50" r="10" fill="var(--doodle-bg)" stroke="var(--doodle-bg)" strokeWidth="1.5" />
+            </svg>
+          </div>
+
+          {/* Logo superior (se mantiene por encima) */}
           <div className="sea-logo-badge">
             <div className="sea-logo-inner">
-              <img src="/logos/LogoWhite.svg" width="128" alt="SEA" className="brightness-0 invert" />
+              <LogoMark />
             </div>
             <span className="sea-logo-label"></span>
           </div>
 
-          {/* Tagline central 
-          <div className="sea-tagline-block">
-            <h1 className="sea-tagline">
-              
-            </h1>
-            <p className="sea-tagline-sub"></p>
-          </div> */}
-
-          
-          {/* Features 
-          <div className="sea-features">
-            <div className="sea-feature-pill">
-              <div className="sea-feature-icon">
-                <Brain size={16} />
-              </div>
-              Simulacros adaptativos con IA
-            </div>
-            <div className="sea-feature-pill">
-              <div className="sea-feature-icon">
-                <TrendingUp size={16} />
-              </div>
-              Seguimiento de progreso en tiempo real
-            </div>
-            <div className="sea-feature-pill">
-              <div className="sea-feature-icon">
-                <ShieldCheck size={16} />
-              </div>
-              Banco de más de 10.000 preguntas
-            </div>
-          </div> */}
-
+          {/* (Opcional: aquí puedes descomentar las features o tagline si deseas texto) */}
+          {/* <div className="sea-tagline-block"> ... </div> */}
+          {/* <div className="sea-features"> ... </div> */}
         </div>
 
-        {/* ── Panel derecho: Formulario ── */}
+        {/* ── Panel derecho: Formulario (sin cambios) ── */}
         <div className="sea-login-right">
           <div className="sea-login-form-wrap">
-
             <h2 className="sea-form-title">Bienvenido</h2>
             <p className="sea-form-subtitle">Ingresa a tu cuenta para continuar</p>
 
-            {error && (
-              <div className="sea-alert-error">{error}</div>
-            )}
-            {successMessage && (
-              <div className="sea-alert-success">{successMessage}</div>
-            )}
+            {error && <div className="sea-alert-error">{error}</div>}
+            {successMessage && <div className="sea-alert-success">{successMessage}</div>}
 
             <form onSubmit={handleSubmit}>
-              {/* Email */}
               <div className="sea-field">
                 <label className="sea-field-label">Correo electrónico</label>
                 <input
@@ -411,7 +562,6 @@ export default function Login() {
                 />
               </div>
 
-              {/* Contraseña */}
               <div className="sea-field">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <label className="sea-field-label" style={{ margin: 0 }}>Contraseña</label>
@@ -454,7 +604,7 @@ export default function Login() {
 
             <a
               href={`${import.meta.env.VITE_API_URL || "http://localhost:3000/api"}/auth/google`}
-              className="sea-social-btn"
+              className="sea-social-btn text-[--text-primary] hover:text-[--text-hover]"
             >
               <img src="https://www.google.com/favicon.ico" alt="Google" style={{ width: 16, height: 16 }} />
               Continuar con Google
@@ -466,7 +616,6 @@ export default function Login() {
             </p>
           </div>
         </div>
-
       </div>
     </>
   );

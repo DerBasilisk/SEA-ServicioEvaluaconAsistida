@@ -113,7 +113,7 @@ function fallbackLink(url) {
 
 // ── Recuperación de contraseña ────────────────────────────────────────────
 async function sendPasswordResetEmail(toEmail, resetToken) {
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${process.env.BACKEND_API}/users/reset-password?token=${resetToken}`;
 
   const body = `
     ${logoBlock()}
@@ -150,7 +150,7 @@ async function sendPasswordResetEmail(toEmail, resetToken) {
 
 // ── Verificación de cuenta ────────────────────────────────────────────────
 async function sendVerificationEmail(toEmail, verificationToken) {
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  const verifyUrl = `${process.env.BACKEND_API}/users/verify-email?token=${verificationToken}`;
 
   const body = `
     ${logoBlock()}

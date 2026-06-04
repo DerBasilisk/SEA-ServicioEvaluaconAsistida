@@ -1,162 +1,156 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 
-/* ═══════════════════════════════════════════════
-   SEA AUTH — Shared Split Layout Tokens
-   Usado por: Login, Register, ForgotPassword,
-              ResetPassword, VerifyEmail,
-              VerificationPending
-   ═══════════════════════════════════════════════ */
-
 .sea-auth { font-family: 'Nunito', sans-serif; }
 
-/* ── Wrapper ── */
+@keyframes login-fadeIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Wrapper principal ── */
 .sea-auth-wrapper {
   display: flex;
   min-height: 100vh;
-  background: var(--bg-gradient, #EFF5FC);
+  background: var(--bg-gradient, linear-gradient(135deg, #EFF5FC 0%, #D9E6F5 100%));
 }
 
-/* ── Panel izquierdo ── */
+/* ── Panel izquierdo (branding + animaciones) ── */
 .sea-auth-left {
   flex: 1;
-  background: #1A5FB4;
+  background: var(--bg-gradient);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 3rem;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
-.sea-auth-left::before {
-  content: '';
+
+/* Capa animada de fondo (SVG y patrones) */
+.sea-bg-animations {
   position: absolute;
-  top: -100px; right: -100px;
-  width: 320px; height: 320px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.07);
+  inset: 0;
   pointer-events: none;
+  z-index: 0;
 }
-.sea-auth-left::after {
-  content: '';
+
+/* Elementos individuales animados */
+.sea-bg-shape {
   position: absolute;
-  bottom: -80px; left: -80px;
-  width: 260px; height: 260px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.05);
-  pointer-events: none;
+  opacity: 0.3;
+  will-change: transform;
 }
 
-/* Logo badge (top-left) */
-.sea-logo-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 14px;
-  padding: 8px 14px;
-  width: fit-content;
-  z-index: 1;
+.rotate-slow {
+  animation: rotateShape 30s linear infinite;
 }
-.sea-logo-inner {
-  background: #2B7FE8;
-  border-radius: 10px;
-  padding: 6px 10px;
+.rotate-medium {
+  animation: rotateShape 18s linear infinite;
 }
-.sea-logo-label {
-  color: rgba(255,255,255,0.85);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .14em;
-  text-transform: uppercase;
+.rotate-fast {
+  animation: rotateShape 12s linear infinite;
+}
+.rotate-reverse {
+  animation: rotateReverse 22s linear infinite;
 }
 
-/* Tagline */
-.sea-auth-tagline-block { z-index: 1; }
-.sea-auth-tagline {
-  color: #fff;
-  font-size: clamp(26px, 3vw, 40px);
-  font-weight: 900;
-  font-style: italic;
-  text-transform: uppercase;
-  letter-spacing: -.02em;
-  line-height: 1.2;
-  margin: 0 0 10px;
+@keyframes rotateShape {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
-.sea-auth-tagline-sub {
-  color: rgba(255,255,255,0.5);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  margin: 0;
+@keyframes rotateReverse {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
 }
 
-/* Info cards (bottom) */
+.float-1 {
+  animation: floatMove 14s ease-in-out infinite;
+}
+.float-2 {
+  animation: floatMove 19s ease-in-out infinite reverse;
+}
+.float-3 {
+  animation: floatMove 11s ease-in-out infinite alternate;
+}
+
+@keyframes floatMove {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(20px, -30px) rotate(5deg); }
+  100% { transform: translate(-10px, 20px) rotate(-3deg); }
+}
+
+.wave-pattern {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 200px;
+  background: repeating-linear-gradient(
+    95deg,
+    var(--doodle-bg, rgba(43,127,232,0.15)) 0px,
+    var(--doodle-bg, rgba(43,127,232,0.15)) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+  background-size: 200% 100%;
+  animation: slideWave 100s linear infinite;
+}
+
+@keyframes slideWave {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 0%; }
+}
+
+.dots-pattern {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80%;
+  height: 80%;
+  background-image: radial-gradient(circle at 2px 2px, var(--doodle-bg, rgba(43,127,232,0.2)) 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  animation: shiftDots 25s linear infinite;
+  opacity: 0.4;
+}
+
+@keyframes shiftDots {
+  0% { background-position: 0 0; }
+  100% { background-position: 48px 48px; }
+}
+
+/* Logo y textos se mantienen por encima de las animaciones */
+.sea-logo-badge,
+.sea-auth-tagline-block,
 .sea-auth-info-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  z-index: 1;
-}
-.sea-auth-info-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 12px;
-  padding: 12px 14px;
-}
-.sea-auth-info-icon {
-  width: 30px; height: 30px;
-  border-radius: 8px;
-  background: #2B7FE8;
-  display: flex; align-items: center; justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
-  font-size: 15px;
-}
-.sea-auth-info-title {
-  color: rgba(255,255,255,0.9);
-  font-size: 12px;
-  font-weight: 800;
-  margin: 0 0 2px;
-}
-.sea-auth-info-desc {
-  color: rgba(255,255,255,0.5);
-  font-size: 11px;
-  font-weight: 600;
-  margin: 0;
+  position: relative;
+  z-index: 2;
 }
 
 /* ── Panel derecho ── */
 .sea-auth-right {
-  width: 440px;
-  background: var(--card-bg, #fff);
+  width: 420px;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.92));
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 3rem 2.5rem;
-}
-@keyframes sea-auth-fade-in {
-  from { opacity: 0; transform: translateX(14px); }
-  to   { opacity: 1; transform: translateX(0); }
+  animation: login-fadeIn 0.5s ease both 0.1s;
 }
 .sea-auth-right-inner {
   width: 100%;
   max-width: 340px;
-  animation: sea-auth-fade-in .45s ease both .1s;
 }
 
-/* Form head */
+/* Títulos y textos */
 .sea-auth-form-title {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 900;
   font-style: italic;
   text-transform: uppercase;
-  letter-spacing: -.02em;
-  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  color: var(--text-primary, #1e293b);
   margin: 0 0 4px;
 }
 .sea-auth-form-subtitle {
@@ -166,25 +160,15 @@
   margin: 0 0 2rem;
 }
 
-/* Status icon (para páginas de estado) */
-.sea-auth-status-icon {
-  width: 72px; height: 72px;
-  border-radius: 18px;
-  display: flex; align-items: center; justify-content: center;
-  margin: 0 0 1.5rem;
+/* Campos de formulario */
+.sea-auth-field {
+  margin-bottom: 18px;
 }
-.sea-auth-status-icon.success { background: rgba(34,197,94,0.1); border: 1.5px solid rgba(34,197,94,0.25); }
-.sea-auth-status-icon.error   { background: rgba(239,68,68,0.1);  border: 1.5px solid rgba(239,68,68,0.25); }
-.sea-auth-status-icon.loading { background: rgba(43,127,232,0.1); border: 1.5px solid rgba(43,127,232,0.25); }
-.sea-auth-status-icon.pending { background: rgba(43,127,232,0.1); border: 1.5px solid rgba(43,127,232,0.25); }
-
-/* Shared input */
-.sea-auth-field { margin-bottom: 16px; }
 .sea-auth-label {
   display: block;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: .15em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: #7A9CC5;
   margin-bottom: 6px;
@@ -192,37 +176,48 @@
 .sea-auth-input {
   background: var(--card-bg, #F5F8FC);
   border: 1.5px solid var(--glass-border, #D4E3F5);
-  color: var(--text-primary);
+  color: var(--text-primary, #1e293b);
   width: 100%;
   border-radius: 12px;
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 600;
   font-family: 'Nunito', sans-serif;
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   outline: none;
 }
 .sea-auth-input:focus {
   border-color: #2B7FE8;
-  box-shadow: 0 0 0 3px rgba(43,127,232,0.12);
+  box-shadow: 0 0 0 3px rgba(43, 127, 232, 0.12);
 }
-.sea-auth-input::placeholder { color: #AAC0D8; }
+.sea-auth-input::placeholder {
+  color: #AAC0D8;
+}
 .sea-auth-input-icon-left {
-  position: absolute; left: 14px; top: 50%;
+  position: absolute;
+  left: 14px;
+  top: 50%;
   transform: translateY(-50%);
-  color: #AAC0D8; pointer-events: none;
-  display: flex; align-items: center;
+  color: #AAC0D8;
 }
 .sea-auth-input-icon-right {
-  position: absolute; right: 14px; top: 50%;
+  position: absolute;
+  right: 14px;
+  top: 50%;
   transform: translateY(-50%);
-  background: none; border: none; cursor: pointer;
-  color: #AAC0D8; padding: 0;
-  display: flex; align-items: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #AAC0D8;
+  display: flex;
+  align-items: center;
+  padding: 0;
 }
-.sea-auth-input-icon-right:hover { color: #2B7FE8; }
+.sea-auth-input-icon-right:hover {
+  color: #2B7FE8;
+}
 
-/* Shared submit btn */
+/* Botones */
 .sea-auth-btn {
   width: 100%;
   background: #2B7FE8;
@@ -235,85 +230,216 @@
   font-style: italic;
   font-family: 'Nunito', sans-serif;
   text-transform: uppercase;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   cursor: pointer;
-  transition: transform .15s, opacity .15s;
-  margin-top: 4px;
+  transition: transform 0.15s, opacity 0.15s;
+  margin-top: 6px;
 }
-.sea-auth-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
-.sea-auth-btn:active:not(:disabled) { transform: scale(.98); }
-.sea-auth-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-/* Outlined btn (secondary) */
+.sea-auth-btn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+.sea-auth-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.sea-auth-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .sea-auth-btn-outline {
   width: 100%;
   background: transparent;
-  color: #2B7FE8;
-  border: 1.5px solid #2B7FE8;
+  border: 1.5px solid #D4E3F5;
   border-radius: 12px;
-  padding: 13px;
-  font-size: 13px;
-  font-weight: 900;
-  font-style: italic;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 800;
   font-family: 'Nunito', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: .1em;
+  letter-spacing: 0.06em;
+  color: var(--text-primary, #1e293b);
   cursor: pointer;
-  transition: background .15s, color .15s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.15s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
-.sea-auth-btn-outline:hover:not(:disabled) { background: #2B7FE8; color: #fff; }
-.sea-auth-btn-outline:disabled { opacity: .5; cursor: not-allowed; }
+.sea-auth-btn-outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+.sea-auth-btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-/* Alerts */
+/* Divisor y social */
+.sea-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 16px;
+}
+.sea-auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--glass-border, #D4E3F5);
+}
+.sea-auth-divider-text {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #AAC0D8;
+}
+
+/* Alertas */
 .sea-auth-alert {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   padding: 10px 16px;
   border-radius: 12px;
-  font-size: 12px; font-weight: 700;
+  font-size: 12px;
+  font-weight: 700;
   text-align: center;
 }
 .sea-auth-alert.error {
   color: #e53e3e;
-  background: rgba(229,62,62,0.08);
-  border: 1px solid rgba(229,62,62,0.18);
+  background: rgba(229, 62, 62, 0.08);
+  border: 1px solid rgba(229, 62, 62, 0.18);
 }
 .sea-auth-alert.success {
   color: #2f855a;
-  background: rgba(47,133,90,0.08);
-  border: 1px solid rgba(47,133,90,0.18);
+  background: rgba(47, 133, 90, 0.08);
+  border: 1px solid rgba(47, 133, 90, 0.18);
+}
+.sea-auth-shake {
+  animation: shake 0.4s ease-in-out 0s 2;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
 }
 
-/* Info box (email display, instructions) */
-.sea-auth-info-box {
-  background: var(--card-bg, #F5F8FC);
-  border: 1.5px solid var(--glass-border, #D4E3F5);
+/* Info cards (para forgot-password, etc) */
+.sea-auth-info-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 1;
+}
+.sea-auth-info-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
+  padding: 10px 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 700;
 }
-
-/* Footer */
+.sea-auth-info-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+.sea-auth-info-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+.sea-auth-info-desc {
+  margin: 0;
+  font-size: 10px;
+  opacity: 0.7;
+}
+.sea-auth-tagline-block {
+  z-index: 1;
+}
+.sea-auth-tagline {
+  color: #fff;
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 0 0 10px;
+}
+.sea-auth-tagline-sub {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.sea-auth-status-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.sea-auth-status-icon.pending {
+  background: rgba(43, 127, 232, 0.12);
+}
+.sea-auth-status-icon.success {
+  background: rgba(34, 197, 94, 0.12);
+}
+.sea-auth-status-icon.error {
+  background: rgba(239, 68, 68, 0.12);
+}
+.sea-auth-info-box {
+  background: rgba(43, 127, 232, 0.06);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  margin: 1rem 0 1.2rem;
+}
 .sea-auth-footer {
   text-align: center;
-  font-size: 10px; font-weight: 800;
-  letter-spacing: .1em; text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: #AAC0D8;
-  margin-top: 18px;
+  margin-top: 20px;
 }
-.sea-auth-footer a { color: #2B7FE8; text-decoration: none; }
-.sea-auth-footer a:hover { text-decoration: underline; }
-
-/* Shake animation para errores */
-@keyframes sea-shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+.sea-auth-footer a {
+  color: #2B7FE8;
+  text-decoration: none;
 }
-.sea-auth-shake { animation: sea-shake 0.3s ease-in-out; }
+.sea-auth-footer a:hover {
+  text-decoration: underline;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
-  .sea-auth-left { display: none; }
-  .sea-auth-right { width: 100%; padding: 2.5rem 1.5rem; }
+  .sea-auth-left {
+    display: none;
+  }
+  .sea-auth-right {
+    width: 100%;
+    padding: 2.5rem 1.5rem;
+  }
+}
+
+/* Animaciones adicionales */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

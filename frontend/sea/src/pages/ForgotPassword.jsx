@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { Mail, ArrowLeft, RefreshCw } from "lucide-react";
 import api from "../api/axios";
 import SEA_AUTH_CSS from "./auth-shared.css?inline";
+import BackgroundAnimations from "../components/BackgroundAnimations";
+import LogoMark from "../components/LogoMark";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -32,13 +34,15 @@ export default function ForgotPassword() {
 
         {/* ── Panel izquierdo ── */}
         <div className="sea-auth-left">
+          <BackgroundAnimations />
           <div className="sea-logo-badge">
             <div className="sea-logo-inner">
-              <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+              <LogoMark/>
             </div>
-            <span className="sea-logo-label">Plataforma educativa</span>
+            <span className="sea-logo-label"></span>
           </div>
 
+          {/* Tagline y pasos para recuperar contraseña 
           <div className="sea-auth-tagline-block">
             <h1 className="sea-auth-tagline">
               Recupera<br />tu acceso<br />fácilmente
@@ -65,7 +69,7 @@ export default function ForgotPassword() {
                 <p className="sea-auth-info-desc">Úsalo antes de que caduque</p>
               </div>
             </div>
-          </div>
+          </div>*/}
         </div>
 
         {/* ── Panel derecho ── */}
