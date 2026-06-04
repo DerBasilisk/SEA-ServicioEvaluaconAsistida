@@ -1,38 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { Eye, EyeOff, ShieldAlert, ShieldCheck, KeyRound, Loader2, ArrowLeft } from "lucide-react";
 import api from "../api/axios";
-import { ShieldAlert, ShieldCheck, KeyRound, Loader2, ArrowRight, RefreshCcw } from "lucide-react";
-
-const RESET_CSS = `
-  .auth-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1.5px solid var(--glass-border);
-    box-shadow: 0 24px 64px var(--glass-shadow);
-  }
-  .input-field {
-    background: var(--card-bg);
-    border: 1.5px solid var(--glass-border);
-    color: var(--text-primary);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .input-field:focus {
-    border-color: var(--text-accent);
-    background: var(--glass-bg);
-    box-shadow: 0 0 20px var(--glass-shadow);
-  }
-  .sea-gradient-bg {
-    background: var(--bg-gradient);
-    background-attachment: fixed;
-  }
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-  }
-  .animate-shake { animation: shake 0.3s ease-in-out; }
-`;
+import SEA_AUTH_CSS from "./auth-shared.css?inline";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -41,38 +11,20 @@ export default function ResetPassword() {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [shaking, setShaking] = useState(false);
 
-  // ── ESTADO: LINK INVÁLIDO ──
-  if (!token) {
-    return (
-      <div className="sea-gradient-bg min-h-screen flex items-center justify-center px-6">
-        <style>{RESET_CSS}</style>
-        <div className="auth-card max-w-sm w-full p-8 rounded-[2.5rem] text-center space-y-6">
-          <div className="bg-rose-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto border border-rose-500/20">
-            <ShieldAlert className="text-rose-500" size={40} />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-[var(--text-primary)] font-black italic uppercase text-xl tracking-tighter">Acceso Denegado</h2>
-            <p className="text-[var(--text-secondary)] text-sm font-bold italic">Token de recuperación inexistente o expirado.</p>
-          </div>
-          <Link 
-            to="/login" 
-            className="flex items-center justify-center gap-2 w-full bg-[var(--card-bg)] hover:bg-white/20 text-[var(--text-primary)] py-4 rounded-2xl transition-all font-black italic uppercase tracking-widest text-[10px] border border-[var(--glass-border)]"
-          >
-            <RefreshCcw size={14} /> Volver al Inicio
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const triggerShake = () => {
+    setShaking(true);
+    setTimeout(() => setShaking(false), 400);
+  };
 
   const handleSubmit = async () => {
-    if (password !== confirm) { setError("Las claves no coinciden"); return; }
-    if (password.length < 6) { setError("Nivel de seguridad insuficiente (mín. 6)"); return; }
-
+    if (password !== confirm) { setError("Las contraseñas no coinciden"); triggerShake(); return; }
+    if (password.length < 6) { setError("Mínimo 6 caracteres"); triggerShake(); return; }
     setLoading(true);
     setError(null);
     try {
@@ -80,100 +32,206 @@ export default function ResetPassword() {
       setSuccess(true);
       setTimeout(() => navigate("/login"), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || "Fallo en la reescritura de credenciales");
+      setError(err.response?.data?.message || "Error al restablecer la contraseña");
+      triggerShake();
     } finally {
       setLoading(false);
     }
   };
 
-  // ── ESTADO: ÉXITO ──
-  if (success) {
+  /* ── Token inválido ── */
+  if (!token) {
     return (
-      <div className="sea-gradient-bg min-h-screen flex items-center justify-center px-6">
-        <style>{RESET_CSS}</style>
-        <div className="auth-card max-w-sm w-full p-10 rounded-[2.5rem] text-center space-y-6">
-          <div className="bg-emerald-500/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20 animate-pulse">
-            <ShieldCheck className="text-emerald-500" size={40} />
+      <>
+        <style>{SEA_AUTH_CSS}</style>
+        <div className="sea-auth sea-auth-wrapper">
+          <div className="sea-auth-left">
+            <div className="sea-logo-badge">
+              <div className="sea-logo-inner">
+                <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+              </div>
+              <span className="sea-logo-label">Plataforma educativa</span>
+            </div>
+            <div className="sea-auth-tagline-block">
+              <h1 className="sea-auth-tagline">Seguridad<br />ante todo</h1>
+              <p className="sea-auth-tagline-sub">Módulo de seguridad SEA</p>
+            </div>
+            <div className="sea-auth-info-cards">
+              <div className="sea-auth-info-card">
+                <div className="sea-auth-info-icon"><KeyRound size={15} /></div>
+                <div>
+                  <p className="sea-auth-info-title">Los enlaces son de un solo uso</p>
+                  <p className="sea-auth-info-desc">Solicita uno nuevo si el tuyo expiró</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <h2 className="text-[var(--text-primary)] font-black italic uppercase text-2xl tracking-tighter">Sincronizado</h2>
-            <p className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em]">Bóveda de Seguridad Actualizada</p>
-          </div>
-          <div className="flex items-center justify-center gap-2 text-[var(--text-secondary)]">
-            <Loader2 size={16} className="animate-spin text-[var(--text-accent)]" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Redirigiendo a Terminal...</span>
+          <div className="sea-auth-right">
+            <div className="sea-auth-right-inner" style={{ textAlign: "center" }}>
+              <div className="sea-auth-status-icon error" style={{ margin: "0 auto 1.5rem" }}>
+                <ShieldAlert size={32} color="#ef4444" />
+              </div>
+              <h2 className="sea-auth-form-title">Enlace inválido</h2>
+              <p style={{ fontSize: 13, color: "#7A9CC5", fontWeight: 600, marginBottom: "2rem", lineHeight: 1.6 }}>
+                El token de recuperación no existe o ha expirado. Solicita un nuevo enlace desde la página de recuperación.
+              </p>
+              <Link to="/forgot-password" style={{ textDecoration: "none" }}>
+                <button className="sea-auth-btn">Solicitar nuevo enlace →</button>
+              </Link>
+              <p className="sea-auth-footer">
+                <Link to="/login" style={{ color: "#7A9CC5", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  <ArrowLeft size={12} /> Volver al inicio de sesión
+                </Link>
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  // ── ESTADO: FORMULARIO ──
+  /* ── Éxito ── */
+  if (success) {
+    return (
+      <>
+        <style>{SEA_AUTH_CSS}</style>
+        <div className="sea-auth sea-auth-wrapper">
+          <div className="sea-auth-left">
+            <div className="sea-logo-badge">
+              <div className="sea-logo-inner">
+                <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+              </div>
+              <span className="sea-logo-label">Plataforma educativa</span>
+            </div>
+            <div className="sea-auth-tagline-block">
+              <h1 className="sea-auth-tagline">¡Listo!<br />Ya puedes<br />ingresar</h1>
+              <p className="sea-auth-tagline-sub">Contraseña actualizada</p>
+            </div>
+            <div className="sea-auth-info-cards" />
+          </div>
+          <div className="sea-auth-right">
+            <div className="sea-auth-right-inner" style={{ textAlign: "center" }}>
+              <div className="sea-auth-status-icon success" style={{ margin: "0 auto 1.5rem" }}>
+                <ShieldCheck size={32} color="#22c55e" />
+              </div>
+              <h2 className="sea-auth-form-title">¡Contraseña actualizada!</h2>
+              <p style={{ fontSize: 13, color: "#7A9CC5", fontWeight: 600, marginBottom: "2rem", lineHeight: 1.6 }}>
+                Tu contraseña fue restablecida exitosamente. Serás redirigido al inicio de sesión en unos segundos.
+              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: "#7A9CC5", fontSize: 12, fontWeight: 700 }}>
+                <Loader2 size={14} className="animate-spin" style={{ color: "#2B7FE8" }} />
+                Redirigiendo...
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  /* ── Formulario ── */
   return (
-    <div className="sea-gradient-bg min-h-screen flex items-center justify-center px-6 py-12">
-      <style>{RESET_CSS}</style>
-      
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-3">
-          <div className="inline-flex p-4 rounded-[1.8rem] bg-[var(--text-accent)] shadow-xl rotate-[-3deg] mb-2">
-            <KeyRound className="text-white" size={32} />
+    <>
+      <style>{SEA_AUTH_CSS}</style>
+      <div className="sea-auth sea-auth-wrapper">
+
+        <div className="sea-auth-left">
+          <div className="sea-logo-badge">
+            <div className="sea-logo-inner">
+              <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+            </div>
+            <span className="sea-logo-label">Plataforma educativa</span>
           </div>
-          <h1 className="text-[var(--text-primary)] font-black italic text-4xl uppercase tracking-tighter">Restablecer</h1>
-          <p className="text-[var(--text-secondary)] font-black text-[10px] uppercase tracking-[0.3em]">Módulo de Seguridad del SEA</p>
+          <div className="sea-auth-tagline-block">
+            <h1 className="sea-auth-tagline">Elige una<br />contraseña<br />segura</h1>
+            <p className="sea-auth-tagline-sub">Módulo de seguridad SEA</p>
+          </div>
+          <div className="sea-auth-info-cards">
+            <div className="sea-auth-info-card">
+              <div className="sea-auth-info-icon"><KeyRound size={15} /></div>
+              <div>
+                <p className="sea-auth-info-title">Mínimo 6 caracteres</p>
+                <p className="sea-auth-info-desc">Usa letras, números y símbolos</p>
+              </div>
+            </div>
+            <div className="sea-auth-info-card">
+              <div className="sea-auth-info-icon" style={{ background: "rgba(255,255,255,0.15)" }}>
+                <ShieldCheck size={15} color="#fff" />
+              </div>
+              <div>
+                <p className="sea-auth-info-title">Enlace de un solo uso</p>
+                <p className="sea-auth-info-desc">Este link quedará invalidado al usarlo</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="auth-card rounded-[2.5rem] p-8 space-y-5">
-          <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="NUEVA CONTRASEÑA"
-                autoFocus
-                className="input-field w-full rounded-2xl px-6 py-4 outline-none placeholder:text-[var(--text-muted)] font-black italic text-sm tracking-widest uppercase"
-              />
-            </div>
-            
-            <div className="relative">
-              <input
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-                placeholder="CONFIRMAR CLAVE"
-                className="input-field w-full rounded-2xl px-6 py-4 outline-none placeholder:text-[var(--text-muted)] font-black italic text-sm tracking-widest uppercase"
-              />
-            </div>
-          </div>
+        <div className="sea-auth-right">
+          <div className="sea-auth-right-inner">
+            <h2 className="sea-auth-form-title">Nueva contraseña</h2>
+            <p className="sea-auth-form-subtitle">Elige una contraseña segura para tu cuenta</p>
 
-          {error && (
-            <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 flex items-center gap-3 animate-shake">
-              <ShieldAlert size={16} className="text-rose-500" />
-              <p className="text-rose-500 text-[10px] font-black uppercase tracking-widest">{error}</p>
-            </div>
-          )}
-
-          <button
-            onClick={handleSubmit}
-            disabled={!password || !confirm || loading}
-            className="w-full bg-[var(--btn-primary)] hover:opacity-90 disabled:opacity-20 text-[var(--btn-text)] font-black italic uppercase tracking-[0.2em] py-5 rounded-2xl transition-all active:scale-95 shadow-xl shadow-blue-500/10 flex items-center justify-center gap-3 border border-white/10"
-          >
-            {loading ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <>
-                <span>Actualizar Vault</span>
-                <ArrowRight size={18} />
-              </>
+            {error && (
+              <div className={`sea-auth-alert error ${shaking ? "sea-auth-shake" : ""}`}>{error}</div>
             )}
-          </button>
+
+            <div className="sea-auth-field">
+              <label className="sea-auth-label">Nueva contraseña</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => { setError(null); setPassword(e.target.value); }}
+                  placeholder="••••••••"
+                  autoFocus
+                  className="sea-auth-input"
+                  style={{ paddingRight: 42 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="sea-auth-input-icon-right"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="sea-auth-field">
+              <label className="sea-auth-label">Confirmar contraseña</label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={confirm}
+                  onChange={(e) => { setError(null); setConfirm(e.target.value); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  placeholder="••••••••"
+                  className="sea-auth-input"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={!password || !confirm || loading}
+              className="sea-auth-btn"
+            >
+              {loading ? (
+                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <Loader2 size={16} className="animate-spin" /> Actualizando...
+                </span>
+              ) : "Actualizar contraseña →"}
+            </button>
+
+            <p className="sea-auth-footer">
+              <Link to="/login" style={{ color: "#7A9CC5", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <ArrowLeft size={12} /> Volver al inicio de sesión
+              </Link>
+            </p>
+          </div>
         </div>
 
-        <p className="text-center text-[var(--text-secondary)] text-[10px] font-black uppercase tracking-[0.3em] opacity-60">
-          Encriptación SEA AES-256 Activa
-        </p>
       </div>
-    </div>
+    </>
   );
 }

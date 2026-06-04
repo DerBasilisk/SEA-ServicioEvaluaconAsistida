@@ -1,26 +1,8 @@
-// frontend/sea/src/pages/VerificationPending.jsx
 import { useState } from "react";
 import { useLocation, Link } from "react-router-dom";
-import { Mail, RefreshCw, CheckCircle } from "lucide-react";
+import { Mail, RefreshCw, CheckCircle, ArrowLeft } from "lucide-react";
 import useAuthStore from "../store/authStore";
-
-const VERIFICATION_PENDING_CSS = `
-  @keyframes pending-fadeUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .pending-card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(24px);
-    border: 1.5px solid var(--glass-border);
-    box-shadow: 0 24px 64px var(--glass-shadow);
-    animation: pending-fadeUp 0.5s ease both 0.1s;
-  }
-  .pending-icon {
-    background: var(--text-accent);
-    box-shadow: 0 8px 24px var(--glass-shadow);
-  }
-`;
+import SEA_AUTH_CSS from "./auth-shared.css?inline";
 
 export default function VerificationPending() {
   const location = useLocation();
@@ -44,77 +26,95 @@ export default function VerificationPending() {
 
   return (
     <>
-      <style>{VERIFICATION_PENDING_CSS}</style>
-      <div
-        className="min-h-screen flex items-center justify-center p-6 overflow-hidden relative"
-        style={{ background: "var(--bg-gradient)" }}
-      >
-        {/* Orbes decorativos */}
-        <div className="fixed inset-0 z-0 pointer-events-none">
-          <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full opacity-30"
-               style={{ background: "var(--deco-blob)", filter: "blur(80px)" }} />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full opacity-20"
-               style={{ background: "var(--deco-blob2)", filter: "blur(80px)" }} />
+      <style>{SEA_AUTH_CSS}</style>
+
+      <div className="sea-auth sea-auth-wrapper">
+
+        {/* ── Panel izquierdo ── */}
+        <div className="sea-auth-left">
+          <div className="sea-logo-badge">
+            <div className="sea-logo-inner">
+              <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+            </div>
+            <span className="sea-logo-label">Plataforma educativa</span>
+          </div>
+
+          <div className="sea-auth-tagline-block">
+            <h1 className="sea-auth-tagline">
+              Un paso<br />más para<br />comenzar
+            </h1>
+            <p className="sea-auth-tagline-sub">Verificación de cuenta</p>
+          </div>
+
+          <div className="sea-auth-info-cards">
+            <div className="sea-auth-info-card">
+              <div className="sea-auth-info-icon"><Mail size={15} /></div>
+              <div>
+                <p className="sea-auth-info-title">Revisa tu bandeja de entrada</p>
+                <p className="sea-auth-info-desc">Y también la carpeta de spam</p>
+              </div>
+            </div>
+            <div className="sea-auth-info-card">
+              <div className="sea-auth-info-icon" style={{ background: "rgba(255,255,255,0.15)" }}>
+                <span style={{ fontSize: 13, fontWeight: 900, fontStyle: "italic", color: "#fff" }}>24h</span>
+              </div>
+              <div>
+                <p className="sea-auth-info-title">El enlace expira en 24 horas</p>
+                <p className="sea-auth-info-desc">Puedes reenviar el correo si lo necesitas</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="relative z-10 w-full max-w-[480px] text-center">
-          <div className="pending-card rounded-[2.5rem] p-8 md:p-10">
-            {/* Ícono animado */}
-            <div className="pending-icon inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 mx-auto">
-              <Mail size={48} className="text-white" />
+        {/* ── Panel derecho ── */}
+        <div className="sea-auth-right">
+          <div className="sea-auth-right-inner">
+
+            <div className="sea-auth-status-icon pending">
+              <Mail size={32} color="#2B7FE8" />
             </div>
 
-            <h1 className="text-3xl font-black tracking-tighter italic uppercase text-[var(--text-primary)] mb-2">
-              ¡Casi listo!
-            </h1>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-6">
-              Verifica tu correo electrónico
-            </p>
+            <h2 className="sea-auth-form-title">¡Casi listo!</h2>
+            <p className="sea-auth-form-subtitle">Verifica tu correo electrónico para activar tu cuenta</p>
 
-            <div className="space-y-4 text-left bg-[var(--card-bg)]/30 rounded-2xl p-5 border border-[var(--glass-border)]">
-              <p className="text-sm text-[var(--text-primary)] leading-relaxed">
-                Hemos enviado un enlace de verificación a:
+            <div className="sea-auth-info-box">
+              <p style={{ fontSize: 11, color: "#7A9CC5", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", margin: "0 0 6px" }}>
+                Enviamos el enlace a
               </p>
-              <p className="font-mono font-bold text-base break-all text-[var(--text-accent)] bg-[var(--glass-bg)] p-2 rounded-xl text-center">
+              <p style={{ fontSize: 14, fontWeight: 800, color: "#2B7FE8", margin: 0, wordBreak: "break-all" }}>
                 {email || "tu correo electrónico"}
               </p>
-              <p className="text-xs text-[var(--text-secondary)]">
-                Haz clic en el enlace que recibiste para activar tu cuenta. El enlace expirará en <strong>24 horas</strong>.
-              </p>
             </div>
 
-            {/* Mensaje de reenvío */}
-            {resendStatus.sent && (
-              <div className="mt-5 px-4 py-3 rounded-2xl text-xs font-bold text-green-600 text-center bg-green-500/10 border border-green-500/20 flex items-center justify-center gap-2">
-                <CheckCircle size={16} />
-                {resendStatus.sent === true && "¡Correo reenviado! Revisa tu bandeja de entrada."}
-              </div>
-            )}
+            <p style={{ fontSize: 12, color: "#7A9CC5", fontWeight: 600, marginBottom: 20, lineHeight: 1.7 }}>
+              Haz clic en el enlace del correo para confirmar tu cuenta. El enlace expira en <strong style={{ color: "var(--text-primary)" }}>24 horas</strong>.
+            </p>
+
             {resendStatus.error && (
-              <div className="mt-5 px-4 py-3 rounded-2xl text-xs font-bold text-rose-500 text-center bg-rose-500/10 border border-rose-500/20">
-                {resendStatus.error}
+              <div className="sea-auth-alert error sea-auth-shake">{resendStatus.error}</div>
+            )}
+            {resendStatus.sent && (
+              <div className="sea-auth-alert success" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <CheckCircle size={14} /> ¡Correo reenviado! Revisa tu bandeja.
               </div>
             )}
 
             <button
               onClick={handleResend}
               disabled={loading}
-              className="mt-6 w-full flex items-center justify-center gap-2 bg-transparent border border-[var(--text-accent)] text-[var(--text-accent)] font-extrabold py-3 rounded-2xl uppercase italic tracking-wider text-sm hover:bg-[var(--text-accent)] hover:text-white transition-all disabled:opacity-50"
+              className="sea-auth-btn-outline"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
               {loading ? "Enviando..." : "Reenviar correo de verificación"}
             </button>
 
-            <div className="mt-8 pt-6 border-t border-[var(--glass-border)]">
-              <p className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">
-                ¿Ya verificaste?{" "}
-                <Link to="/login" className="text-[var(--text-accent)] hover:underline">
-                  Iniciar sesión
-                </Link>
-              </p>
-            </div>
+            <p className="sea-auth-footer">
+              ¿Ya verificaste?{" "}
+              <Link to="/login">Iniciar sesión</Link>
+            </p>
           </div>
         </div>
+
       </div>
     </>
   );
