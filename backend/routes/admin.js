@@ -57,4 +57,10 @@ router.post("/questions", ctrl.createQuestion);
 
 router.put("/questions/:id/clear-reports", ctrl.clearReports);
 
+// Tienda
+router.get("/shop-items", ctrl.getShopItems);
+router.post("/shop-items", ctrl.createShopItem);
+router.put("/shop-items/:id", ctrl.updateShopItem);
+router.delete("/shop-items/:id", ctrl.deleteShopItem);
+
 module.exports = router;

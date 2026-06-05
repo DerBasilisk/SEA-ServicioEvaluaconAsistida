@@ -40,8 +40,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import UsersManagement from "./pages/admin/UsersManagement";
 import QuestionsManagement from "./pages/admin/QuestionsManagement";
 import SubjectsManagement from "./pages/admin/SubjectsManagement";
-import UnitsManagement from "./pages/admin/UnitsManagement";        // ← Corregido (plural)
+import UnitsManagement from "./pages/admin/UnitsManagement";
 import LessonsManagement from "./pages/admin/LessonsManagement";
+import ShopManagement from "./pages/admin/ShopManagement";
 
 // Adiciones
 import AudioManager from "./components/AudioManager";
@@ -109,8 +110,9 @@ function App() {
           <Route path="users" element={<UsersManagement />} />
           <Route path="questions" element={<QuestionsManagement />} />
           <Route path="subjects" element={<SubjectsManagement />} />
-          <Route path="units" element={<UnitsManagement />} />        {/* ← Corregido */}
-          <Route path="lessons" element={<LessonsManagement />} />    {/* ← Corregido */}
+          <Route path="units" element={<UnitsManagement />} />
+          <Route path="lessons" element={<LessonsManagement />} />
+          <Route path="shop" element={<ShopManagement />} />
         </Route>
 
         {/* Fallback */}

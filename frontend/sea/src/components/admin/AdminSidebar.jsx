@@ -4,7 +4,7 @@ import {
   BarChart3, Users, ListChecks,
   BookOpen, Layers, BookText,
   LogOut, Home, ChevronLeft,
-  ShieldCheck, X, Menu
+  ShieldCheck, X, Menu, ShoppingBag
 } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import Avatar from "../Avatar";
@@ -226,6 +226,7 @@ const NAV_ITEMS = [
     items: [
       { to: "/admin",        end: true, icon: <BarChart3 size={22} />, label: "Dashboard" },
       { to: "/admin/users",             icon: <Users     size={22} />, label: "Usuarios"  },
+      { to: "/admin/shop",      icon: <ShoppingBag size={22} />,label: "Tienda" },
     ],
   },
   {

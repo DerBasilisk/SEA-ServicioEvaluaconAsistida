@@ -1,9 +1,11 @@
 const User = require("../models/user");
 const UserProgress = require("../models/userProgress");
+const ShopItem = require("../models/shopItem");
 const { Subject, Unit, Lesson, Question } = require("../models");
 const mongoose = require("mongoose");
 const { exportToCSV } = require("../services/csv.service");
 const { generateQuestions } = require("../services/ai.service");
+
 
 // ── USUARIOS ──────────────────────────────────────────────────
 
@@ -606,6 +608,56 @@ const exportQuestions = async (req, res) => {
   }
 };
 
+// GET /api/admin/shop-items
+const getShopItems = async (req, res) => {
+  try {
+    const { type, rarity, isActive, search } = req.query;
+    const query = {};
+
+    if (type && type !== "all") query.type = type;
+    if (rarity && rarity !== "all") query.rarity = rarity;
+    if (isActive !== undefined && isActive !== "all") query.isActive = isActive === "true";
+    if (search) query.name = { $regex: search, $options: "i" };
+
+    const items = await ShopItem.find(query).sort({ type: 1, price: 1 });
+    res.json({ ok: true, data: items });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+// POST /api/admin/shop-items
+const createShopItem = async (req, res) => {
+  try {
+    const item = await ShopItem.create(req.body);
+    res.status(201).json({ ok: true, data: item });
+  } catch (err) {
+    res.status(400).json({ ok: false, message: err.message });
+  }
+};
+
+// PUT /api/admin/shop-items/:id
+const updateShopItem = async (req, res) => {
+  try {
+    const item = await ShopItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!item) return res.status(404).json({ ok: false, message: "Item no encontrado" });
+    res.json({ ok: true, data: item });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
+// DELETE /api/admin/shop-items/:id
+const deleteShopItem = async (req, res) => {
+  try {
+    const item = await ShopItem.findByIdAndDelete(req.params.id);
+    if (!item) return res.status(404).json({ ok: false, message: "Item no encontrado" });
+    res.json({ ok: true, message: "Item eliminado" });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+};
+
 module.exports = {
   getUsers, 
   getUserProgress, 
@@ -652,4 +704,10 @@ module.exports = {
   exportSubjects,
 
   getStats,
+
+  //Tienda
+  getShopItems,
+  createShopItem,
+  updateShopItem,
+  deleteShopItem,
 };
