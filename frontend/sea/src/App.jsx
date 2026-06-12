@@ -24,6 +24,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerificationPending from './pages/VerificationPending';
 import VerifyEmail from './pages/VerifyEmail';
 import Contact from "./pages/Contact";
+import CookieBanner from "./components/CookieBanner";
 
 // Aplicacion
 import Friends from "./pages/Friends";
@@ -122,6 +123,7 @@ function App() {
       </Routes>
 
       <DuelInviteToast />
+      <CookieBanner />
       <Toaster position="top-right" />
     </BrowserRouter>
   );

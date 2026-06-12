@@ -409,26 +409,6 @@ export default function Contact() {
               </h2>
               <div className="grid grid-cols-2 gap-2">
                 <a
-                  href="https://github.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="social-btn"
-                  aria-label="GitHub del proyecto"
-                >
-                  <Github size={14} />
-                  GitHub
-                </a>
-                <a
-                  href="https://instagram.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="social-btn"
-                  aria-label="Instagram del proyecto"
-                >
-                  <Instagram size={14} />
-                  Instagram
-                </a>
-                <a
                   href="mailto:no-reply@sealearn.online"
                   className="social-btn col-span-2"
                   aria-label="Enviar correo directo"
