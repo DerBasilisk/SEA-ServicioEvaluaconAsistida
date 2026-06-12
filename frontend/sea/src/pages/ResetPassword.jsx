@@ -4,7 +4,7 @@ import { Eye, EyeOff, ShieldAlert, ShieldCheck, KeyRound, Loader2, ArrowLeft } f
 import api from "../api/axios";
 import SEA_AUTH_CSS from "./auth-shared.css?inline";
 import BackgroundAnimations from "../components/BackgroundAnimations";
-import LogoMark from "../components/LogoMark";
+import { LogoMark } from "../components/LogoMark";
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();

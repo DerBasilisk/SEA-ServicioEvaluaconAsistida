@@ -4,7 +4,7 @@ import { Eye, EyeOff, User, Mail, Lock } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import SEA_AUTH_CSS from "./auth-shared.css?inline";
 import BackgroundAnimations from "../components/BackgroundAnimations";
-import LogoMark from "../components/LogoMark";
+import { LogoMark } from "../components/LogoMark";
 
 export default function Register() {
   const navigate = useNavigate();

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Rocket, BrainCircuit, Target, Sparkles, ArrowRight, Menu } from "lucide-react";
 import useThemeStore from "../store/themeStore";
 import { useForceTheme } from "../hooks/useForceTheme";
+import Footer from "../components/Footer";
 
 const FRONTAL_CSS = `
   @keyframes float {
@@ -48,7 +49,7 @@ export default function Frontal() {
         </div>
 
         <div className="relative flex flex-col items-center">
-          <div className="bg-[var(--text-accent)] text-[var(--btn-text)] w-16 h-16 md:w-20 md:h-20 flex items-center justify-center rounded-[1.5rem] md:rounded-[2rem] font-black text-3xl md:text-4xl shadow-2xl rotate-[-5deg] animate-float">S</div>
+          <LogoMark/>
           <h2 className="mt-6 text-xl md:text-2xl font-black tracking-[0.2em] md:tracking-[0.3em] uppercase italic text-[var(--text-primary)]">Sistema SEA</h2>
         </div>
         <div className="flex flex-col items-center gap-2 w-full max-w-[200px]">
@@ -143,6 +144,7 @@ export default function Frontal() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
@@ -184,7 +186,7 @@ function LogoMark() {
     >
       <img 
         src={getLogoSrc(theme)}
-        width={70} 
+        width={120} 
         alt="SEA" 
         style={{ 
           display: "block",

@@ -3,6 +3,7 @@ import { Plus, Edit, Trash2, RotateCcw, X, Search as SearchIcon, Gem } from "luc
 import api from "../../api/axios";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR } from "../../utils/validators";
+import useAuthStore from "../../store/authStore";
 
 const SHOP_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -178,6 +179,7 @@ const SHOP_CSS = `
     background: var(--card-bg);
     border-radius: 1rem;
     transition: box-shadow 0.2s;
+    overflow: hidden;
   }
   .preview-bg {
     background-size: cover;
@@ -189,7 +191,124 @@ const SHOP_CSS = `
   }
 `;
 
+// Helper fuera del componente para evitar recreación en cada render
+function getCurrentThemeHelper() {
+  const theme = document.documentElement.getAttribute("data-theme") || "light";
+  if (theme === "high-contrast") return "highContrast";
+  return theme === "dark" ? "dark" : "light";
+}
+
+// Convierte cualquier color CSS válido a #RRGGBB usando canvas.
+// Necesario porque <input type="color"> solo acepta ese formato exacto;
+// rgb(), hsl(), colores nombrados y hex con alpha hacen que muestre negro.
+function cssColorToHex(color) {
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000000"; // reset antes de asignar
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  } catch {
+    return "#000000";
+  }
+}
+
+// Componente extraído fuera de ShopManagement para evitar desmontaje/remontaje en cada re-render
+function ItemPreview({ item, size = "md", userAvatarUrl, previewTheme }) {
+  const currentTheme = previewTheme || getCurrentThemeHelper();
+  const isFrame = item.type === "frame";
+  const bgType = item.backgroundType;
+  const previewStyle = {};
+
+  if (isFrame) {
+    previewStyle.boxShadow = item.cssValue || "0 0 0 3px var(--text-accent)";
+    previewStyle.backgroundColor = "var(--card-bg)";
+    previewStyle.display = "flex";
+    previewStyle.alignItems = "center";
+    previewStyle.justifyContent = "center";
+    previewStyle.borderRadius = "1rem";
+    previewStyle.overflow = "hidden";
+  } else {
+    if (bgType === "gradient" && item.themeVariants) {
+      const gradientValue = item.themeVariants[currentTheme];
+      previewStyle.background = gradientValue || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    } else if (bgType === "svg" && item.patternSvg) {
+      let svgString = item.patternSvg;
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue("--text-accent").trim();
+      svgString = svgString.replace(/currentColor/g, accentColor);
+      const encodedSvg = encodeURIComponent(svgString);
+      previewStyle.backgroundImage = `url("data:image/svg+xml,${encodedSvg}")`;
+      previewStyle.backgroundRepeat = "repeat";
+      previewStyle.backgroundSize = item.patternSize || "40px 40px";
+      previewStyle.backgroundColor = "var(--card-bg)";
+      previewStyle.opacity = item.patternOpacity ?? 0.25;
+    } else if (item.cssValue) {
+      previewStyle.background = item.cssValue;
+    } else {
+      previewStyle.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
+    }
+    previewStyle.borderRadius = "0.75rem";
+  }
+
+  // Frames usan tamaño fijo; fondos siempre ancho completo
+  const sizeClasses = {
+    sm: isFrame ? "w-14 h-14" : "w-full h-16",
+    md: isFrame ? "w-20 h-20" : "w-full h-20",
+    lg: isFrame ? "w-28 h-28" : "w-full h-28",
+  };
+
+  if (isFrame) {
+    // El shadow se aplica en el div INTERNO, dentro de un padding del wrapper.
+    // Esto evita que el overflow:hidden del padre (shop-card) lo recorte,
+    // ya que la sombra queda dentro de los límites del contenedor exterior.
+    const frameShadow = item.cssValue || "0 0 0 3px var(--text-accent)";
+    return (
+      <div
+        className={sizeClasses[size]}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "var(--card-bg)",
+          borderRadius: "1.25rem",
+          padding: "8px",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "0.875rem",
+            overflow: "hidden",
+            boxShadow: frameShadow,
+            flexShrink: 0,
+          }}
+        >
+          <img
+            src={userAvatarUrl}
+            alt="Avatar preview"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${sizeClasses[size]} preview-bg ${bgType === "svg" ? "preview-svg" : ""}`}
+      style={previewStyle}
+    />
+  );
+}
+
 export default function ShopManagement() {
+  const { user } = useAuthStore(); // Obtener usuario actual
+  const userAvatarUrl = user?.avatar || "https://via.placeholder.com/80?text=Avatar"; // fallback
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -216,70 +335,59 @@ export default function ShopManagement() {
   };
   const [form, setForm] = useState(initialForm);
 
-  // Obtener tema actual (light, dark, high-contrast)
-  const getCurrentTheme = () => {
-    const theme = document.documentElement.getAttribute("data-theme") || "light";
-    if (theme === "high-contrast") return "highContrast";
-    return theme === "dark" ? "dark" : "light";
+  // Estado para el editor visual de gradientes
+  const [gradientAngle, setGradientAngle] = useState("135deg");
+  const [manualMode, setManualMode] = useState({ light: false, dark: false, highContrast: false });
+  // Tema seleccionado para previsualizar fondos en el modal (independiente del tema de la app)
+  const [previewTheme, setPreviewTheme] = useState(getCurrentThemeHelper);
+
+  // Función para construir un gradiente lineal a partir de colores y ángulo
+  const buildGradientCSS = (startColor, endColor, angle = gradientAngle) => {
+    if (!startColor && !endColor) return "";
+    return `linear-gradient(${angle}, ${startColor || "#000"}, ${endColor || "#000"})`;
   };
 
-  // Componente de vista previa (se usa en cada tarjeta y en el modal)
-  const ItemPreview = ({ item, size = "md", className = "" }) => {
-    const currentTheme = getCurrentTheme();
-    const isFrame = item.type === "frame";
-    const bgType = item.backgroundType; // <- DEFINICIÓN CORREGIDA
-    const previewStyle = {};
-
-    if (isFrame) {
-      previewStyle.boxShadow = item.cssValue || "0 0 0 3px var(--text-accent)";
-      previewStyle.backgroundColor = "var(--card-bg)";
-      previewStyle.display = "flex";
-      previewStyle.alignItems = "center";
-      previewStyle.justifyContent = "center";
-      previewStyle.borderRadius = "1rem";
-    } else {
-      // Fondo
-      if (bgType === "gradient" && item.themeVariants) {
-        const gradientValue = item.themeVariants[currentTheme];
-        previewStyle.background = gradientValue || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-      } else if (bgType === "svg" && item.patternSvg) {
-        // Reemplazar currentColor por el color de acento del tema
-        let svgString = item.patternSvg;
-        const accentColor = getComputedStyle(document.documentElement).getPropertyValue("--text-accent").trim();
-        svgString = svgString.replace(/currentColor/g, accentColor);
-        const encodedSvg = encodeURIComponent(svgString);
-        previewStyle.backgroundImage = `url("data:image/svg+xml,${encodedSvg}")`;
-        previewStyle.backgroundRepeat = "repeat";
-        previewStyle.backgroundSize = item.patternSize || "40px 40px";
-        previewStyle.backgroundColor = "var(--card-bg)";
-        previewStyle.opacity = item.patternOpacity ?? 0.25;
-      } else if (item.cssValue) {
-        previewStyle.background = item.cssValue;
-      } else {
-        previewStyle.background = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
-      }
-      previewStyle.borderRadius = "0.75rem";
+  // Manejar cambio de color en un tema específico (inicio o fin)
+  const handleGradientColorChange = (theme, position, color) => {
+    const currentGradient = form.themeVariants[theme];
+    let startColor = "#000000", endColor = "#ffffff";
+    const match = currentGradient.match(/linear-gradient\([^,]+,\s*([^,]+),\s*([^)]+)\)/);
+    if (match) {
+      startColor = cssColorToHex(match[1].trim());
+      endColor = cssColorToHex(match[2].trim());
     }
-
-    const sizeClasses = {
-      sm: isFrame ? "w-12 h-12" : "w-full h-16",
-      md: isFrame ? "w-16 h-16" : "w-full h-20",
-      lg: isFrame ? "w-24 h-24" : "w-full h-28",
-    };
-
-    return (
-      <div
-        className={`${sizeClasses[size]} ${isFrame ? "preview-frame" : "preview-bg"} ${bgType === "svg" ? "preview-svg" : ""} ${className}`}
-        style={previewStyle}
-      >
-        {isFrame && (
-          <div className="w-full h-full flex items-center justify-center text-lg font-black" style={{ color: "var(--text-primary)" }}>
-            🖼️
-          </div>
-        )}
-      </div>
-    );
+    if (position === "start") startColor = color;
+    else endColor = color;
+    const newGradient = buildGradientCSS(startColor, endColor);
+    setForm({
+      ...form,
+      themeVariants: { ...form.themeVariants, [theme]: newGradient }
+    });
   };
+
+  // Manejar cambio de ángulo (actualiza todos los temas que no estén en modo manual)
+  const handleAngleChange = (newAngle) => {
+    setGradientAngle(newAngle);
+    const updatedVariants = { ...form.themeVariants };
+    for (const theme of ["light", "dark", "highContrast"]) {
+      if (!manualMode[theme] && updatedVariants[theme]) {
+        const match = updatedVariants[theme].match(/linear-gradient\([^,]+,\s*([^,]+),\s*([^)]+)\)/);
+        if (match) {
+          const start = cssColorToHex(match[1].trim());
+          const end = cssColorToHex(match[2].trim());
+          updatedVariants[theme] = buildGradientCSS(start, end, newAngle);
+        }
+      }
+    }
+    setForm({ ...form, themeVariants: updatedVariants });
+  };
+
+  // Alternar entre modo visual y manual para cada tema
+  const toggleManualMode = (theme) => {
+    setManualMode(prev => ({ ...prev, [theme]: !prev[theme] }));
+  };
+
+
 
   const fetchItems = async () => {
     try {
@@ -318,10 +426,19 @@ export default function ShopManagement() {
         patternOpacity: item.patternOpacity ?? 0.25,
         patternSize: item.patternSize || "40px 40px",
       });
+      // Intentar extraer el ángulo del primer gradiente para inicializar gradientAngle
+      const firstGradient = item.themeVariants?.light || "";
+      const angleMatch = firstGradient.match(/linear-gradient\(([^,]+),/);
+      if (angleMatch) setGradientAngle(angleMatch[1]);
+      else setGradientAngle("135deg");
+      setManualMode({ light: false, dark: false, highContrast: false });
     } else {
       setEditingItem(null);
       setForm(initialForm);
+      setGradientAngle("135deg");
+      setManualMode({ light: false, dark: false, highContrast: false });
     }
+    setPreviewTheme(getCurrentThemeHelper());
     setShowModal(true);
   };
 
@@ -463,11 +580,9 @@ export default function ShopManagement() {
         ) : (
           items.map(item => (
             <div key={item._id} className="shop-card">
-              {/* Vista previa grande arriba */}
-              <div className="p-3 pb-0">
-                <ItemPreview item={item} size="md" className="w-full" />
+              <div className={`p-3 pb-0 ${item.type === "frame" ? "flex justify-center" : ""}`}>
+                <ItemPreview item={item} size="md" userAvatarUrl={userAvatarUrl} />
               </div>
-              {/* Info y acciones */}
               <div className="p-3 flex flex-col gap-2">
                 <div className="flex justify-between items-start">
                   <div>
@@ -584,11 +699,145 @@ export default function ShopManagement() {
                     </div>
 
                     {form.backgroundType === "gradient" && (
-                      <div className="space-y-2">
-                        <label className="shop-label">Gradientes por tema</label>
-                        <input className="shop-input" placeholder="Light: linear-gradient(...)" value={form.themeVariants.light} onChange={e => setForm({ ...form, themeVariants: { ...form.themeVariants, light: e.target.value } })} />
-                        <input className="shop-input" placeholder="Dark: linear-gradient(...)" value={form.themeVariants.dark} onChange={e => setForm({ ...form, themeVariants: { ...form.themeVariants, dark: e.target.value } })} />
-                        <input className="shop-input" placeholder="High Contrast: ..." value={form.themeVariants.highContrast} onChange={e => setForm({ ...form, themeVariants: { ...form.themeVariants, highContrast: e.target.value } })} />
+                      <div className="space-y-4">
+                        <div>
+                          <label className="shop-label">Ángulo del gradiente</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="360"
+                            step="1"
+                            value={parseInt(gradientAngle)}
+                            onChange={(e) => handleAngleChange(`${e.target.value}deg`)}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted mt-1">
+                            <span>0°</span><span>90°</span><span>180°</span><span>270°</span><span>360°</span>
+                          </div>
+                          <input
+                            type="text"
+                            value={gradientAngle}
+                            onChange={(e) => handleAngleChange(e.target.value)}
+                            className="shop-input mt-2"
+                            placeholder="Ej: 135deg, to right, etc."
+                          />
+                        </div>
+
+                        <div className="border rounded-xl overflow-hidden" style={{ borderColor: "var(--card-border)" }}>
+                          <table className="w-full text-sm">
+                            <thead className="bg-glass-bg">
+                              <tr>
+                                <th className="p-2 text-left">Tema</th>
+                                <th className="p-2 text-left">Color inicial</th>
+                                <th className="p-2 text-left">Color final</th>
+                                <th className="p-2 text-left">Acción</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {["light", "dark", "highContrast"].map((theme) => {
+                                const themeLabel = theme === "light" ? "🌞 Claro" : (theme === "dark" ? "🌙 Oscuro" : "♿ Alto contraste");
+                                const currentGradient = form.themeVariants[theme];
+                                let startColor = "#000000", endColor = "#ffffff";
+                                const match = currentGradient.match(/linear-gradient\([^,]+,\s*([^,]+),\s*([^)]+)\)/);
+                                if (match) {
+                                  startColor = cssColorToHex(match[1].trim());
+                                  endColor = cssColorToHex(match[2].trim());
+                                }
+                                return (
+                                  <tr key={theme} className="border-t" style={{ borderColor: "var(--card-border)" }}>
+                                    <td className="p-2 font-bold">{themeLabel}</td>
+                                    <td className="p-2">
+                                      <input
+                                        type="color"
+                                        value={startColor}
+                                        onChange={(e) => handleGradientColorChange(theme, "start", e.target.value)}
+                                        disabled={manualMode[theme]}
+                                        className="w-10 h-10 rounded border"
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <input
+                                        type="color"
+                                        value={endColor}
+                                        onChange={(e) => handleGradientColorChange(theme, "end", e.target.value)}
+                                        disabled={manualMode[theme]}
+                                        className="w-10 h-10 rounded border"
+                                      />
+                                    </td>
+                                    <td className="p-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleManualMode(theme)}
+                                        className="text-xs px-2 py-1 rounded bg-glass-bg"
+                                      >
+                                        {manualMode[theme] ? "Usar selectores" : "Edición manual"}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {Object.entries(manualMode).some(([_, active]) => active) && (
+                          <div className="space-y-2 mt-2">
+                            <label className="shop-label">Valores CSS (edición manual)</label>
+                            {manualMode.light && (
+                              <input
+                                className="shop-input"
+                                placeholder="Light gradient"
+                                value={form.themeVariants.light}
+                                onChange={(e) => setForm({ ...form, themeVariants: { ...form.themeVariants, light: e.target.value } })}
+                              />
+                            )}
+                            {manualMode.dark && (
+                              <input
+                                className="shop-input"
+                                placeholder="Dark gradient"
+                                value={form.themeVariants.dark}
+                                onChange={(e) => setForm({ ...form, themeVariants: { ...form.themeVariants, dark: e.target.value } })}
+                              />
+                            )}
+                            {manualMode.highContrast && (
+                              <input
+                                className="shop-input"
+                                placeholder="High contrast gradient"
+                                value={form.themeVariants.highContrast}
+                                onChange={(e) => setForm({ ...form, themeVariants: { ...form.themeVariants, highContrast: e.target.value } })}
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        <div className="p-2 rounded-xl" style={{ background: "var(--glass-bg-small)" }}>
+                          <label className="shop-label block text-center mb-2">Vista previa (selecciona tema)</label>
+                          <div className="flex gap-1 justify-center mb-2">
+                            {[
+                              { key: "light", label: "🌞 Claro" },
+                              { key: "dark", label: "🌙 Oscuro" },
+                              { key: "highContrast", label: "♿ Alto contraste" },
+                            ].map(({ key, label }) => (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => setPreviewTheme(key)}
+                                className="text-xs px-2 py-1 rounded-lg font-bold transition-all"
+                                style={{
+                                  background: previewTheme === key ? "var(--text-accent)" : "var(--glass-bg)",
+                                  color: previewTheme === key ? "white" : "var(--text-secondary)",
+                                  border: `1.5px solid ${previewTheme === key ? "var(--text-accent)" : "var(--card-border)"}`,
+                                }}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                          <div
+                            className="h-20 rounded-lg"
+                            style={{ background: form.themeVariants[previewTheme] || "transparent" }}
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -615,8 +864,35 @@ export default function ShopManagement() {
 
                 {/* Vista previa en vivo en el modal */}
                 <div className="mt-2 p-3 rounded-xl" style={{ background: "var(--glass-bg-small)", border: "1px solid var(--card-border)" }}>
-                  <label className="shop-label text-center block mb-2">Vista previa en tiempo real</label>
-                  <ItemPreview item={form} size="lg" className="w-full" />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="shop-label mb-0">Vista previa en tiempo real</label>
+                    {form.type === "background" && (
+                      <div className="flex gap-1">
+                        {[
+                          { key: "light", label: "🌞" },
+                          { key: "dark", label: "🌙" },
+                          { key: "highContrast", label: "♿" },
+                        ].map(({ key, label }) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => setPreviewTheme(key)}
+                            className="text-xs px-2 py-1 rounded-lg font-bold transition-all"
+                            style={{
+                              background: previewTheme === key ? "var(--text-accent)" : "var(--glass-bg)",
+                              color: previewTheme === key ? "white" : "var(--text-secondary)",
+                              border: `1.5px solid ${previewTheme === key ? "var(--text-accent)" : "var(--card-border)"}`,
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className={form.type === "frame" ? "flex justify-center" : ""}>
+                    <ItemPreview item={form} size="lg" userAvatarUrl={userAvatarUrl} previewTheme={previewTheme} />
+                  </div>
                 </div>
 
                 <button type="submit" className="shop-btn-primary" disabled={isSubmitting}>

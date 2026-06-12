@@ -1,7 +1,7 @@
 // backend/services/ai/ai.service.js
 const Groq = require('groq-sdk');
 const { GoogleGenAI } = require('@google/genai');
-
+const math = require('mathjs');
 const gemini = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // ─── Circuit Breaker ──────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ async function callGroqRaw(prompt, temperature = 0.75) {
       model: GROQ_MODEL,
       messages: [{ role: 'user', content: prompt }],
       temperature,
-      max_tokens: 3200,
+      max_tokens: 8000,
       response_format: { type: 'json_object' },
     });
     entry.breaker.recordSuccess();
@@ -233,6 +233,74 @@ async function callAI(prompt, { temperature } = {}) {
   });
 }
 
+/**
+ * Verifica que la respuesta correcta de una pregunta sea realmente correcta.
+ * Retorna { valid: boolean, correctedQuestion?: object, error?: string }
+ */
+// ─── Verificación de consistencia numérica ──────────────────────────────────
+async function verifyQuestionConsistency(question) {
+  // 1. Para múltiple opción con expresiones matemáticas
+  if (question.type === 'multiple_choice' && question.options) {
+    const correctOption = question.options.find(opt => opt.isCorrect);
+    if (!correctOption) return { valid: false, error: 'No hay opción correcta' };
+
+    const promptText = question.prompt;
+    if (/[\+\-\*\/\(\)\d\s]+\=?\??/.test(promptText)) {
+      try {
+        let expr = promptText.replace(/¿Cuánto es\s*/, '').replace(/\?$/, '').trim();
+        const computed = math.evaluate(expr);
+        const computedStr = computed.toString();
+        const optionText = correctOption.text.trim();
+        const isMatch = computedStr === optionText || 
+                        (Math.abs(parseFloat(computedStr) - parseFloat(optionText)) < 0.0001);
+        if (!isMatch) {
+          return { valid: false, error: `Error en multiple_choice: "${expr}" da ${computedStr}, pero la opción correcta es "${optionText}"` };
+        }
+      } catch (e) { /* no es expresión válida */ }
+    }
+  }
+
+  // 2. Para fill_blank numérico
+  if (question.type === 'fill_blank' && question.correctAnswers) {
+    const promptText = question.prompt;
+    if (/[\+\-\*\/\(\)\d\s]+\=?\s*___/.test(promptText) && promptText.includes('= ___')) {
+      let leftSide = promptText.split('=')[0].trim();
+      try {
+        const computed = math.evaluate(leftSide);
+        const computedStr = computed.toString();
+        const correctMatches = question.correctAnswers.some(ans => 
+          ans.toString() === computedStr || Math.abs(parseFloat(ans) - computed) < 0.0001
+        );
+        if (!correctMatches) {
+          return { valid: false, error: `Fill_blank incorrecto: "${leftSide}" = ${computedStr}, pero las respuestas son ${question.correctAnswers.join(', ')}` };
+        }
+      } catch(e) {}
+    }
+  }
+
+  // 3. Para true/false con afirmaciones matemáticas
+  if (question.type === 'true_false') {
+    const statement = question.prompt;
+    const match = statement.match(/(\d+)\s*([\+\-\*\/])\s*(\d+)\s*=\s*(\d+)/);
+    if (match) {
+      const [_, a, op, b, c] = match;
+      let computed;
+      switch(op) {
+        case '+': computed = parseFloat(a) + parseFloat(b); break;
+        case '-': computed = parseFloat(a) - parseFloat(b); break;
+        case '*': computed = parseFloat(a) * parseFloat(b); break;
+        case '/': computed = parseFloat(a) / parseFloat(b); break;
+      }
+      const isCorrectStatement = Math.abs(computed - parseFloat(c)) < 0.0001;
+      if (question.correctBoolean !== isCorrectStatement) {
+        return { valid: false, error: `True/False incorrecto: "${statement}" es ${isCorrectStatement}, pero la IA marcó ${question.correctBoolean}` };
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
 // callGroq público: también pasa por la cola y tiene backoff
 async function callGroq(prompt, temperature = 0.75) {
   return enqueueRequest(() =>
@@ -274,7 +342,10 @@ function getSubjectRules(subjectName = '', aiPromptContext = '') {
       'Esta es una materia de CIENCIAS EXACTAS. Las preguntas deben incluir al menos una que requiera cálculo o razonamiento cuantitativo.',
       'Para fill_blank con fórmulas, el ___ debe reemplazar una variable o número clave.',
       'Para match_pairs: empareja conceptos con definiciones O fórmulas con sus nombres, NUNCA dos operaciones matemáticas que den el mismo resultado.',
-      'Los números en match_pairs deben estar elegidos de forma que todos los resultados de la columna derecha sean distintos entre sí.'
+      'Los números en match_pairs deben estar elegidos de forma que todos los resultados de la columna derecha sean distintos entre sí.',
+      'Incluye al menos una pregunta que requiera múltiples pasos (ej: "Si x + 3 = 10, ¿cuánto es 2x - 5?").',
+      'Para fill_blank, usa frases como "La fórmula del área de un círculo es π * ___^2".',
+      'Evita preguntas de simple memorización (ej: "¿Cuánto es 2+2?").'
     );
   } else if (name.includes('historia') || name.includes('geografí')) {
     rules.push(
@@ -285,6 +356,7 @@ function getSubjectRules(subjectName = '', aiPromptContext = '') {
   } else if (name.includes('project moon') || name.includes('trivia') || name.includes('videojuego') || name.includes('juego')) {
     rules.push(
       'Esta es una materia de TRIVIA/LORE. Las preguntas deben ser precisas y verificables dentro del universo del juego.',
+      'Esta son materias broma, por lo que las preguntas no deben exigir conocimientos demasiado específicos o de nicho, pero sí deben ser interesantes y no triviales.',
       'Usa terminología oficial del juego (nombres de personajes, habilidades, facciones, mecánicas).',
       'Para true_false, usa afirmaciones que los fans expertos puedan debatir — no trivialidades obvias.',
       'Evita spoilers innecesarios en el hint; en cambio orienta sobre en qué parte del juego buscar.',
@@ -380,6 +452,17 @@ async function generateQuestions({
     : '';
 
   const prompt = `Eres un profesor experto creando preguntas para un simulador de exámenes.
+  
+  ANTES DE GENERAR LAS PREGUNTAS, razona internamente (no lo incluyas en la salida):
+  1. ¿Cuáles son los 3 conceptos más importantes del tema "${topicHint}"?
+  2. ¿Qué errores comunes cometen los estudiantes?
+  3. ¿Qué tipos de pregunta encajan mejor con cada concepto?
+  4. ¿Cómo variarías las preguntas para que sean más fáciles o más difíciles?
+  5. ¿Qué información clave debe incluir cada pregunta para que sea educativa y no ambigua?
+  6. ¿Cómo adaptarías las preguntas si la materia es de trivia o lore de un videojuego, para que sean interesantes pero no demasiado específicas?
+  7. ¿Las preguntas cubren diferentes aspectos del tema o se están repitiendo el mismo concepto con diferente redacción?
+
+  Ahora, genera las preguntas siguiendo estas reglas:
 
   Materia: ${subjectName}
   Unidad: ${unitName}
@@ -395,39 +478,52 @@ async function generateQuestions({
   ══════════════════════════════════════════
 
   - **multiple_choice**: 
-    - Exactamente 4 opciones.
-    - SOLO UNA opción con isCorrect: true.
-    - Todas las opciones deben tener texto distinto.
+    - Debe tener exactamente 4 opciones.
+    - Solo una de las opciones debe ser correcta, teniendo "isCorrect": true.
+    - Todas las opciones deben ser distintas entre sí (no repetir el mismo texto con diferente capitalización o espacios).
 
   - **true_false**: 
-    - Debe incluir "correctBoolean": true o false.
+    - Debe tener una respuesta correcta con "correctBoolean": true.
 
   - **fill_blank**: 
-    - "correctAnswers": array con al menos 1 respuesta (mejor 2-3 variantes).
+    - la oracion debe tener UN UNICO espacio de tres barras bajas (___) que indique donde va la respueta.
+    - "correctAnswers": array con al menos 1 respuesta valida (mejor 2-3 variantes).
 
   - **order_items** (CRÍTICO): 
     - "items": array con **al menos 3 ítems** (recomendado 4-6).
+    - los items deben dar pistas sobre su orden indicado (ej: despues de x hacemos y, o antes de x hacemos z, etc.).
     - Los ítems deben tener sentido lógico para ordenarlos (pasos de un proceso, secuencia cronológica, etc.).
 
   - **match_pairs**: 
     - "pairs": mínimo 3 pares.
+    - los pares deben tener relacion clara y no repetirse entre si (ej: no generar un 6x2 y 3x4 que den el mismo resultado, o emparejar dos países con la misma capital).
     - Todos los valores de "right" deben ser **únicos** (sin duplicados).
 
   - **sentence_builder**: 
     - "wordBank": mínimo 5 palabras (correctas + distractores).
+    - los espacios libres tienen que ser indicados con tres barras bajas (___) dentro del prompt, y deben ser reemplazados por palabras del wordBank.
+    - la cantidad de espacios libres debe coincidir con la cantidad de palabras correctas que se espera usar del wordBank.
     - "correctOrder": array de índices que forman la oración correcta.
 
   - **typing**: 
     - "typingText": texto corto (máx 120 caracteres), preferiblemente código o palabras relacionadas con el tema.
+    - El texto debe ser lo suficientemente específico para que no haya ambigüedad en la respuesta del estudiante.
 
   - **free_text**: 
     - Incluir "evaluationCriteria" con instrucciones claras para evaluar la respuesta.
+    - el texto a evaluar debe ser una respuesta argumentativa o explicativa, no solo una palabra o número.
+  
+  - **code_python**:
+    - "prompt": descripción de la función a implementar.
+    - "testCases": array de al menos 2 casos con "description", "expectedOutput", y opcionalmente "callCode".
+    - "isCodeExercise": true (siempre).
+    - "evaluationCriteria": instrucciones para evaluar el código.
 
   REGLAS GLOBALES (obligatorias):
   1. Cada pregunta debe cubrir un aspecto **diferente** del tema.
   2. NO repetir conceptos.
   3. Para "order_items" y "match_pairs" sé especialmente cuidadoso con la cantidad mínima.
-  4. Usa lenguaje claro y educativo.
+  4. Usa lenguaje claro, explicativo y educativo.
   5. Incluye siempre: prompt, explanation, hint, conceptExplanation, difficulty, xpValue, tags.
 
   Responde **SOLO** con un array JSON válido. Sin texto adicional, sin \`\`\`json.`;
@@ -473,17 +569,13 @@ async function generateQuestions({
       }).filter(q => {
         // Descartar sentence_builder con wordBank insuficiente en vez de lanzar error
         if (q.type === 'sentence_builder') {
-          const ok = Array.isArray(q.wordBank) && q.wordBank.length >= 2;
+          const ok = Array.isArray(q.wordBank) && q.wordBank.length >= 5;
           if (!ok) console.warn('⚠️ sentence_builder descartada por wordBank insuficiente');
           return ok;
         }
         return true;
       });
     }
-  }
-
-  if (!Array.isArray(questions) || questions.length === 0) {
-    throw new Error('No se pudieron generar preguntas válidas después de varios intentos');
   }
 
   if (!Array.isArray(questions) || questions.length === 0) {
@@ -514,12 +606,23 @@ questions = questions.filter(q => {
   return true;
 });
 
-if (questions.length === 0) {
-  throw new Error('La IA no generó ninguna pregunta válida');
+const verifiedQuestions = [];
+for (const q of questions) {
+  const { valid, error, corrected } = await verifyQuestionConsistency(q);
+  if (!valid) {
+    console.warn(`⚠️ Pregunta descartada por inconsistencia: ${error}`);
+    // Opcional: intentar corregirla automáticamente (ej. si es numérica, reemplazar respuesta)
+    continue; // descartar
+  }
+  verifiedQuestions.push(q);
 }
 
-  return questions.map((q) => ({
-    ...q,
+if (verifiedQuestions.length === 0) {
+  throw new Error('Todas las preguntas generadas fueron inválidas');
+}
+
+return verifiedQuestions.map(q => ({
+  ...q,
     isAIGenerated: true,
     aiModel: GEMINI_MODEL,
     aiGeneratedAt: new Date(),

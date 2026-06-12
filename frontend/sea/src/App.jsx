@@ -23,6 +23,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerificationPending from './pages/VerificationPending';
 import VerifyEmail from './pages/VerifyEmail';
+import Contact from "./pages/Contact";
 
 // Aplicacion
 import Friends from "./pages/Friends";
@@ -77,6 +78,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verification-pending" element={<VerificationPending />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/contact" element={<Contact />} />
 
         {/* Rutas Protegidas para usuarios normales */}
         <Route path="/" element={

@@ -4,7 +4,7 @@ import { Mail, ArrowLeft, RefreshCw } from "lucide-react";
 import api from "../api/axios";
 import SEA_AUTH_CSS from "./auth-shared.css?inline";
 import BackgroundAnimations from "../components/BackgroundAnimations";
-import LogoMark from "../components/LogoMark";
+import { LogoMark } from "../components/LogoMark";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");

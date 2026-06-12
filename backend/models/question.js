@@ -32,6 +32,11 @@ const questionSchema = new mongoose.Schema(
 
     wordBank: [String],
 
+    correctOrder: {
+      type: [Number],
+      default: [],
+    },
+
     type: {
       type: String,
       required: true,

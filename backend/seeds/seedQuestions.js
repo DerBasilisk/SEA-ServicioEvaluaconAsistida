@@ -1,25 +1,3 @@
-/**
- * seedQuestions.js
- * ─────────────────────────────────────────────────────────────────────────────
- * Puebla la base de datos con 10 preguntas por lección usando el ai.service.
- *
- * USO:
- *   node seedQuestions.js                        # todas las lecciones
- *   node seedQuestions.js --subject "Matemáticas" # solo una materia
- *   node seedQuestions.js --lesson <lessonId>     # solo una lección
- *   node seedQuestions.js --force                 # regenerar aunque ya tenga preguntas
- *   node seedQuestions.js --dry-run               # simular sin guardar ni llamar a la IA
- *
- * ESTRATEGIA ANTI-RATE-LIMIT (tier gratuita):
- *   • Genera en lotes de 5 preguntas (no 10 de golpe) → 2 llamadas por lección.
- *   • Pausa de DELAY_BETWEEN_LESSONS ms entre lecciones.
- *   • Pausa de DELAY_BETWEEN_BATCHES ms entre los 2 lotes de la misma lección.
- *   • Si la IA devuelve error 429, espera RETRY_AFTER_429 ms y reintenta 1 vez.
- *   • El ai.service ya tiene su propio backoff y circuit-breakers; este script
- *     añade una capa externa para no disparar todo en paralelo.
- * ─────────────────────────────────────────────────────────────────────────────
- */
-
 'use strict';
 
 require('dotenv').config(); // carga .env del directorio donde corres el script
@@ -39,12 +17,12 @@ const { generateQuestions } = require('../services/ai.service');
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CONFIG = {
-  QUESTIONS_PER_LESSON:    10,   // total deseado por lección
-  BATCH_SIZE:               5,   // cuántas generar por llamada a la IA
+  QUESTIONS_PER_LESSON:    2,   // total deseado por lección
+  BATCH_SIZE:               2,   // cuántas generar por llamada a la IA
   DELAY_BETWEEN_BATCHES:  4_000, // ms entre los lotes de UNA misma lección
   DELAY_BETWEEN_LESSONS: 10_000, // ms entre lecciones (evita ráfagas)
   RETRY_AFTER_429:       30_000, // ms a esperar si llega un 429 externo
-  MIN_EXISTING_TO_SKIP:       8, // si la lección ya tiene ≥ este nº, saltar
+  MIN_EXISTING_TO_SKIP:       2, // si la lección ya tiene ≥ este nº, saltar
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -9,6 +9,7 @@
   --alt-gradient: linear-gradient(145deg, #0a3e8d 0%, #306ac7 100%);
   --doodle-bg: #6f80e493;
   --glass-bg: #ffffff66;
+  --glass-bg-nice: #e7e5e5ee;
   --glass-bg-small: #ffffff0d;
   --glass-border: #ffffffb3;
   --glass-shadow: #2b7fe81a;
@@ -61,6 +62,7 @@
   --alt-gradient: linear-gradient(145deg, #030c1a 0%, #041229 100%);
   --doodle-bg: #8a59fc7e;
   --glass-bg: #0f172ab3;
+  --glass-bg-nice: #0c1222e5;
   --glass-bg-small: #0f172a0d;
   --glass-border: #94a3b81a; 
   --glass-shadow: #00000080;
@@ -111,6 +113,7 @@
   --alt-gradient: #000000;
   --doodle-bg: #ffffff67;
   --glass-bg: #000000;
+  --glass-bg-nice: #000000;
   --glass-bg-small: #000000;
   --glass-border: #FFFFFF; 
   --glass-shadow: none;
