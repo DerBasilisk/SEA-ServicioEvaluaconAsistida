@@ -15,6 +15,7 @@ const questionRoutes = require("./routes/question");
 const progressRoutes = require("./routes/progress");
 const passport = require("./Auth.account");
 const adminRoutes = require("./routes/admin");
+const contactRouter = require("./routes/contact");
 
 const http = require("http");
 const { setupDuelSocket } = require("./duel.socket");
@@ -51,6 +52,7 @@ app.use("/api/leagues", require("./routes/league"));
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", require("./routes/chat"));
 app.use("/api/shop", require("./routes/shop"));
+app.use("/api/contact", contactRouter);
 setupCronJobs();
 
 // ── Health check ───────────────────────────────────────────────

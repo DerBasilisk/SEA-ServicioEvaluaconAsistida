@@ -199,4 +199,24 @@ async function sendVerificationEmail(toEmail, verificationToken) {
   });
 }
 
-module.exports = { sendPasswordResetEmail, sendVerificationEmail };
+async function sendContactEmail({ name, email, subject, message }) {
+  await resend.emails.send({
+    from: process.env.RESEND_FROM,
+    to: "no-reply@sealearn.online", // o el correo del equipo
+    replyTo: email,
+    subject: `[Contacto SEA] ${subject}`,
+    html: emailShell({
+      preheader: `Nuevo mensaje de ${name}`,
+      body: `
+        ${logoBlock()}
+        <h2>Nuevo mensaje de contacto</h2>
+        <p><strong>Nombre:</strong> ${name}</p>
+        <p><strong>Correo:</strong> ${email}</p>
+        <p><strong>Asunto:</strong> ${subject}</p>
+        <p><strong>Mensaje:</strong><br/>${message}</p>
+      `
+    })
+  });
+}
+
+module.exports = { sendPasswordResetEmail, sendVerificationEmail, sendContactEmail };
