@@ -141,16 +141,20 @@ export default function ResetPassword() {
       <div className="sea-auth sea-auth-wrapper">
 
         <div className="sea-auth-left">
+          <BackgroundAnimations />
           <div className="sea-logo-badge">
             <div className="sea-logo-inner">
-              <img src="/logos/LogoWhite.svg" width="64" alt="SEA" className="brightness-0 invert" />
+              <LogoMark/>
             </div>
-            <span className="sea-logo-label">Plataforma educativa</span>
+            <span className="sea-logo-label"></span>
           </div>
+
+          {/*}
           <div className="sea-auth-tagline-block">
             <h1 className="sea-auth-tagline">Elige una<br />contraseña<br />segura</h1>
             <p className="sea-auth-tagline-sub">Módulo de seguridad SEA</p>
           </div>
+
           <div className="sea-auth-info-cards">
             <div className="sea-auth-info-card">
               <div className="sea-auth-info-icon"><KeyRound size={15} /></div>
@@ -169,6 +173,7 @@ export default function ResetPassword() {
               </div>
             </div>
           </div>
+            */}
         </div>
 
         <div className="sea-auth-right">
