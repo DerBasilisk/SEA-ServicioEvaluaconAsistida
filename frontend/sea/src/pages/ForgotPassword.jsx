@@ -37,7 +37,7 @@ export default function ForgotPassword() {
           <BackgroundAnimations />
           <div className="sea-logo-badge">
             <div className="sea-logo-inner">
-              <LogoMark/>
+              <LogoMark />
             </div>
             <span className="sea-logo-label"></span>
           </div>

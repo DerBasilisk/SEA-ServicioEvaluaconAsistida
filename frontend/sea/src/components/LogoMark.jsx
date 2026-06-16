@@ -1,7 +1,7 @@
 import useThemeStore from "../store/themeStore";
 import { Link, useNavigate } from "react-router-dom";
 
-export function LogoMark({ width = 80 }) {
+export function LogoMark({ width = 120 }) {
   const { theme } = useThemeStore();
   const getLogoSrc = () => {
     switch (theme) {

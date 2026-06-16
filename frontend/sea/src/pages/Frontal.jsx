@@ -4,6 +4,7 @@ import { Rocket, BrainCircuit, Target, Sparkles, ArrowRight, Menu } from "lucide
 import useThemeStore from "../store/themeStore";
 import { useForceTheme } from "../hooks/useForceTheme";
 import Footer from "../components/Footer";
+import { LogoMark } from "../components/LogoMark";
 
 const FRONTAL_CSS = `
   @keyframes float {
@@ -158,41 +159,5 @@ function FeatureItem({ icon, title, desc }) {
       <h3 className="font-black text-[10px] md:text-xs uppercase tracking-widest text-[var(--text-primary)] mb-2">{title}</h3>
       <p className="text-[10px] md:text-[11px] font-bold text-[var(--text-secondary)] uppercase leading-tight">{desc}</p>
     </div>
-  );
-}
-
-function LogoMark() {
-  const { theme } = useThemeStore();
-
-  const getLogoSrc = (theme) => {
-    switch (theme) {
-      case 'light':        return '/logos/LogoBlue.svg';
-      case 'dark':         return '/logos/LogoWhite.svg';
-      case 'high-contrast': return '/logos/LogoCyan.svg';
-      default:             return '/logos/LogoWhite.svg';
-    }
-  };
-
-  return (
-    <Link 
-      to="/" 
-      style={{ 
-        display: "flex", 
-        alignItems: "center", 
-        gap: 8, 
-        textDecoration: "none", 
-        flexShrink: 0 
-      }}
-    >
-      <img 
-        src={getLogoSrc(theme)}
-        width={120} 
-        alt="SEA" 
-        style={{ 
-          display: "block",
-          transition: "opacity 0.4s ease, transform 0.3s ease"
-        }} 
-      />
-    </Link>
   );
 }
