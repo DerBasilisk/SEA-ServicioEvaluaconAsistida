@@ -132,7 +132,7 @@ const CHAT_CSS = `
     align-self: flex-end;
   }
   .bubble-other {
-    background: var(--card-bg);
+    background: var(--chat-bg);
     border: 2px solid var(--glass-border);
     color: var(--text-primary);
     border-radius: 18px 18px 18px 4px;
@@ -187,6 +187,7 @@ const CHAT_CSS = `
   .chat-icon-btn {
     width: 42px; height: 42px;
     border-radius: 13px;
+    color: var(--text-primary);
     background: var(--card-bg);
     border: 2px solid var(--glass-border);
     cursor: pointer; flex-shrink: 0;
@@ -217,7 +218,7 @@ const CHAT_CSS = `
   /* Modal */
   .chat-modal-overlay {
     position: fixed; inset: 0;
-    background: var(--bg-gradient);
+    background: var(--duel-bg);
     z-index: 500;
     display: flex; align-items: center; justify-content: center;
     padding: 16px;
