@@ -14,9 +14,9 @@ const useAudioStore = create(
   persist(
     (set, get) => ({
       // ── Solo esto se persiste ──
-      musicEnabled: true,
+      musicEnabled: false,
       sfxEnabled: true,
-      volume: 0.6,
+      volume: 0.3,
       trackIndex: 0,
       shuffle: false,
 
