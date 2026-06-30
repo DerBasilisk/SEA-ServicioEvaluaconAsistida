@@ -46,7 +46,51 @@ export default function VerificationPending() {
         </div>
 
         <div className="sea-auth-right">
-          {/* resto del contenido del panel derecho sin cambios */}
+          <div className="sea-auth-right-inner">
+
+            <div className="sea-auth-status-icon pending">
+              <Mail size={32} color="#2B7FE8" />
+            </div>
+
+            <h2 className="sea-auth-form-title">¡Casi listo!</h2>
+            <p className="sea-auth-form-subtitle">Verifica tu correo electrónico para activar tu cuenta</p>
+
+            <div className="sea-auth-info-box">
+              <p style={{ fontSize: 11, color: "#7A9CC5", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", margin: "0 0 6px" }}>
+                Enviamos el enlace a
+              </p>
+              <p style={{ fontSize: 14, fontWeight: 800, color: "#2B7FE8", margin: 0, wordBreak: "break-all" }}>
+                {email || "tu correo electrónico"}
+              </p>
+            </div>
+
+            <p style={{ fontSize: 12, color: "#7A9CC5", fontWeight: 600, marginBottom: 20, lineHeight: 1.7 }}>
+              Haz clic en el enlace del correo para confirmar tu cuenta. El enlace expira en <strong style={{ color: "var(--text-primary)" }}>24 horas</strong>.
+            </p>
+
+            {resendStatus.error && (
+              <div className="sea-auth-alert error sea-auth-shake">{resendStatus.error}</div>
+            )}
+            {resendStatus.sent && (
+              <div className="sea-auth-alert success" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <CheckCircle size={14} /> ¡Correo reenviado! Revisa tu bandeja.
+              </div>
+            )}
+
+            <button
+              onClick={handleResend}
+              disabled={loading}
+              className="sea-auth-btn-outline"
+            >
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+              {loading ? "Enviando..." : "Reenviar correo de verificación"}
+            </button>
+
+            <p className="sea-auth-footer">
+              ¿Ya verificaste?{" "}
+              <Link to="/login">Iniciar sesión</Link>
+            </p>
+          </div>
         </div>
       </div>
     </>
