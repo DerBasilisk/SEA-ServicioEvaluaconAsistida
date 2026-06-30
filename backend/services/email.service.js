@@ -140,14 +140,15 @@ async function sendPasswordResetEmail(toEmail, resetToken) {
     ${fallbackLink(resetUrl)}
   `;
 
+  console.log("[email] Antes de resend.emails.send, from:", process.env.RESEND_FROM, "to:", toEmail);
   await resend.emails.send({
     from: process.env.RESEND_FROM,
     to: toEmail,
     subject: "Recuperación de contraseña – SEA",
     html: emailShell({ preheader: "Restablece tu contraseña de SEA en menos de un minuto.", body }),
   });
+  console.log("[email] Después de resend.emails.send");
 }
-
 // ── Verificación de cuenta ────────────────────────────────────────────────
 async function sendVerificationEmail(toEmail, verificationToken) {
   const verifyUrl = `${process.env.BACKEND_API}/users/verify-email?token=${verificationToken}`;

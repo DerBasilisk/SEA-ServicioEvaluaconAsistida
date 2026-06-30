@@ -159,9 +159,10 @@ userSchema.pre("save", async function () {
   if (this.isModified("password")) {
     this.password = await bcrypt.hash(this.password, 12);
   }
-  const xpForNext = Math.floor(100 * Math.pow(1.5, this.level - 1));
+  let xpForNext = Math.floor(100 * Math.pow(1.5, this.level - 1));
   while (this.xp >= xpForNext) {
     this.level += 1;
+    xpForNext = Math.floor(100 * Math.pow(1.5, this.level - 1));
   }
 });
 
