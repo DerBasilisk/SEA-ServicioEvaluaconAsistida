@@ -4,6 +4,7 @@ import { Mail, RefreshCw, CheckCircle, ArrowLeft } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import SEA_AUTH_CSS from "./auth-shared.css?inline";
 import BackgroundAnimations from "../components/BackgroundAnimations";
+import { LogoMark } from "../components/LogoMark";
 
 export default function VerificationPending() {
   const location = useLocation();
@@ -34,7 +35,7 @@ export default function VerificationPending() {
           
           <div className="sea-logo-badge">
             <div className="sea-logo-inner">
-              <img src="/logos/LogoWhite.svg" width="128" alt="SEA" className="brightness-0 invert" />
+              <LogoMark />
             </div>
           </div>
 
