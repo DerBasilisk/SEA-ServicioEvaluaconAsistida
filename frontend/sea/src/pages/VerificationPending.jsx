@@ -39,11 +39,11 @@ export default function VerificationPending() {
             </div>
           </div>
 
-          {/* Opcional: tagline */}
+          {/* Opcional: tagline 
           <div className="sea-auth-tagline-block">
             <h1 className="sea-auth-tagline">Verifica<br />tu correo</h1>
             <p className="sea-auth-tagline-sub">Activación de cuenta</p>
-          </div>
+          </div>*/}
         </div>
 
         <div className="sea-auth-right">
