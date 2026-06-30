@@ -180,9 +180,9 @@ export default function Friends() {
         api.get("/friends/requests"),
         api.get("/friends/leaderboard"),
       ]);
-      setFriends(f.data.data     || []);
-      setRequests(r.data.data    || []);
-      setLeaderboard(l.data.data || []);
+      setFriends((f.data.data     || []).filter(Boolean));
+      setRequests((r.data.data    || []).filter(Boolean));
+      setLeaderboard((l.data.data || []).filter(Boolean));
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -598,7 +598,7 @@ function TabContent({ tab, loading, friends, requests, leaderboard, searchQuery,
 
   if (tab === "leaderboard") return (
     <div className="space-y-2.5">
-      {leaderboard.map((entry, i) => (
+      {leaderboard.filter(entry => entry?.user).map((entry, i) => (
         <LeaderboardItem key={entry.user._id} entry={entry} index={i}
                          isMe={entry.user._id === user?._id} />
       ))}
