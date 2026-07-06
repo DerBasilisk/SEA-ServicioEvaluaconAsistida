@@ -214,6 +214,51 @@ const LESSONS_CSS = `
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Paginación */
+  .lm-page-nav {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.35rem; flex-wrap: wrap;
+  }
+  .lm-page-btn {
+    background: var(--card-bg); color: var(--text-secondary);
+    border: 1.5px solid var(--card-border); border-radius: 0.85rem;
+    padding: 0.55rem 1rem; font-weight: 700; font-size: 0.8rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'Nunito', sans-serif;
+  }
+  .lm-page-btn:active:not(:disabled) { transform: scale(0.96); }
+  .lm-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .lm-page-num {
+    min-width: 2.35rem; height: 2.35rem; padding: 0 0.4rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--card-bg); color: var(--text-secondary);
+    border: 1.5px solid var(--card-border); border-radius: 0.75rem;
+    font-weight: 700; font-size: 0.8rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'Nunito', sans-serif;
+  }
+  .lm-page-num:active:not(:disabled):not(.active) { transform: scale(0.94); }
+  .lm-page-num.active {
+    background: var(--text-alternative-b); color: white; border-color: var(--text-alternative-b); cursor: default;
+  }
+  .lm-page-num:disabled { opacity: 0.3; cursor: not-allowed; }
+  .lm-page-ellipsis {
+    min-width: 1.2rem; text-align: center; color: var(--text-muted);
+    font-weight: 700; font-size: 0.8rem; user-select: none;
+  }
+  .lm-page-jump {
+    display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+    font-size: 0.75rem; font-weight: 700; color: var(--text-secondary);
+  }
+  .lm-page-jump input {
+    width: 3.25rem; text-align: center;
+    background: var(--card-bg); border: 1.5px solid var(--card-border);
+    border-radius: 0.65rem; padding: 0.4rem 0.25rem;
+    color: var(--text-primary); font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: 0.8rem; outline: none; transition: border-color 0.2s;
+  }
+  .lm-page-jump input:focus { border-color: var(--text-accent); }
+  .lm-page-jump input::-webkit-outer-spin-button,
+  .lm-page-jump input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 `;
 
 const getDiffClass = (diff) => {
@@ -228,6 +273,30 @@ const getDiffLabel = (diff) => {
   return "Difícil";
 };
 
+const LESSONS_PER_PAGE = 20;
+
+// Calcula qué números de página mostrar, colapsando los intermedios con "…"
+function getPageRange(current, total, siblings = 1) {
+  if (total <= 1) return [1];
+  const range = [];
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - siblings && i <= current + siblings)) {
+      range.push(i);
+    }
+  }
+  const withDots = [];
+  let last = null;
+  for (const i of range) {
+    if (last !== null) {
+      if (i - last === 2) withDots.push(last + 1);
+      else if (i - last > 2) withDots.push("…");
+    }
+    withDots.push(i);
+    last = i;
+  }
+  return withDots;
+}
+
 export default function LessonsManagement() {
   const [lessons, setLessons] = useState([]);
   const [units, setUnits] = useState([]);
@@ -241,6 +310,9 @@ export default function LessonsManagement() {
   const [selectedUnit, setSelectedUnit] = useState("");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
+  const [page, setPage] = useState(1);
+  const [pageJumpValue, setPageJumpValue] = useState("");
 
   const [form, setForm] = useState({
     unit: "", name: "", order: 1, xpReward: 10,
@@ -277,6 +349,25 @@ export default function LessonsManagement() {
     const matchesUnit = !selectedUnit || String(unitId) === String(selectedUnit);
     return matchesSearch && matchesSubject && matchesUnit;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredLessons.length / LESSONS_PER_PAGE));
+  const paginatedLessons = filteredLessons.slice((page - 1) * LESSONS_PER_PAGE, page * LESSONS_PER_PAGE);
+
+  // Si el filtro cambia (o se elimina una lección), vuelve a la página 1
+  // o recorta a la última página válida para no quedar en una vacía.
+  useEffect(() => { setPage(1); }, [search, selectedSubject, selectedUnit]);
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [totalPages, page]);
+
+  const goToPage = (n) => setPage(Math.min(Math.max(1, n), totalPages));
+
+  const handlePageJumpSubmit = (e) => {
+    e.preventDefault();
+    const n = parseInt(pageJumpValue, 10);
+    if (!Number.isNaN(n)) goToPage(n);
+    setPageJumpValue("");
+  };
 
   const openModal = (lesson = null) => {
     if (lesson) {
@@ -443,7 +534,7 @@ export default function LessonsManagement() {
             </button>
           </div>
         ) : (
-          filteredLessons.map(lesson => (
+          paginatedLessons.map(lesson => (
             <div key={lesson._id} className="lm-lesson-card">
               <div className="p-4">
                 {/* Header con nombre y acciones */}
@@ -529,6 +620,47 @@ export default function LessonsManagement() {
           ))
         )}
       </div>
+
+      {/* Paginación */}
+      {totalPages > 1 && (
+        <div className="flex flex-col items-center gap-3 pt-2">
+          <div className="lm-page-nav">
+            <button className="lm-page-btn" disabled={page === 1} onClick={() => goToPage(1)}>«</button>
+            <button className="lm-page-btn" disabled={page === 1} onClick={() => goToPage(page - 1)}>Anterior</button>
+
+            {getPageRange(page, totalPages).map((n, idx) =>
+              n === "…" ? (
+                <span key={`dots-${idx}`} className="lm-page-ellipsis">…</span>
+              ) : (
+                <button
+                  key={n}
+                  className={`lm-page-num ${n === page ? "active" : ""}`}
+                  onClick={() => goToPage(n)}
+                  aria-current={n === page ? "page" : undefined}
+                >
+                  {n}
+                </button>
+              )
+            )}
+
+            <button className="lm-page-btn" disabled={page >= totalPages} onClick={() => goToPage(page + 1)}>Siguiente</button>
+            <button className="lm-page-btn" disabled={page >= totalPages} onClick={() => goToPage(totalPages)}>»</button>
+          </div>
+
+          <form className="lm-page-jump" onSubmit={handlePageJumpSubmit}>
+            <span>Ir a página</span>
+            <input
+              type="number"
+              min={1}
+              max={totalPages}
+              value={pageJumpValue}
+              onChange={e => setPageJumpValue(e.target.value)}
+              placeholder={String(page)}
+            />
+            <span>/ {totalPages}</span>
+          </form>
+        </div>
+      )}
 
       {/* Modal - Bottom sheet */}
       {showModal && (

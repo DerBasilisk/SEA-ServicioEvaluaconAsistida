@@ -1,5 +1,5 @@
 // frontend/sea/src/pages/admin/QuestionsManagement.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Search, Edit, Trash2, CheckCircle, ShieldAlert, XCircle, Sparkles, Plus, RotateCcw } from "lucide-react";
 import api from "../../api/axios";
 import QuestionModal from "../../components/admin/QuestionModal";
@@ -185,6 +185,46 @@ const QUESTIONS_CSS = `
   .qm-page-btn:hover:not(:disabled) { border-color: var(--text-accent); color: var(--text-primary); }
   .qm-page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+  .qm-page-nav {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.4rem; flex-wrap: wrap;
+  }
+
+  .qm-page-num {
+    min-width: 2.5rem; height: 2.5rem; padding: 0 0.5rem;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--card-bg); color: var(--text-secondary);
+    border: 1.5px solid var(--glass-border); border-radius: 0.85rem;
+    font-weight: 700; font-size: 0.875rem; cursor: pointer;
+    transition: all 0.2s; font-family: 'Nunito', sans-serif;
+  }
+  .qm-page-num:hover:not(:disabled):not(.active) { border-color: var(--text-accent); color: var(--text-primary); }
+  .qm-page-num.active {
+    background: var(--btn-primary); color: var(--btn-text);
+    border-color: var(--btn-primary); cursor: default;
+  }
+  .qm-page-num:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .qm-page-ellipsis {
+    min-width: 1.5rem; text-align: center; color: var(--text-muted);
+    font-weight: 700; font-size: 0.875rem; user-select: none;
+  }
+
+  .qm-page-jump {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.8rem; font-weight: 700; color: var(--text-secondary);
+  }
+  .qm-page-jump input {
+    width: 3.5rem; text-align: center;
+    background: var(--card-bg); border: 1.5px solid var(--glass-border);
+    border-radius: 0.75rem; padding: 0.5rem 0.25rem;
+    color: var(--text-primary); font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: 0.875rem; outline: none; transition: border-color 0.2s;
+  }
+  .qm-page-jump input:focus { border-color: var(--text-accent); }
+  .qm-page-jump input::-webkit-outer-spin-button,
+  .qm-page-jump input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
   /* Loading spinner */
   .qm-spin { animation: qm-spin-anim 0.9s linear infinite; }
   @keyframes qm-spin-anim { to { transform: rotate(360deg); } }
@@ -192,6 +232,29 @@ const QUESTIONS_CSS = `
 
 const diffClass = (d) =>
   d === "easy" ? "qm-diff-easy" : d === "medium" ? "qm-diff-medium" : "qm-diff-hard";
+
+// Calcula qué números de página mostrar, colapsando los intermedios con "…"
+// Ej: total=10, current=5 -> [1, '…', 4, 5, 6, '…', 10]
+function getPageRange(current, total, siblings = 1) {
+  if (total <= 1) return [1];
+  const range = [];
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || (i >= current - siblings && i <= current + siblings)) {
+      range.push(i);
+    }
+  }
+  const withDots = [];
+  let last = null;
+  for (const i of range) {
+    if (last !== null) {
+      if (i - last === 2) withDots.push(last + 1);
+      else if (i - last > 2) withDots.push("…");
+    }
+    withDots.push(i);
+    last = i;
+  }
+  return withDots;
+}
 
 export default function QuestionsManagement() {
   const [questions, setQuestions] = useState([]);
@@ -202,6 +265,7 @@ export default function QuestionsManagement() {
   const [lessons, setLessons] = useState([]);
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [selSubject, setSelSubject] = useState("");
   const [selUnit, setSelUnit] = useState("");
@@ -209,6 +273,7 @@ export default function QuestionsManagement() {
 
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [pageJumpValue, setPageJumpValue] = useState("");
 
   const [showModal, setShowModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
@@ -241,12 +306,18 @@ export default function QuestionsManagement() {
     setSelLesson("");
   }, [selUnit]);
 
+  // Espera 350ms sin escribir antes de disparar la búsqueda real
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const fetchQuestions = async () => {
     try {
       setLoading(true);
       const params = {
-        page, limit: 12,
-        search: search || undefined,
+        page, limit: 20,
+        search: debouncedSearch || undefined,
         reviewed: filterStatus === "all" ? undefined : (filterStatus === "reviewed"),
         subjectId: selSubject || undefined,
         unitId: selUnit || undefined,
@@ -265,7 +336,30 @@ export default function QuestionsManagement() {
     }
   };
 
-  useEffect(() => { fetchQuestions(); }, [page, filterStatus, search, selSubject, selUnit, selLesson, showReportedOnly, selType, selDifficulty]);
+  // Clave que representa "todos los filtros salvo la página". Si cambia,
+  // significa que el usuario tocó un filtro y debemos volver a la página 1
+  // en vez de quedarnos en una página que puede no existir para el nuevo filtro.
+  const filterKey = useMemo(
+    () => JSON.stringify({
+      debouncedSearch, filterStatus, selSubject, selUnit, selLesson,
+      showReportedOnly, selType, selDifficulty,
+    }),
+    [debouncedSearch, filterStatus, selSubject, selUnit, selLesson, showReportedOnly, selType, selDifficulty]
+  );
+  const prevFilterKey = useRef(filterKey);
+
+  useEffect(() => {
+    const filtersChanged = prevFilterKey.current !== filterKey;
+    prevFilterKey.current = filterKey;
+
+    if (filtersChanged && page !== 1) {
+      // Este cambio de página vuelve a disparar el efecto; como filterKey
+      // ya quedó actualizado arriba, la próxima vuelta hará el fetch real.
+      setPage(1);
+      return;
+    }
+    fetchQuestions();
+  }, [page, filterKey]);
 
   const handleClearReports = async (questionId) => {
     if (!confirm("¿Eliminar todos los reportes de esta pregunta?")) return;
@@ -300,6 +394,18 @@ export default function QuestionsManagement() {
     setSelSubject(""); setSelUnit(""); setSelLesson("");
     setSelType(""); setSelDifficulty("");
     setPage(1);
+  };
+
+  const goToPage = (n) => {
+    const clamped = Math.min(Math.max(1, n), totalPages);
+    setPage(clamped);
+  };
+
+  const handlePageJumpSubmit = (e) => {
+    e.preventDefault();
+    const n = parseInt(pageJumpValue, 10);
+    if (!Number.isNaN(n)) goToPage(n);
+    setPageJumpValue("");
   };
 
   const handleGenerateAI = async () => {
@@ -602,16 +708,51 @@ export default function QuestionsManagement() {
       </div>
 
       {/* Paginación */}
-      <div className="flex justify-center gap-4 items-center">
-        <button className="qm-page-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-          Anterior
-        </button>
-        <span className="text-sm font-bold" style={{ color: "var(--text-secondary)" }}>
-          Página <span style={{ color: "var(--text-primary)" }}>{page}</span> / {totalPages}
-        </span>
-        <button className="qm-page-btn" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-          Siguiente
-        </button>
+      <div className="flex flex-col items-center gap-3">
+        <div className="qm-page-nav">
+          <button className="qm-page-btn" disabled={page === 1 || loading} onClick={() => goToPage(1)}>
+            « Primera
+          </button>
+          <button className="qm-page-btn" disabled={page === 1 || loading} onClick={() => goToPage(page - 1)}>
+            Anterior
+          </button>
+
+          {getPageRange(page, totalPages).map((n, idx) =>
+            n === "…" ? (
+              <span key={`dots-${idx}`} className="qm-page-ellipsis">…</span>
+            ) : (
+              <button
+                key={n}
+                className={`qm-page-num ${n === page ? "active" : ""}`}
+                disabled={loading}
+                onClick={() => goToPage(n)}
+                aria-current={n === page ? "page" : undefined}
+              >
+                {n}
+              </button>
+            )
+          )}
+
+          <button className="qm-page-btn" disabled={page >= totalPages || loading} onClick={() => goToPage(page + 1)}>
+            Siguiente
+          </button>
+          <button className="qm-page-btn" disabled={page >= totalPages || loading} onClick={() => goToPage(totalPages)}>
+            Última »
+          </button>
+        </div>
+
+        <form className="qm-page-jump" onSubmit={handlePageJumpSubmit}>
+          <span>Ir a página</span>
+          <input
+            type="number"
+            min={1}
+            max={totalPages}
+            value={pageJumpValue}
+            onChange={e => setPageJumpValue(e.target.value)}
+            placeholder={String(page)}
+          />
+          <span>/ {totalPages}</span>
+        </form>
       </div>
 
       {showModal && (
