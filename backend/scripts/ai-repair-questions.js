@@ -143,7 +143,7 @@ const gemini        = process.env.GEMINI_API_KEY
   : null;
 const geminiBreaker = new CircuitBreaker("Gemini", { failureThreshold: 3, resetTimeMs: 60_000 });
 
-const GROQ_MODEL   = "llama-3.3-70b-versatile";
+const GROQ_MODEL   = "llama-3.1-8b-instant";
 const GEMINI_MODEL = "gemini-2.0-flash";
 
 // ── Modelo usado para marcar en BD ────────────────────────────────────────────
