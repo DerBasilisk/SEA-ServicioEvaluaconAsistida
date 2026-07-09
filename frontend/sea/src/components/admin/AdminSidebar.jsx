@@ -9,6 +9,7 @@ import {
 import useAuthStore from "../../store/authStore";
 import Avatar from "../Avatar";
 import { useState } from "react";
+import { LogoMark } from "../LogoMark";
 
 /* ── Estilos que consumen las variables de index.css ── */
 const SIDEBAR_CSS = `
@@ -264,24 +265,7 @@ export default function AdminSidebar({ mobileOpen, onMobileClose }) {
       <style>{SIDEBAR_CSS}</style>
 
       {/* ── Logo ── */}
-      <div className="p-6 flex items-center justify-between" style={{ borderBottom: "1.5px solid var(--sidebar-border)" }}>
-        <div className="flex items-center gap-3">
-          <div className="sea-logo-letter w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-lg shrink-0">
-            S
-          </div>
-          <div>
-            <h1
-              className="text-2xl font-black italic uppercase tracking-tighter leading-none"
-              style={{ color: "var(--text-primary)" }}
-            >
-              SEA
-            </h1>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: "var(--text-accent)" }}>
-              Admin Panel
-            </p>
-          </div>
-        </div>
-      </div>
+      <LogoMark className="mx-auto my-6" size={50} />
 
       {/* ── Usuario ── */}
       <div className="px-5 py-4" style={{ borderBottom: "1.5px solid var(--sidebar-border)" }}>
