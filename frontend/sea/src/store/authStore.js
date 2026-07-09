@@ -6,7 +6,7 @@ import { disconnectDuelSocket } from "../api/duelSocket";
 const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem("sea_token") || null,
-  loading: true,
+  loading: !!localStorage.getItem("sea_token"),
   error: null,
 
   setUser: (userData) => set({ user: userData }),
