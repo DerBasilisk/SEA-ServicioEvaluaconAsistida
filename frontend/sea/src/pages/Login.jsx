@@ -372,7 +372,7 @@ export default function Login() {
       localStorage.setItem("sea_token", token);
       fetchMe().then(() => {
         const { user } = useAuthStore.getState();
-        navigate(user?.role === "admin" ? "/admin" : "/");
+        navigate(["admin", "superadmin"].includes(user?.role) ? "/admin" : "/");
       });
     }
   }, [location, navigate, fetchMe]);
@@ -398,7 +398,7 @@ export default function Login() {
       const res = await login(form.email, form.password);
       if (res?.ok) {
         const { user } = useAuthStore.getState();
-        navigate(user?.role === "admin" ? "/admin" : "/");
+        navigate(["admin", "superadmin"].includes(user?.role) ? "/admin" : "/");
       } else {
         console.warn("Login fallido:", res?.message);
       }

@@ -1,30 +1,49 @@
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
+
+const LOADING_TIMEOUT_MS = 8000;
 
 export default function AdminProtectedRoute({ children }) {
   const { user, loading } = useAuthStore();
+  const [timedOut, setTimedOut] = useState(false);
 
-  // 1. MIENTRAS CARGA: No redirigimos. Mostramos un estado de espera.
-  // Esto evita que el sistema te expulse mientras fetchMe() verifica el token.
+  useEffect(() => {
+    if (!loading) return;
+    const timeoutId = setTimeout(() => setTimedOut(true), LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timeoutId);
+  }, [loading]);
+
+  // Si loading nunca termina (bug de red/store), no dejamos a la persona
+  // colgada indefinidamente: la mandamos a login para que reintente.
+  if (loading && timedOut) {
+    return <Navigate to="/login?error=timeout" replace />;
+  }
+
   if (loading) {
     return (
-      <div className="h-screen w-full bg-[#050505] flex flex-col items-center justify-center">
-        <div className="w-10 h-10 border-4 border-violet-500/20 border-t-violet-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-500 text-sm font-medium animate-pulse">Verificando credenciales...</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "var(--bg-gradient)" }}
+      >
+        <div className="flex flex-col items-center">
+          <Loader2 size={32} className="text-[#2B7FE8] animate-spin mb-4" />
+          <p className="text-[--text-primary] text-sm font-medium">
+            Cargando...
+          </p>
+        </div>
       </div>
     );
   }
 
-  // 2. SI NO HAY USUARIO: Solo después de que terminó de cargar y user sigue null, redirigimos.
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // 3. SI NO ES ADMIN: Redirigimos al home.
   if (!["admin", "superadmin"].includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
-  // 4. TODO OK: Renderizamos el panel de admin.
   return children;
 }

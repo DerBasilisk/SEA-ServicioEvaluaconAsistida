@@ -32,7 +32,7 @@ const verificarToken = async (req, res, next) => {
 };
 
 const soloAdmin = (req, res, next) => {
-  if (req.usuario?.role !== "admin") {
+  if (!["admin", "superadmin"].includes(req.usuario?.role)) {
     return res.status(403).json({ message: "Acceso Denegado: se requiere role admin" });
   }
   next();
