@@ -48,7 +48,7 @@ import ShopManagement from "./pages/admin/ShopManagement";
 
 // Adiciones
 import AudioManager from "./components/AudioManager";
-
+import { ConfirmProvider } from "./context/ConfirmContext";
 import DuelInviteToast from "./components/Duelinvitetoast";
 
 function App() {
@@ -68,6 +68,7 @@ function App() {
   return (
     <BrowserRouter>
     <AudioManager />
+    <ConfirmProvider>
       <Routes>
         {/* Rutas Públicas */}
         
@@ -125,6 +126,7 @@ function App() {
       <DuelInviteToast />
       <CookieBanner />
       <Toaster position="top-right" />
+      </ConfirmProvider>
     </BrowserRouter>
   );
 }

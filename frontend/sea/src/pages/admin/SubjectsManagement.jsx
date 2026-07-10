@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, ArrowUp, ArrowDown, X, ChevronDown, ChevronUp } fro
 import api from "../../api/axios";
 import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../../context/ConfirmContext"; // Importa el hook useConfirm
 
 const SUBJECTS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -188,6 +189,7 @@ export default function SubjectsManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
   const [expandedSubject, setExpandedSubject] = useState(null);
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
 
   const [form, setForm] = useState({
     name: "",
@@ -263,7 +265,12 @@ export default function SubjectsManagement() {
   };
 
   const deleteSubject = async (id) => {
-    if (!confirm("¿Eliminar esta materia? Se borrarán también sus unidades y lecciones.")) return;
+    if (!(await confirm({
+     title: "Eliminar materia",
+     message: "Se borrarán también sus unidades y lecciones.",
+     danger: true,
+     confirmText: "Eliminar",
+   }))) return;
     try {
       await api.delete(`/admin/subjects/${id}`);
       fetchSubjects();

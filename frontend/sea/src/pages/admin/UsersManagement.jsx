@@ -5,6 +5,7 @@ import useAuthStore from "../../store/authStore";
 import api from "../../api/axios";
 import Avatar from "../../components/Avatar";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../../context/ConfirmContext"; // Importa el hook useConfirm
 
 const USERS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -272,6 +273,7 @@ export default function UsersManagement() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
   
   const isSuperAdmin = useAuthStore(s => s.isSuperAdmin);
 
@@ -331,7 +333,11 @@ const handleRefresh = () => {
 
   const handleBan = async (id, isActive) => {
     const action = isActive ? "banear" : "desbanear";
-    if (!confirm(`¿${action.toUpperCase()} a este usuario?`)) return;
+       if (!(await confirm({
+     message: `¿${action.toUpperCase()} a este usuario?`,
+     danger: !isActive, // banear es destructivo, desbanear no
+     confirmText: action.charAt(0).toUpperCase() + action.slice(1),
+      }))) return;
     try {
       await api.put(`/admin/users/${id}/ban`, { isActive: !isActive });
       fetchUsers(true);
@@ -342,7 +348,12 @@ const handleRefresh = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("¿ELIMINAR usuario permanentemente?\nEsto borrará todo su progreso.")) return;
+       if (!(await confirm({
+     title: "Eliminar usuario permanentemente",
+     message: "Esto borrará todo su progreso. Esta acción no se puede deshacer.",
+     danger: true,
+     confirmText: "Eliminar",
+   }))) return;
     try {
       await api.delete(`/admin/users/${id}`);
       fetchUsers(true);

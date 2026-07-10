@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import QuestionModal from "../../components/admin/QuestionModal";
 import CustomSelect from "../../components/ui/CustomSelect";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../../context/ConfirmContext"; // Importa el hook useConfirm
 
 const QUESTIONS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -260,6 +261,7 @@ function getPageRange(current, total, siblings = 1) {
 export default function QuestionsManagement() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
 
   const [subjects, setSubjects] = useState([]);
   const [units, setUnits] = useState([]);
@@ -363,7 +365,7 @@ export default function QuestionsManagement() {
   }, [page, filterKey]);
 
   const handleClearReports = async (questionId) => {
-    if (!confirm("¿Eliminar todos los reportes de esta pregunta?")) return;
+    if (!(await confirm("¿Eliminar todos los reportes de esta pregunta?"))) return;
     try {
       await api.put(`/admin/questions/${questionId}/clear-reports`);
       fetchQuestions();
@@ -385,7 +387,7 @@ export default function QuestionsManagement() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("¿Eliminar esta pregunta?")) return;
+   if (!(await confirm({ message: "¿Eliminar esta pregunta?", danger: true, confirmText: "Eliminar" }))) return;
     await api.delete(`/admin/questions/${id}`);
     fetchQuestions();
   };

@@ -11,6 +11,7 @@ import {
 import Avatar from "../components/Avatar";
 import toast from "react-hot-toast";
 import { getDuelSocket } from "../api/duelSocket";
+import { useConfirm } from "../context/ConfirmContext";
 
 const FRIENDS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -143,6 +144,7 @@ export default function Friends() {
   const { user, token } = useAuthStore();
   const navigate        = useNavigate();
   const socketRef       = useRef(null);
+  const confirm          = useConfirm();
 
   const [tab,           setTab]           = useState("friends");
   const [friends,       setFriends]       = useState([]);
@@ -267,7 +269,7 @@ export default function Friends() {
   const handleAccept = async (id) => { await api.put(`/friends/request/${id}/accept`); fetchAll(); };
   const handleReject = async (id) => { await api.put(`/friends/request/${id}/reject`); fetchAll(); };
   const handleRemove = async (userId) => {
-    if (!confirm("¿Eliminar amigo?")) return;
+    if (!(await confirm("¿Eliminar amigo?"))) return;
     await api.delete(`/friends/${userId}`);
     fetchAll();
   };

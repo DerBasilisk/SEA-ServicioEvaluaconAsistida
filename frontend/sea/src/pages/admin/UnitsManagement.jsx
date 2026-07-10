@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../../context/ConfirmContext"; // Importa el hook useConfirm
 
 const UNITS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -303,6 +304,7 @@ export default function UnitsManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingUnit, setEditingUnit] = useState(null);
   const [expandedUnit, setExpandedUnit] = useState(null);
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
 
   const [selectedSubject, setSelectedSubject] = useState("");
   const [search, setSearch] = useState("");
@@ -395,7 +397,12 @@ export default function UnitsManagement() {
   };
 
   const deleteUnit = async (id) => {
-    if (!confirm("¿Eliminar esta unidad? Se borrarán todas sus lecciones y preguntas.")) return;
+     if (!(await confirm({
+     title: "Eliminar unidad",
+     message: "Se borrarán todas sus lecciones y preguntas.",
+     danger: true,
+     confirmText: "Eliminar",
+     }))) return;
     try {
       await api.delete(`/admin/units/${id}`);
       fetchData();

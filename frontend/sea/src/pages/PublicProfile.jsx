@@ -11,6 +11,7 @@ import Navbar from "../components/Navbar";
 import Avatar from "../components/Avatar";
 import api from "../api/axios";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../context/ConfirmContext"; // Importa el hook useConfirm
 
 const PUBLIC_PROFILE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -64,6 +65,7 @@ export default function PublicProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
 
   useEffect(() => { fetchProfile(); }, [username]);
 
@@ -87,7 +89,7 @@ export default function PublicProfile() {
   };
 
   const handleRemove = async () => {
-    if (!confirm("¿Eliminar de tu red de contactos?")) return;
+    if (!(await confirm("¿Eliminar de tu red de contactos?"))) return;
     setActionLoading(true);
     try {
       await api.delete(`/friends/${profile._id}`);

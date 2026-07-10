@@ -5,6 +5,7 @@ import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR } from "../../utils/validators";
 import useAuthStore from "../../store/authStore";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../../context/ConfirmContext"; // Importa el hook useConfirm
 
 const SHOP_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -318,6 +319,7 @@ export default function ShopManagement() {
   const [filterType, setFilterType] = useState("all");
   const [filterRarity, setFilterRarity] = useState("all");
   const [search, setSearch] = useState("");
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
 
   const initialForm = {
     name: "",
@@ -466,7 +468,12 @@ export default function ShopManagement() {
   };
 
   const deleteItem = async (id) => {
-    if (!confirm("¿Eliminar este item? Los usuarios que lo tengan lo perderán.")) return;
+    if (!(await confirm({
+     title: "Eliminar item",
+     message: "Los usuarios que lo tengan lo perderán.",
+     danger: true,
+     confirmText: "Eliminar",
+     }))) return;
     try {
       await api.delete(`/admin/shop-items/${id}`);
       fetchItems();

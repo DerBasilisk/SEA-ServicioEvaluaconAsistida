@@ -5,6 +5,7 @@ import api from "../../api/axios";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
 import toast from 'react-hot-toast';
+import { useConfirm } from "../../context/ConfirmContext"; // Importa el hook useConfirm
 
 const LESSONS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -306,6 +307,7 @@ export default function LessonsManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [expandedLesson, setExpandedLesson] = useState(null);
+  const confirm = useConfirm(); // ✅ Hook movido al inicio (sin condiciones)
 
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
@@ -415,7 +417,7 @@ export default function LessonsManagement() {
   };
 
   const deleteLesson = async (id) => {
-    if (!confirm("¿Eliminar esta lección?")) return;
+    if (!(await confirm({ message: "¿Eliminar esta lección?", danger: true, confirmText: "Eliminar" }))) return;
     try {
       await api.delete(`/admin/lessons/${id}`);
       fetchData();
