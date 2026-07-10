@@ -261,7 +261,7 @@ export default function Friends() {
     try {
       await api.post("/friends/request", { username });
       handleSearch(searchQuery);
-    } catch (err) { alert(err.response?.data?.message || "Error"); }
+    } catch (err) { toast.error(err.response?.data?.message || "Error"); }
   };
 
   const handleAccept = async (id) => { await api.put(`/friends/request/${id}/accept`); fetchAll(); };

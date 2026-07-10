@@ -4,6 +4,7 @@ import api from "../../api/axios";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR } from "../../utils/validators";
 import useAuthStore from "../../store/authStore";
+import toast from 'react-hot-toast';
 
 const SHOP_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -445,7 +446,7 @@ export default function ShopManagement() {
   const saveItem = async (e) => {
     e.preventDefault();
     if (!validarNombre(form.name)) {
-      alert(NOMBRE_ERROR);
+      toast.error(NOMBRE_ERROR);
       return;
     }
     setIsSubmitting(true);
@@ -458,7 +459,7 @@ export default function ShopManagement() {
       setShowModal(false);
       fetchItems();
     } catch (err) {
-      alert(err.response?.data?.message || "Error al guardar el item");
+      toast.error(err.response?.data?.message || "Error al guardar el item");
     } finally {
       setIsSubmitting(false);
     }
@@ -470,7 +471,7 @@ export default function ShopManagement() {
       await api.delete(`/admin/shop-items/${id}`);
       fetchItems();
     } catch (err) {
-      alert("Error al eliminar el item");
+      toast.error("Error al eliminar el item");
     }
   };
 

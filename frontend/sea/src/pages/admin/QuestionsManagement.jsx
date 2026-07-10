@@ -4,6 +4,7 @@ import { Search, Edit, Trash2, CheckCircle, ShieldAlert, XCircle, Sparkles, Plus
 import api from "../../api/axios";
 import QuestionModal from "../../components/admin/QuestionModal";
 import CustomSelect from "../../components/ui/CustomSelect";
+import toast from 'react-hot-toast';
 
 const QUESTIONS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -366,21 +367,21 @@ export default function QuestionsManagement() {
     try {
       await api.put(`/admin/questions/${questionId}/clear-reports`);
       fetchQuestions();
-    } catch { alert("Error al limpiar los reportes"); }
+    } catch { toast.error("Error al limpiar los reportes"); }
   };
 
   const handleToggleReview = async (id, newReviewed) => {
     try {
       await api.put(`/admin/questions/${id}/review`, { approved: newReviewed });
       fetchQuestions();
-    } catch { alert("Error al actualizar estado de revisión"); }
+    } catch { toast.error("Error al actualizar estado de revisión"); }
   };
 
   const handleToggleActive = async (id, newActive) => {
     try {
       await api.put(`/admin/questions/${id}`, { isActive: newActive });
       fetchQuestions();
-    } catch { alert("Error al actualizar estado activo"); }
+    } catch { toast.error("Error al actualizar estado activo"); }
   };
 
   const handleDelete = async (id) => {
@@ -410,7 +411,7 @@ export default function QuestionsManagement() {
 
   const handleGenerateAI = async () => {
     if (!selLesson) {
-      alert("Por favor selecciona una Lección antes de generar preguntas con IA.");
+      toast.error("Por favor selecciona una Lección antes de generar preguntas con IA.");
       return;
     }
     setGenerating(true);
@@ -418,10 +419,10 @@ export default function QuestionsManagement() {
       const { data } = await api.post("/admin/questions/generate", {
         lessonId: selLesson, count: 5, difficulty: "medium"
       });
-      alert(data.message || `${data.data?.length || 0} preguntas generadas correctamente.`);
+      toast.success(data.message || `${data.data?.length || 0} preguntas generadas correctamente.`);
       fetchQuestions();
     } catch (err) {
-      alert(err.response?.data?.message || "Error al generar preguntas con IA");
+      toast.error(err.response?.data?.message || "Error al generar preguntas con IA");
     } finally {
       setGenerating(false);
     }
@@ -433,17 +434,17 @@ export default function QuestionsManagement() {
       if (!editingQuestion && selLesson) finalPayload.lesson = selLesson;
       if (editingQuestion?._id) {
         await api.put(`/admin/questions/${editingQuestion._id}`, finalPayload);
-        alert("Pregunta actualizada correctamente");
+        toast.success("Pregunta actualizada correctamente");
       } else {
-        if (!finalPayload.lesson) { alert("Debes seleccionar una lección para crear la pregunta"); return; }
+        if (!finalPayload.lesson) { toast.error("Debes seleccionar una lección para crear la pregunta"); return; }
         await api.post("/admin/questions", finalPayload);
-        alert("Pregunta creada correctamente");
+        toast.success("Pregunta creada correctamente");
       }
       setShowModal(false);
       setEditingQuestion(null);
       fetchQuestions();
     } catch (err) {
-      alert(err.response?.data?.message || "Error al guardar la pregunta");
+      toast.error(err.response?.data?.message || "Error al guardar la pregunta");
     }
   };
 

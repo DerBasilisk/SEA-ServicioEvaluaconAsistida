@@ -4,6 +4,7 @@ import { Camera, Image as ImageIcon, Check, X } from "lucide-react";
 import "react-image-crop/dist/ReactCrop.css";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
+import toast from 'react-hot-toast';
 
 const BANNER_ASPECT = 1200 / 300;
 
@@ -77,7 +78,7 @@ export default function BannerUpload({ currentBanner }) {
       await api.post("/upload/banner", formData, { headers: { "Content-Type": "multipart/form-data" } });
       await fetchMe();
       setShowModal(false);
-    } catch (err) { alert("Error al subir banner"); }
+    } catch (err) { toast.error("Error al subir banner"); }
     finally { setUploading(false); }
   };
 

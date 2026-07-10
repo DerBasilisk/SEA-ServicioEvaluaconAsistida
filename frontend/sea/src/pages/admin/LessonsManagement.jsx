@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, X, ChevronDown, ChevronUp, Filter } from "lucide-re
 import api from "../../api/axios";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
+import toast from 'react-hot-toast';
 
 const LESSONS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -392,7 +393,7 @@ export default function LessonsManagement() {
   const saveLesson = async (e) => {
     e.preventDefault();
     if (!validarNombre(form.name)) {
-      alert(NOMBRE_ERROR);
+      toast.error(NOMBRE_ERROR);
       return;
     }
     try {
@@ -406,9 +407,9 @@ export default function LessonsManagement() {
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
       if (err.response?.data?.message?.includes("duplicate key")) {
-        alert("Ya existe una lección con ese orden en la unidad.");
+        toast.error("Ya existe una lección con ese orden en la unidad.");
       } else {
-        alert(err.response?.data?.message || "Error al guardar la lección");
+        toast.error(err.response?.data?.message || "Error al guardar la lección");
       }
     }
   };
@@ -420,7 +421,7 @@ export default function LessonsManagement() {
       fetchData();
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch { 
-      alert("Error al eliminar la lección"); 
+      toast.error("Error al eliminar la lección"); 
     }
   };
 

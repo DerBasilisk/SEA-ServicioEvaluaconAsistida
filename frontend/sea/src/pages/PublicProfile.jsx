@@ -10,6 +10,7 @@ import {
 import Navbar from "../components/Navbar";
 import Avatar from "../components/Avatar";
 import api from "../api/axios";
+import toast from 'react-hot-toast';
 
 const PUBLIC_PROFILE_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -81,7 +82,7 @@ export default function PublicProfile() {
       await api.post("/friends/request", { username: profile.username });
       fetchProfile();
     } catch (err) {
-      alert(err.response?.data?.message || "Error");
+      toast.error(err.response?.data?.message || "Error");
     } finally { setActionLoading(false); }
   };
 

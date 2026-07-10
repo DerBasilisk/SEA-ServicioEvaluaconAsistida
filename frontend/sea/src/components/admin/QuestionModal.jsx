@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Keyboard, Code2, X } from "lucide-react";
 import CustomSelect from "../ui/CustomSelect";
+import toast from 'react-hot-toast';
 
 const MODAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -457,16 +458,16 @@ export default function QuestionModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.lesson) { alert("Debes seleccionar una lección"); return; }
+    if (!form.lesson) { toast.error("Debes seleccionar una lección"); return; }
     if (form.type === "typing" && !form.typingText.trim()) {
-      alert("El texto a escribir es obligatorio"); return;
+      toast.error("El texto a escribir es obligatorio"); return;
     }
     if (form.type === "code_python") {
       if (form.testCases.some(tc => !tc.expectedOutput.trim())) {
-        alert("Todos los tests deben tener salida esperada"); return;
+        toast.error("Todos los tests deben tener salida esperada"); return;
       }
       if (form.testCases.some(tc => tc.testType === "return" && !tc.callCode.trim())) {
-        alert('Los tests de tipo "retorno" necesitan una expresión de llamada'); return;
+        toast.error('Los tests de tipo "retorno" necesitan una expresión de llamada'); return;
       }
     }
 

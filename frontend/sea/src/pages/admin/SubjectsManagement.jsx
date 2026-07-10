@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, ArrowUp, ArrowDown, X, ChevronDown, ChevronUp } from "lucide-react";
 import api from "../../api/axios";
 import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
+import toast from 'react-hot-toast';
 
 const SUBJECTS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -204,7 +205,7 @@ export default function SubjectsManagement() {
       setSubjects(data.data);
     } catch (err) {
       console.error(err);
-      alert("Error al cargar materias");
+      toast.error("Error al cargar materias");
     } finally {
       setLoading(false);
     }
@@ -244,7 +245,7 @@ export default function SubjectsManagement() {
   const saveSubject = async (e) => {
     e.preventDefault();
     if (!validarNombre(form.name)) {
-      alert(NOMBRE_ERROR);
+      toast.error(NOMBRE_ERROR);
       return;
     }
     try {
@@ -257,7 +258,7 @@ export default function SubjectsManagement() {
       fetchSubjects();
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert(err.response?.data?.message || "Error al guardar materia");
+      toast.error(err.response?.data?.message || "Error al guardar materia");
     }
   };
 
@@ -268,7 +269,7 @@ export default function SubjectsManagement() {
       fetchSubjects();
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert("Error al eliminar materia");
+      toast.error("Error al eliminar materia");
     }
   };
 

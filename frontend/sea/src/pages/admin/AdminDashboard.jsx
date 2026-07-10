@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
+import toast from 'react-hot-toast';
 
 /* ─── Estilos que consumen las variables de index.css ─── */
 const ADMIN_CSS = `
@@ -157,7 +158,7 @@ export default function AdminDashboard() {
         window.navigator.vibrate(50);
       }
     } catch {
-      alert(`Error al descargar ${label}`);
+      toast.error(`Error al descargar ${label}`);
     }
   };
 

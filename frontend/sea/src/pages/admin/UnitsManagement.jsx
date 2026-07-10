@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2, RotateCcw, Lock, X, Search as SearchIcon, Filter } 
 import api from "../../api/axios";
 import CustomSelect from "../../components/ui/CustomSelect";
 import { validarNombre, NOMBRE_ERROR, NOMBRE_REGEX } from "../../utils/validators";
+import toast from 'react-hot-toast';
 
 const UNITS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -374,7 +375,7 @@ export default function UnitsManagement() {
     e.preventDefault();
     setIsSubmitting(true);
     if (!validarNombre(form.name)) {
-      alert(NOMBRE_ERROR);
+      toast.error(NOMBRE_ERROR);
       return;
     }
     try {
@@ -387,7 +388,7 @@ export default function UnitsManagement() {
       fetchData();
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert(err.response?.data?.message || "Error al guardar. Revisa que el orden no esté repetido.");
+      toast.error(err.response?.data?.message || "Error al guardar. Revisa que el orden no esté repetido.");
     } finally {
       setIsSubmitting(false);
     }
@@ -400,7 +401,7 @@ export default function UnitsManagement() {
       fetchData();
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert("Error al eliminar la unidad");
+      toast.error("Error al eliminar la unidad");
     }
   };
 

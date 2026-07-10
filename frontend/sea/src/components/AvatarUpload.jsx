@@ -5,6 +5,7 @@ import "react-image-crop/dist/ReactCrop.css";
 import api from "../api/axios";
 import useAuthStore from "../store/authStore";
 import Avatar from "./Avatar"; // ← Importamos el componente Avatar
+import toast from 'react-hot-toast';
 
 function centerAspectCrop(mediaWidth, mediaHeight) {
   return centerCrop(
@@ -85,7 +86,7 @@ export default function AvatarUpload({ currentAvatar, username, size = "lg", fra
       await fetchMe();
       handleCancel();
     } catch (err) {
-      alert("Error al subir imagen");
+      toast.error("Error al subir imagen");
     } finally { setUploading(false); }
   };
 

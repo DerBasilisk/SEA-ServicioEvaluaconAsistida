@@ -4,6 +4,7 @@ import { Search, Edit, Ban, Trash2, X, Filter, RefreshCw } from "lucide-react";
 import useAuthStore from "../../store/authStore";
 import api from "../../api/axios";
 import Avatar from "../../components/Avatar";
+import toast from 'react-hot-toast';
 
 const USERS_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
@@ -288,7 +289,7 @@ export default function UsersManagement() {
       setTotalPages(data.data.pages);
     } catch (err) {
       console.error(err);
-      alert("Error al cargar usuarios");
+      toast.error("Error al cargar usuarios");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -312,7 +313,7 @@ useEffect(() => {
       setTotalPages(data.data.pages);
     } catch (err) {
       console.error(err);
-      alert("Error al cargar usuarios");
+      toast.error("Error al cargar usuarios");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -336,7 +337,7 @@ const handleRefresh = () => {
       fetchUsers(true);
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert("Error al actualizar estado: " + (err.response?.data?.message || "Error desconocido"));
+      toast.error("Error al actualizar estado: " + (err.response?.data?.message || "Error desconocido"));
     }
   };
 
@@ -347,7 +348,7 @@ const handleRefresh = () => {
       fetchUsers(true);
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch { 
-      alert("Error al eliminar usuario"); 
+      toast.error("Error al eliminar usuario"); 
     }
   };
 
@@ -366,7 +367,7 @@ const handleRefresh = () => {
       fetchUsers(true);
       if (window.navigator?.vibrate) window.navigator.vibrate(50);
     } catch (err) {
-      alert("Error al actualizar usuario: " + (err.response?.data?.message || "Error desconocido"));
+      toast.error("Error al actualizar usuario: " + (err.response?.data?.message || "Error desconocido"));
     }
   };
 
